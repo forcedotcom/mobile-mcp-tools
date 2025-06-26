@@ -1,6 +1,6 @@
 name: run-tests
 run-name: Installs project and runs tests
-on: [ push, pull_request ]
+on: [push, pull_request]
 jobs:
   run-tests:
     runs-on: ${{ matrix.os }}
@@ -20,16 +20,16 @@ jobs:
       # Only run Xvfb cleanup on Ubuntu (Unix systems)
       - if: matrix.os == 'ubuntu-latest'
         run: killall Xvfb || true
-      
+
       # Upload individual package coverage
       - name: Upload mobile-web coverage
         uses: codecov/codecov-action@v3
         with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: packages/mobile-web/coverage/*.json
-            flags: mobile-web-${{ runner.os }}-node${{ matrix.node }}
-            name: mobile-web-coverage
-            
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/mobile-web/coverage/*.json
+          flags: mobile-web-${{ runner.os }}-node${{ matrix.node }}
+          name: mobile-web-coverage
+
       # Add more packages as you create them
       # - name: Upload backend-api coverage
       #   uses: codecov/codecov-action@v3
@@ -38,7 +38,7 @@ jobs:
       #       files: packages/backend-api/coverage/*.json
       #       flags: backend-api-${{ runner.os }}-node${{ matrix.node }}
       #       name: backend-api-coverage
-      
+
       # - name: Upload shared-utils coverage
       #   uses: codecov/codecov-action@v3
       #   with:
@@ -46,12 +46,12 @@ jobs:
       #       files: packages/shared-utils/coverage/*.json
       #       flags: shared-utils-${{ runner.os }}-node${{ matrix.node }}
       #       name: shared-utils-coverage
-      
+
       # Upload combined coverage for overall monorepo metrics
       - name: Upload combined monorepo coverage
         uses: codecov/codecov-action@v3
         with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: packages/*/coverage/*.json
-            flags: monorepo-${{ runner.os }}-node${{ matrix.node }}
-            name: monorepo-combined-coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/*/coverage/*.json
+          flags: monorepo-${{ runner.os }}-node${{ matrix.node }}
+          name: monorepo-combined-coverage

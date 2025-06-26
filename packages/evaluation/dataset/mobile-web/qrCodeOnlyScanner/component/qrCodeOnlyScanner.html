@@ -1,0 +1,41 @@
+<template>
+  <lightning-card title="QR Code Scanner">
+    <div class="slds-p-around_medium">
+      <template if:true="{isAvailable}">
+        <lightning-button
+          label="Scan QR Code"
+          onclick="{handleScanClick}"
+          variant="brand"
+          class="slds-m-bottom_medium"
+        >
+        </lightning-button>
+
+        <template if:true="{scannedValue}">
+          <div class="slds-box slds-theme_default">
+            <p class="slds-text-heading_small">Scanned Value:</p>
+            <p class="slds-m-top_small">{scannedValue}</p>
+          </div>
+        </template>
+
+        <template if:true="{error}">
+          <div class="slds-notify slds-notify_alert slds-theme_error slds-m-top_medium">
+            <span class="slds-assistive-text">Error</span>
+            <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small">
+              <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+            </span>
+            <h2>{error}</h2>
+          </div>
+        </template>
+      </template>
+      <template if:false="{isAvailable}">
+        <div class="slds-notify slds-notify_alert slds-theme_warning">
+          <span class="slds-assistive-text">Warning</span>
+          <span class="slds-icon_container slds-icon-utility-warning slds-m-right_x-small">
+            <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+          </span>
+          <h2>Barcode Scanner is not available on this device</h2>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>

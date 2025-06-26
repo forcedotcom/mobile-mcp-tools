@@ -19,20 +19,20 @@ codecov:
 
 # Comment configuration for PRs
 comment:
-  layout: "reach, diff, flags, files"
+  layout: 'reach, diff, flags, files'
   behavior: default
   require_changes: no
 
 # Ignore certain files/directories
 ignore:
-  - "packages/*/node_modules/"
-  - "packages/*/dist/"
-  - "packages/*/coverage/"
-  - "**/*.test.ts"
-  - "**/*.spec.ts"
-  - "**/*.config.ts"
-  - "**/*.d.ts"
-  - "**/src/scripts/*.ts"
+  - 'packages/*/node_modules/'
+  - 'packages/*/dist/'
+  - 'packages/*/coverage/'
+  - '**/*.test.ts'
+  - '**/*.spec.ts'
+  - '**/*.config.ts'
+  - '**/*.d.ts'
+  - '**/src/scripts/*.ts'
 
 # Flag-specific configurations
 flags:
@@ -46,7 +46,7 @@ flags:
   shared-utils:
     target: 90%
     threshold: 5%
-  
+
   # Monorepo combined flag
   monorepo:
     target: 82%
@@ -59,4 +59,4 @@ parsers:
       conditional: yes
       loop: yes
       method: no
-      macro: no 
+      macro: no

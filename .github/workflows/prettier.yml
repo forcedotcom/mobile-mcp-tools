@@ -1,12 +1,12 @@
 name: prettier
 run-name: Installs project and runs prettier checks
-on: [ push, pull_request ]
+on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 20 ]
+        node: [20]
     name: Prettier on Ubuntu with Node ${{ matrix.node }}
     steps:
       - uses: actions/checkout@v3
