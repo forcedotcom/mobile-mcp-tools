@@ -1,0 +1,373 @@
+name: Base Publish Release
+run-name: Publish ${{ inputs.package_display_name }} Release ${{ inputs.release_tag }}
+
+on:
+  workflow_call:
+    inputs:
+      package_display_name:
+        description: 'Display name for the package (e.g., Mobile Web MCP Server)'
+        required: true
+        type: string
+      package_path:
+        description: 'Path to package directory (e.g., packages/mobile-web)'
+        required: true
+        type: string
+      release_tag:
+        description: 'Release tag to publish (e.g., mobile-web-mcp-server_v1.0.0)'
+        required: true
+        type: string
+      npm_tag:
+        description: 'NPM tag to publish under (default: latest)'
+        required: false
+        type: string
+        default: 'latest'
+      dry_run:
+        description: 'Perform a dry run (do not actually publish)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Validate inputs and release
+        id: validate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseTag = '${{ inputs.release_tag }}';
+
+            core.info(`🔍 Validating release tag: ${releaseTag}`);
+
+            try {
+              // Check if release exists
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: releaseTag
+              });
+              
+              // Extract version from tag (format: package-name_vX.X.X)
+              const tagMatch = releaseTag.match(/^(.+)_v(.+)$/);
+              if (!tagMatch) {
+                core.setFailed(`❌ Invalid release tag format: ${releaseTag}. Expected format: <package-name>_v<version>`);
+                return;
+              }
+              
+              const packageIdentifier = tagMatch[1];
+              const packageVersion = tagMatch[2];
+              
+              // Set outputs
+              core.setOutput('package_identifier', packageIdentifier);
+              core.setOutput('package_version', packageVersion);
+              
+              core.info(`✅ Release found: ${releaseTag}`);
+              core.info(`📦 Package Identifier: ${packageIdentifier}`);
+              core.info(`🔢 Version: ${packageVersion}`);
+            } catch (error) {
+              if (error.status === 404) {
+                core.setFailed(`❌ Release ${releaseTag} not found`);
+              } else {
+                core.setFailed(`❌ Error validating release: ${error.message}`);
+              }
+            }
+
+      - name: Get package information
+        id: package-info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const packagePath = '${{ inputs.package_path }}';
+            const packageJsonPath = path.join(packagePath, 'package.json');
+            const expectedVersion = '${{ steps.validate.outputs.package_version }}';
+
+            if (!fs.existsSync(packageJsonPath)) {
+              core.setFailed(`❌ package.json not found at ${packageJsonPath}`);
+              return;
+            }
+
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+            const packageFullName = packageJson.name;
+            const currentVersion = packageJson.version;
+
+            // Verify version matches the release tag
+            if (currentVersion !== expectedVersion) {
+              core.setFailed(`❌ Version mismatch:\n  Release tag version: ${expectedVersion}\n  Package.json version: ${currentVersion}`);
+              return;
+            }
+
+            // Set outputs
+            core.setOutput('package_full_name', packageFullName);
+
+            core.info('✅ Package information validated');
+            core.info(`📦 Full package name: ${packageFullName}`);
+
+      - name: Check if version already published
+        id: check-published
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+
+            const packageFullName = '${{ steps.package-info.outputs.package_full_name }}';
+            const packageVersion = '${{ steps.validate.outputs.package_version }}';
+
+            core.info('🔍 Checking if version is already published...');
+
+            try {
+              // Check if this version is already published
+              execSync(`npm view "${packageFullName}@${packageVersion}" version`, { stdio: 'pipe' });
+              
+              core.warning(`⚠️  Version ${packageVersion} of ${packageFullName} is already published on NPM`);
+              core.setOutput('already_published', 'true');
+            } catch (error) {
+              core.info(`✅ Version ${packageVersion} is not yet published`);
+              core.setOutput('already_published', 'false');
+            }
+
+      - name: Stop if already published
+        if: steps.check-published.outputs.already_published == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const packageVersion = '${{ steps.validate.outputs.package_version }}';
+            core.setFailed(`❌ Cannot publish: Version ${packageVersion} already exists on NPM\nIf you need to republish, increment the version and create a new release`);
+
+      - name: Download release assets
+        id: download-assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const releaseTag = '${{ inputs.release_tag }}';
+
+            core.info('📥 Downloading release assets...');
+
+            try {
+              // Get the release
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: releaseTag
+              });
+              
+              // Find the tarball asset
+              const tarballAsset = release.assets.find(asset => asset.name.endsWith('.tgz'));
+              if (!tarballAsset) {
+                core.setFailed('❌ No tarball (.tgz) found in release assets');
+                return;
+              }
+              
+              // Download the tarball
+              const { data: assetData } = await github.rest.repos.getReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                asset_id: tarballAsset.id,
+                headers: {
+                  Accept: 'application/octet-stream'
+                }
+              });
+              
+              // Create temp directory and save the tarball
+              const tempDir = './temp-release';
+              if (!fs.existsSync(tempDir)) {
+                fs.mkdirSync(tempDir, { recursive: true });
+              }
+              
+              const tarballPath = path.join(tempDir, tarballAsset.name);
+              fs.writeFileSync(tarballPath, Buffer.from(assetData));
+              
+              // Set environment variable for later steps
+              core.exportVariable('TARBALL_PATH', tarballPath);
+              
+              core.info(`✅ Downloaded tarball: ${tarballAsset.name}`);
+            } catch (error) {
+              core.setFailed(`❌ Failed to download release assets: ${error.message}`);
+            }
+
+      - name: Verify tarball contents
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            const fs = require('fs');
+            const path = require('path');
+
+            const tarballPath = process.env.TARBALL_PATH;
+            const expectedVersion = '${{ steps.validate.outputs.package_version }}';
+
+            core.info('🔍 Verifying tarball contents...');
+
+            try {
+              // Show tarball contents (first 20 files)
+              core.info('📋 Tarball contents:');
+              const contents = execSync(`tar -tzf "${tarballPath}"`, { encoding: 'utf8' });
+              const files = contents.split('\n').slice(0, 20);
+              files.forEach(file => file && core.info(`  ${file}`));
+              
+              // Extract to temporary directory for verification
+              const tempVerifyDir = './temp-verify';
+              if (!fs.existsSync(tempVerifyDir)) {
+                fs.mkdirSync(tempVerifyDir, { recursive: true });
+              }
+              
+              execSync(`tar -xzf "${tarballPath}" -C "${tempVerifyDir}"`);
+              
+              // Verify package.json exists and version matches
+              const extractedPackageJsonPath = path.join(tempVerifyDir, 'package', 'package.json');
+              if (!fs.existsSync(extractedPackageJsonPath)) {
+                core.setFailed('❌ package.json not found in extracted tarball');
+                return;
+              }
+              
+              const extractedPackageJson = JSON.parse(fs.readFileSync(extractedPackageJsonPath, 'utf8'));
+              const extractedVersion = extractedPackageJson.version;
+              
+              if (extractedVersion !== expectedVersion) {
+                core.setFailed(`❌ Version mismatch in tarball:\n  Expected: ${expectedVersion}\n  Found: ${extractedVersion}`);
+                return;
+              }
+              
+              core.info(`✅ Tarball verified - version matches: ${extractedVersion}`);
+            } catch (error) {
+              core.setFailed(`❌ Failed to verify tarball: ${error.message}`);
+            }
+
+      - name: Publish to NPM (dry run)
+        if: inputs.dry_run == true
+        uses: actions/github-script@v7
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        with:
+          script: |
+            const tarballPath = process.env.TARBALL_PATH;
+            const packageFullName = '${{ steps.package-info.outputs.package_full_name }}';
+            const packageVersion = '${{ steps.validate.outputs.package_version }}';
+            const npmTag = '${{ inputs.npm_tag }}';
+            const path = require('path');
+
+            core.info('🧪 DRY RUN MODE - No actual publishing will occur');
+            core.info('');
+            core.info('Would publish with command:');
+            core.info(`  npm publish ${tarballPath} --tag ${npmTag}`);
+            core.info('');
+            core.info('📋 Publish Details:');
+            core.info(`  Package: ${packageFullName}`);
+            core.info(`  Version: ${packageVersion}`);
+            core.info(`  NPM Tag: ${npmTag}`);
+            core.info(`  Tarball: ${path.basename(tarballPath)}`);
+            core.info('');
+            core.info('To actually publish, re-run this workflow with dry_run set to false');
+
+      - name: Publish to NPM
+        if: inputs.dry_run == false
+        uses: actions/github-script@v7
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        with:
+          script: |
+            const { execSync } = require('child_process');
+
+            const tarballPath = process.env.TARBALL_PATH;
+            const npmTag = '${{ inputs.npm_tag }}';
+
+            core.info('🚀 Publishing to NPM...');
+
+            try {
+              execSync(`npm publish "${tarballPath}" --tag "${npmTag}"`, { stdio: 'inherit' });
+              core.info('✅ Successfully published to NPM!');
+            } catch (error) {
+              core.setFailed('❌ Failed to publish to NPM');
+            }
+
+      - name: Update release (remove prerelease flag)
+        if: inputs.dry_run == false
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releaseTag = '${{ inputs.release_tag }}';
+
+            core.info('🏷️  Updating GitHub release...');
+
+            try {
+              // Get the release first
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: releaseTag
+              });
+              
+              // Update the release to remove prerelease flag
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                prerelease: false
+              });
+              
+              core.info('✅ Release updated - prerelease flag removed');
+            } catch (error) {
+              core.setFailed(`❌ Failed to update release: ${error.message}`);
+            }
+
+      - name: Output success information
+        if: inputs.dry_run == false
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const packageFullName = '${{ steps.package-info.outputs.package_full_name }}';
+            const packageVersion = '${{ steps.validate.outputs.package_version }}';
+            const npmTag = '${{ inputs.npm_tag }}';
+            const releaseTag = '${{ inputs.release_tag }}';
+            const repository = '${{ github.repository }}';
+
+            core.info('🎉 Package published successfully!');
+            core.info('');
+            core.info('📋 Publication Details:');
+            core.info(`  Package: ${packageFullName}`);
+            core.info(`  Version: ${packageVersion}`);
+            core.info(`  NPM Tag: ${npmTag}`);
+            core.info('');
+            core.info('🔗 Links:');
+            core.info(`  NPM Package: https://www.npmjs.com/package/${packageFullName}/v/${packageVersion}`);
+            core.info(`  GitHub Release: https://github.com/${repository}/releases/tag/${releaseTag}`);
+
+      - name: Cleanup
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Clean up temporary directories
+            try {
+              if (fs.existsSync('./temp-release')) {
+                fs.rmSync('./temp-release', { recursive: true, force: true });
+                core.info('🧹 Cleaned up temp-release directory');
+              }
+              if (fs.existsSync('./temp-verify')) {
+                fs.rmSync('./temp-verify', { recursive: true, force: true });
+                core.info('🧹 Cleaned up temp-verify directory');
+              }
+            } catch (error) {
+              core.warning(`Cleanup failed: ${error.message}`);
+            }

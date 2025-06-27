@@ -1,0 +1,39 @@
+name: Mobile Web - Publish Release
+run-name: Publish Mobile Web MCP Server release to NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to publish (e.g., mobile-web-mcp-server_v1.0.0)'
+        required: true
+        type: string
+      npm_tag:
+        description: 'NPM tag to publish under'
+        required: false
+        type: choice
+        options:
+          - latest
+          - beta
+          - alpha
+          - next
+        default: 'latest'
+      dry_run:
+        description: 'Perform a dry run (do not actually publish)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish-release:
+    uses: ./.github/workflows/base-publish-release.yml
+    with:
+      package_display_name: 'Mobile Web MCP Server'
+      package_path: 'packages/mobile-web'
+      release_tag: ${{ inputs.release_tag }}
+      npm_tag: ${{ inputs.npm_tag }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
+    permissions:
+      contents: write
+      packages: write
