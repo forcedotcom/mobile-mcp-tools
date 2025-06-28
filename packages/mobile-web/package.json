@@ -19,9 +19,6 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "update-resources": "tsx src/scripts/update-type-declarations.ts"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.3"
-  },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.14.1"
   }
