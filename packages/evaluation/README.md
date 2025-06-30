@@ -2,11 +2,9 @@
 
 Components and datasets related to generating LWCs from user prompts, destined for evaluating model performance, go here.
 
-**Note:** Components meant to _train_/fine tune one or more models should _not_ go here! Once components have been added to the fine tuning of a given model, they're susceptible to [overfitting](https://en.wikipedia.org/wiki/Overfitting). Components meant to train model(s) should go in [../training](../training).
-
 ## Eval data components
 
-Each eval data component directory hierarchy should live at the top level of `lwc-generation/eval`, and adhere to the following structure:
+Each eval data component directory hierarchy should live under `dataset/${sub_package_name}/` like `dataset/mobile-web/` for mobile-web sub project related evaluation, and adhere to the following structure:
 
 ```
 <Name of the LWC>/
