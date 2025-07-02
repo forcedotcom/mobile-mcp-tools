@@ -16,6 +16,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
       - run: npm install
+      - run: npm run build:all  
       - run: npm run test:coverage
       # Only run Xvfb cleanup on Ubuntu (Unix systems)
       - if: matrix.os == 'ubuntu-latest'
@@ -27,9 +28,16 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: packages/mobile-web/coverage/*.json
-          flags: mobile-web-${{ runner.os }}-node${{ matrix.node }}
+          flags: mobile-web
           name: mobile-web-coverage
 
+      - name: Upload evaluation coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: packages/evaluation/coverage/*.json
+          flags: evaluation
+          name: evaluation-coverage
       # Add more packages as you create them
       # - name: Upload backend-api coverage
       #   uses: codecov/codecov-action@v3
@@ -53,5 +61,5 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: packages/*/coverage/*.json
-          flags: monorepo-${{ runner.os }}-node${{ matrix.node }}
+          flags: monorepo
           name: monorepo-combined-coverage

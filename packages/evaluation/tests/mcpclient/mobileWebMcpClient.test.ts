@@ -10,12 +10,6 @@ describe('MobileWebMcpClient (integration)', () => {
   let serverProcess: import('child_process').ChildProcess;
 
   beforeAll(async () => {
-    // Build all packages before starting the server
-    execSync('npm run build:all', {
-      stdio: 'inherit',
-      cwd: path.resolve(__dirname, '../../../..'),
-    });
-
     // Start the MCP server
     serverProcess = spawn('npm', ['run', 'mobile-web:server:start'], {
       cwd: path.resolve(__dirname, '../../../..'),
@@ -24,7 +18,7 @@ describe('MobileWebMcpClient (integration)', () => {
     });
 
     // Wait for the server to be ready (simple delay, adjust as needed)
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
     client = new MobileWebMcpClient();
     await client.connect();
@@ -59,14 +53,14 @@ describe('MobileWebMcpClient (integration)', () => {
     expect(toolNames).toEqual(expect.arrayContaining(Object.keys(toolNameToGroundingTitleMapping)));
   });
 
+  // Test each tool with the correct grounding context
   it.each(Object.keys(toolNameToGroundingTitleMapping))(
-    'should call a tool %s and return a result',
+    'should call a tool %s and return correct grounding context',
     async toolName => {
+      const groundTitle = toolNameToGroundingTitleMapping[toolName];
       const result = await client.callTool(toolName, {});
       const groundingContext = result.content?.[0]?.text;
-      expect(groundingContext).toEqual(
-        expect.stringContaining(toolNameToGroundingTitleMapping[toolName])
-      );
+      expect(groundingContext).toEqual(expect.stringContaining(groundTitle));
     }
   );
 });

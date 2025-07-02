@@ -43,24 +43,3 @@ export class MobileWebMcpClient {
     return this.client.callTool({ name: toolName, arguments: params });
   }
 }
-
-// Example usage
-async function example() {
-  const mcpClient = new MobileWebMcpClient();
-  await mcpClient.connect();
-
-  const tools = await mcpClient.listTools();
-  console.log('Available tools:', tools);
-
-  // Example: Call the barcodeScanner tool (adjust params as needed)
-  try {
-    const result = await mcpClient.callTool('barcodeScanner', {
-      /* tool params here */
-    });
-    console.log('barcodeScanner result:', result);
-  } catch (err) {
-    console.error('Error calling barcodeScanner:', err);
-  }
-
-  await mcpClient.disconnect();
-}

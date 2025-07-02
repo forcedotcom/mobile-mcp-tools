@@ -19,7 +19,17 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "update-resources": "tsx src/scripts/update-type-declarations.ts"
   },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.2"
+  },
   "devDependencies": {
-    "@modelcontextprotocol/inspector": "^0.14.1"
+    "@modelcontextprotocol/inspector": "^0.15.0",
+    "@types/node": "^24.0.7",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tar": "^7.4.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.3"
   }
 }
