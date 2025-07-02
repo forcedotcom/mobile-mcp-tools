@@ -39,6 +39,168 @@ cd mobile-mcp-tools
 npm install
 ```
 
+## MCP Server Configuration
+
+To use this MCP server with various AI assistants and code editors, you'll need to add it to their MCP configuration files. Below are instructions for the most popular MCP-compatible clients.
+
+### Claude Desktop
+
+1. **Locate your configuration file:**
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+2. **Add the server configuration:**
+
+   ```json
+   {
+     "mcpServers": {
+       "mobile-web": {
+         "command": "npx",
+         "args": ["-y", "@salesforce/mobile-web-mcp-server"],
+         "env": {}
+       }
+     }
+   }
+   ```
+
+   Or if you're running from a local build:
+
+   ```json
+   {
+     "mcpServers": {
+       "mobile-web": {
+         "command": "node",
+         "args": ["./packages/mobile-web/dist/index.js"],
+         "env": {}
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Desktop** completely to load the new configuration.
+
+### Cursor
+
+Add this configuration to your Cursor `mcp.json` file (typically located in the `.cursor` directory):
+
+```json
+{
+  "mcpServers": {
+    "mobile-web": {
+      "command": "npx",
+      "args": ["-y", "@salesforce/mobile-web-mcp-server"],
+      "env": {}
+    }
+  }
+}
+```
+
+### Cline (VS Code Extension)
+
+Add this configuration to your Cline MCP settings file:
+
+- **Windows**: `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`
+- **macOS**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
+
+```json
+{
+  "mcpServers": {
+    "mobile-web": {
+      "command": "npx",
+      "args": ["-y", "@salesforce/mobile-web-mcp-server"],
+      "env": {}
+    }
+  }
+}
+```
+
+### Windsurf
+
+Add this configuration to your Windsurf `mcp_config.json` file:
+
+- **Windows**: `%APPDATA%\WindSurf\mcp_settings.json`
+- **macOS**: `~/.codeium/windsurf/mcp_config.json`
+
+```json
+{
+  "mcpServers": {
+    "mobile-web": {
+      "command": "npx",
+      "args": ["-y", "@salesforce/mobile-web-mcp-server"],
+      "env": {}
+    }
+  }
+}
+```
+
+### Zed
+
+Add this configuration to your Zed `settings.json`:
+
+```json
+{
+  "context_servers": {
+    "mobile-web": {
+      "command": {
+        "path": "npx",
+        "args": ["-y", "@salesforce/mobile-web-mcp-server"],
+        "env": {}
+      }
+    }
+  }
+}
+```
+
+### Local Development Configuration
+
+If you're running from a local build instead of the npm package, replace the command configuration in any of the above clients with:
+
+```json
+{
+  "command": "node",
+  "args": ["./packages/mobile-web/dist/index.js"],
+  "env": {}
+}
+```
+
+Make sure to adjust the path relative to where you're running the client from.
+
+### Available Tools
+
+Once configured, you'll have access to the following mobile capability tools:
+
+- **App Review** (`sfmobile-web-appReview`): App store review functionality
+- **AR Space Capture** (`sfmobile-web-arSpaceCapture`): AR space data capture
+- **Barcode Scanner** (`sfmobile-web-barcodeScanner`): Barcode scanning
+- **Biometrics** (`sfmobile-web-biometrics`): Biometric authentication
+- **Calendar** (`sfmobile-web-calendar`): Device calendar access
+- **Contacts** (`sfmobile-web-contacts`): Device contacts management
+- **Document Scanner** (`sfmobile-web-documentScanner`): Document scanning
+- **Geofencing** (`sfmobile-web-geofencing`): Location-based geofencing
+- **Location** (`sfmobile-web-location`): Device location services
+- **NFC** (`sfmobile-web-nfc`): NFC functionality
+- **Payments** (`sfmobile-web-payments`): Mobile payment processing
+
+### Verifying Your Configuration
+
+After adding the configuration and restarting your client:
+
+- **Claude Desktop**: Look for the mobile-web tools in the tools panel when starting a new conversation
+- **Cursor**: Check that the MCP server appears in your MCP status indicator
+- **Cline**: The tools should be available in the Cline sidebar
+- **Windsurf**: MCP tools will appear in the context menu
+- **Zed**: Context servers will be shown in the status bar
+
+### Testing the Connection
+
+You can test that the server is working by asking your AI assistant to:
+
+```
+"Show me how to implement biometric authentication in a Salesforce Lightning Web Component"
+```
+
+The assistant should use the biometrics tool to provide you with detailed implementation guidance including type definitions and code examples.
+
 ## Development
 
 ### Build

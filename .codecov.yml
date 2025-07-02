@@ -1,10 +1,17 @@
 # Codecov configuration for monorepo
 coverage:
-  # Overall coverage thresholds for the monorepo
   status:
     project:
       default:
         target: 80%
+        threshold: 5%
+      mobile-web:
+        flags: mobile-web
+        target: 85%
+        threshold: 5%
+      monorepo:
+        flags: monorepo
+        target: 82%
         threshold: 5%
     patch:
       default:
@@ -59,4 +66,6 @@ parsers:
       conditional: yes
       loop: yes
       method: no
+      macro: no
+
       macro: no

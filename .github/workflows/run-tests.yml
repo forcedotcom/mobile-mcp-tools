@@ -27,7 +27,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: packages/mobile-web/coverage/*.json
-          flags: mobile-web-${{ runner.os }}-node${{ matrix.node }}
+          flags: mobile-web
           name: mobile-web-coverage
 
       # Add more packages as you create them
@@ -53,5 +53,5 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: packages/*/coverage/*.json
-          flags: monorepo-${{ runner.os }}-node${{ matrix.node }}
+          flags: monorepo
           name: monorepo-combined-coverage
