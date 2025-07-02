@@ -39,6 +39,69 @@ cd mobile-mcp-tools
 npm install
 ```
 
+## MCP Server Configuration
+
+To use this MCP server with AI assistants like Claude Desktop, you'll need to add it to your MCP configuration file.
+
+### Claude Desktop Configuration
+
+1. **Locate your configuration file:**
+
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+2. **Add the server configuration:**
+
+   ```json
+   {
+     "mcpServers": {
+       "mobile-web": {
+         "command": "npx",
+         "args": ["-y", "@salesforce/mobile-web-mcp-server"],
+         "env": {}
+       }
+     }
+   }
+   ```
+
+   Or if you're running from a local build:
+
+   ```json
+   {
+     "mcpServers": {
+       "mobile-web": {
+         "command": "node",
+         "args": ["./packages/mobile-web/dist/index.js"],
+         "env": {}
+       }
+     }
+   }
+   ```
+
+3. **Restart Claude Desktop** completely to load the new configuration.
+
+4. **Verify the connection:** In a new Claude Desktop conversation, you should see the mobile-web tools available in the tools panel.
+
+### Other MCP Clients
+
+For other MCP-compatible clients (like Cursor, Cline, etc.), add a similar configuration to their respective MCP configuration files. The exact format may vary slightly between clients, but the core structure remains the same.
+
+### Available Tools
+
+Once configured, you'll have access to the following mobile capability tools:
+
+- **App Review** (`sfmobile-web-appReview`): App store review functionality
+- **AR Space Capture** (`sfmobile-web-arSpaceCapture`): AR space data capture
+- **Barcode Scanner** (`sfmobile-web-barcodeScanner`): Barcode scanning
+- **Biometrics** (`sfmobile-web-biometrics`): Biometric authentication
+- **Calendar** (`sfmobile-web-calendar`): Device calendar access
+- **Contacts** (`sfmobile-web-contacts`): Device contacts management
+- **Document Scanner** (`sfmobile-web-documentScanner`): Document scanning
+- **Geofencing** (`sfmobile-web-geofencing`): Location-based geofencing
+- **Location** (`sfmobile-web-location`): Device location services
+- **NFC** (`sfmobile-web-nfc`): NFC functionality
+- **Payments** (`sfmobile-web-payments`): Mobile payment processing
+
 ## Development
 
 ### Build
