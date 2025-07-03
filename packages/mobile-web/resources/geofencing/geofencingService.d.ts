@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode GeofencingService}.
@@ -64,15 +64,15 @@ export interface GeofencingServiceFailure {
  * Possible failure codes.
  */
 export type GeofencingServiceFailureCode =
-  | "LOCATION_SERVICE_DISABLED" // Android Only: The location service is disabled on the device, not just for this app.
-  | "USER_DENIED_PERMISSION" // Permission was denied by user when prompt, could ask again
-  | "USER_DISABLED_PERMISSION" // Android: permission was denied along "don't ask again" when prompt, will need to go app setting to turn on. iOS: permission was disabled by the user and will need to be turned on in settings
-  | "UNAVAILABLE_ON_HARDWARE" // Geofence monitoring not available on the hardware.
-  | "MAX_GEOFENCE_MONITORED_REACHED" // The maximum number of geofences that can be monitored by the OS has been reached.
-  | "INVALID_LATITUDE" // The range of latitude for a geofence is -90...90
-  | "INVALID_LONGITUDE" // The range of longitude for a geofence is -180...180
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "UNKNOWN_REASON"; // An error happened in the Native Code that is not permission based. Will give more information in the GeofencingServiceFailure message.
+  | 'LOCATION_SERVICE_DISABLED' // Android Only: The location service is disabled on the device, not just for this app.
+  | 'USER_DENIED_PERMISSION' // Permission was denied by user when prompt, could ask again
+  | 'USER_DISABLED_PERMISSION' // Android: permission was denied along "don't ask again" when prompt, will need to go app setting to turn on. iOS: permission was disabled by the user and will need to be turned on in settings
+  | 'UNAVAILABLE_ON_HARDWARE' // Geofence monitoring not available on the hardware.
+  | 'MAX_GEOFENCE_MONITORED_REACHED' // The maximum number of geofences that can be monitored by the OS has been reached.
+  | 'INVALID_LATITUDE' // The range of latitude for a geofence is -90...90
+  | 'INVALID_LONGITUDE' // The range of longitude for a geofence is -180...180
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'UNKNOWN_REASON'; // An error happened in the Native Code that is not permission based. Will give more information in the GeofencingServiceFailure message.
 
 /**
  * An object representing the coordinates and radius of the geofence region.

@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode BiometricsService}.
@@ -55,8 +55,7 @@ export interface BiometricsServiceOptions {
 /**
  * An object representing policy to use pin code as an alternative to biometrics.
  */
-export type BiometricsServicePolicy =
-  /** User cancelled the operation. */ "PIN_CODE";
+export type BiometricsServicePolicy = /** User cancelled the operation. */ 'PIN_CODE';
 
 /**
  * An object representing an error that occurred when accessing {@linkcode BiometricsService} features.
@@ -77,7 +76,7 @@ interface BiometricsServiceFailure {
  * Correlates with the code property on the {@linkcode BiometricsServiceFailure} object.
  */
 type BiometricsServiceFailureCode =
-  | "HARDWARE_NOT_AVAILABLE" // There is no fingerprint scanner or face recognition hardware found.
-  | "NOT_CONFIGURED" // Biometrics hardware was found but has not been set up yet.
-  | "SERVICE_NOT_ENABLED" // BiometricsService is not enabled and cannot be used.
-  | "UNKNOWN_REASON"; // An error occurred in the native code that isn’t related to permissions or hardware issues. More information is provided in the BiometricsServiceFailure message.
+  | 'HARDWARE_NOT_AVAILABLE' // There is no fingerprint scanner or face recognition hardware found.
+  | 'NOT_CONFIGURED' // Biometrics hardware was found but has not been set up yet.
+  | 'SERVICE_NOT_ENABLED' // BiometricsService is not enabled and cannot be used.
+  | 'UNKNOWN_REASON'; // An error occurred in the native code that isn’t related to permissions or hardware issues. More information is provided in the BiometricsServiceFailure message.

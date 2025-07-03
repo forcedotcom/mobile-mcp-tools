@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode BarcodeScanner}.
@@ -71,17 +71,17 @@ export interface Barcode {
  * An object enumerating the barcode symbologies supported by {@linkcode BarcodeScanner}.
  */
 export interface BarcodeType {
-  CODE_128: "code128";
-  CODE_39: "code39";
-  CODE_93: "code93";
-  DATA_MATRIX: "datamatrix";
-  EAN_13: "ean13";
-  EAN_8: "ean8";
-  ITF: "itf";
-  UPC_A: "upca";
-  UPC_E: "upce";
-  PDF_417: "pdf417";
-  QR: "qr";
+  CODE_128: 'code128';
+  CODE_39: 'code39';
+  CODE_93: 'code93';
+  DATA_MATRIX: 'datamatrix';
+  EAN_13: 'ean13';
+  EAN_8: 'ean8';
+  ITF: 'itf';
+  UPC_A: 'upca';
+  UPC_E: 'upce';
+  PDF_417: 'pdf417';
+  QR: 'qr';
 }
 
 /**
@@ -105,29 +105,24 @@ export interface BarcodeScannerFailure {
  * Possible failure codes.
  */
 export type BarcodeScannerFailureCode =
-  | "USER_DISMISSED" // The user clicked the button to dismiss the scanner
-  | "USER_DENIED_PERMISSION" // This is only ever returned on android. android: permission was denied by user when prompt, could ask again.
-  | "USER_DISABLED_PERMISSION" // Both ios and android will use this as it requires the same action of the user going to settings.
+  | 'USER_DISMISSED' // The user clicked the button to dismiss the scanner
+  | 'USER_DENIED_PERMISSION' // This is only ever returned on android. android: permission was denied by user when prompt, could ask again.
+  | 'USER_DISABLED_PERMISSION' // Both ios and android will use this as it requires the same action of the user going to settings.
   // Android: permission was denied along "don't ask again" when prompt, will need to go app setting to turn on.
   // iOS: permission was disabled by the user and will need to be turned on in settings
-  | "INVALID_BARCODE_TYPE_REQUESTED" // One or more invalid barcode types were passed to the scanner for scanning
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "UNKNOWN_REASON"; //  A hardware or unknown failure happened when trying to use the camera or other reason, like FirebaseVision failure. This is not caused by a lack of permission.
+  | 'INVALID_BARCODE_TYPE_REQUESTED' // One or more invalid barcode types were passed to the scanner for scanning
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'UNKNOWN_REASON'; //  A hardware or unknown failure happened when trying to use the camera or other reason, like FirebaseVision failure. This is not caused by a lack of permission.
 
 /**
  * ScannerSize values.
  */
-export type ScannerSize =
-  | "SMALL"
-  | "MEDIUM"
-  | "LARGE"
-  | "XLARGE"
-  | "FULLSCREEN";
+export type ScannerSize = 'SMALL' | 'MEDIUM' | 'LARGE' | 'XLARGE' | 'FULLSCREEN';
 
 /**
  * CameraFacing values.
  */
-export type CameraFacing = "FRONT" | "BACK";
+export type CameraFacing = 'FRONT' | 'BACK';
 
 /**
  * An object representing configuration details for a barcode scanning session.

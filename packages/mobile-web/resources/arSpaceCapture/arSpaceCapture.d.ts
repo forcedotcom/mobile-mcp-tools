@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode ARSpaceCapture}.
@@ -110,8 +110,8 @@ export interface ARSpaceCaptureFailure {
  * Possible failure codes.
  */
 type ARSpaceCaptureFailureCode =
-  | "USER_DISMISSED" // User cancelled the operation.
-  | "USER_DENIED_PERMISSION" // The user denied permissions to use the device camera.
-  | "AR_NOT_SUPPORTED" // The AR capabilities are not enabled/available on the device.
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "UNKNOWN_REASON"; // An error happened in the native code that is not permission based. Will give more information in the ARSpaceCaptureFailure message
+  | 'USER_DISMISSED' // User cancelled the operation.
+  | 'USER_DENIED_PERMISSION' // The user denied permissions to use the device camera.
+  | 'AR_NOT_SUPPORTED' // The AR capabilities are not enabled/available on the device.
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'UNKNOWN_REASON'; // An error happened in the native code that is not permission based. Will give more information in the ARSpaceCaptureFailure message

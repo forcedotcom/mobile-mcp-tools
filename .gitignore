@@ -19,7 +19,7 @@ coverage/
 Thumbs.db
 
 
-
+.sfdx/
 .cursor/rules/nx-rules.mdc
 .sfdx/
 .github/instructions/nx.instructions.md

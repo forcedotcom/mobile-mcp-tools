@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode AppReviewService}.
@@ -54,7 +54,7 @@ export interface AppReviewServiceFailure {
  * Possible failure codes.
  */
 type AppReviewServiceFailureCode =
-  | "ALREADY_REQUESTED_FOR_CURRENT_APP_VERSION"
-  | "IN_APP_REVIEW_ERROR"
-  | "SERVICE_NOT_ENABLED"
-  | "UNKNOWN_REASON";
+  | 'ALREADY_REQUESTED_FOR_CURRENT_APP_VERSION'
+  | 'IN_APP_REVIEW_ERROR'
+  | 'SERVICE_NOT_ENABLED'
+  | 'UNKNOWN_REASON';

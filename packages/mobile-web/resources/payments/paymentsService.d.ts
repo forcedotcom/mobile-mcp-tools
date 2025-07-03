@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode PaymentsService}.
@@ -28,18 +28,13 @@ export interface PaymentsService extends BaseCapability {
    * @param options The customization options.
    * @returns  A Promise object that resolves to an array containing {@linkcode PaymentMethod} objects.
    */
-  getSupportedPaymentMethods(
-    options: GetSupportedPaymentMethodsOptions,
-  ): Promise<PaymentMethod[]>;
+  getSupportedPaymentMethods(options: GetSupportedPaymentMethodsOptions): Promise<PaymentMethod[]>;
 }
 
 /**
  * PaymentMethod values.
  */
-export type PaymentMethod =
-  | "TAP_TO_PAY"
-  | "CREDIT_CARD_DETAILS"
-  | "PAY_VIA_LINK";
+export type PaymentMethod = 'TAP_TO_PAY' | 'CREDIT_CARD_DETAILS' | 'PAY_VIA_LINK';
 
 /**
  * GetSupportedPaymentMethodsOptions interface.
@@ -86,7 +81,7 @@ export interface PaymentsServiceFailure {
  * Possible failure codes.
  */
 export type PaymentsServiceFailureCode =
-  | "USER_DISMISSED" // User cancelled the operation.
-  | "USER_DENIED_PERMISSION" // Permission to access device location is denied.
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "UNKNOWN_REASON"; // An error happened in the native code that is not permission based. Will give more information in the PaymentsServiceFailure message.
+  | 'USER_DISMISSED' // User cancelled the operation.
+  | 'USER_DENIED_PERMISSION' // Permission to access device location is denied.
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'UNKNOWN_REASON'; // An error happened in the native code that is not permission based. Will give more information in the PaymentsServiceFailure message.

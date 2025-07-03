@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode NfcService}.
@@ -130,13 +130,13 @@ export interface TextPayload {
  * The following constants are available as properties on an instance of {@linkcode NfcService}. The constants enumerate the accepted values for the associated properties.
  */
 export type TypeNameFormat =
-  | "ABSOLUTE_URI"
-  | "EMPTY"
-  | "EXTERNAL"
-  | "MEDIA"
-  | "WELLKNOWN"
-  | "UNCHANGED"
-  | "UNKNOWN";
+  | 'ABSOLUTE_URI'
+  | 'EMPTY'
+  | 'EXTERNAL'
+  | 'MEDIA'
+  | 'WELLKNOWN'
+  | 'UNCHANGED'
+  | 'UNKNOWN';
 
 /**
  * An object containing configuration details for an NFC interaction.
@@ -172,9 +172,9 @@ export interface NFCServiceFailure {
  * Correlates with the code property on the {@linkcode NFCServiceFailure} object.
  */
 export type NFCServiceFailureCode =
-  | "USER_DISMISSED" // The user dismissed the scanner.
-  | "NFC_NOT_SUPPORTED" // The device doesn’t support NFC capabilities.
-  | "NFC_NOT_ENABLED" // The device NFC feature is turned off.
-  | "TAG_EMPTY" // The NFC tag contains no data to be read.
-  | "SERVICE_NOT_ENABLED" // NFCService is not enabled and cannot be used.
-  | "UNKNOWN_REASON"; // An error occurred in the native code that isn’t related to permissions or hardware issues. More information is provided in the NFCServiceFailure message.
+  | 'USER_DISMISSED' // The user dismissed the scanner.
+  | 'NFC_NOT_SUPPORTED' // The device doesn’t support NFC capabilities.
+  | 'NFC_NOT_ENABLED' // The device NFC feature is turned off.
+  | 'TAG_EMPTY' // The NFC tag contains no data to be read.
+  | 'SERVICE_NOT_ENABLED' // NFCService is not enabled and cannot be used.
+  | 'UNKNOWN_REASON'; // An error occurred in the native code that isn’t related to permissions or hardware issues. More information is provided in the NFCServiceFailure message.

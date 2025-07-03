@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode CalendarService}.
@@ -37,7 +37,7 @@ export interface CalendarService extends BaseCapability {
     startDateSecondsUTC: number,
     endDateSecondsUTC: number,
     calendars?: string[],
-    options?: CalendarServiceOptions,
+    options?: CalendarServiceOptions
   ): Promise<CalendarEvent[]>;
 
   /**
@@ -46,10 +46,7 @@ export interface CalendarService extends BaseCapability {
    * @param options A {@linkcode CalendarServiceOptions} object to configure the {@linkcode CalendarService} request.
    * @returns A Promise object that resolves as a coerced version of the {@linkcode CalendarEvent} parameter.
    */
-  addEvent(
-    event: CalendarEvent,
-    options?: CalendarServiceOptions,
-  ): Promise<CalendarEvent>;
+  addEvent(event: CalendarEvent, options?: CalendarServiceOptions): Promise<CalendarEvent>;
 
   /**
    * Updates an event in the device’s calendar.
@@ -59,7 +56,7 @@ export interface CalendarService extends BaseCapability {
    */
   updateEvent(
     updatedEvent: CalendarEvent,
-    options?: CalendarServiceOptions,
+    options?: CalendarServiceOptions
   ): Promise<CalendarEvent>;
 
   /**
@@ -68,10 +65,7 @@ export interface CalendarService extends BaseCapability {
    * @param options A {@linkcode CalendarServiceOptions} object to configure the {@linkcode CalendarService} request.
    * @returns If successful, null is returned.
    */
-  removeEvent(
-    event: CalendarEvent,
-    options?: CalendarServiceOptions,
-  ): Promise<null>;
+  removeEvent(event: CalendarEvent, options?: CalendarServiceOptions): Promise<null>;
 }
 
 /**
@@ -108,12 +102,12 @@ export interface CalendarEvent {
 /**
  * EventAvailability values.
  */
-export type EventAvailability = "Busy" | "Free" | "Tentative";
+export type EventAvailability = 'Busy' | 'Free' | 'Tentative';
 
 /**
  * EventStatus values.
  */
-export type EventStatus = "Canceled" | "Confirmed" | "Tentative";
+export type EventStatus = 'Canceled' | 'Confirmed' | 'Tentative';
 
 /**
  * Alarm interface.
@@ -135,17 +129,12 @@ export interface Participant {
 /**
  * ParticipantRole values.
  */
-export type ParticipantRole = "Required" | "Optional" | "Unknown";
+export type ParticipantRole = 'Required' | 'Optional' | 'Unknown';
 
 /**
  * ParticipantStatus values.
  */
-export type ParticipantStatus =
-  | "Accepted"
-  | "Declined"
-  | "Pending"
-  | "Tentative"
-  | "Unknown";
+export type ParticipantStatus = 'Accepted' | 'Declined' | 'Pending' | 'Tentative' | 'Unknown';
 
 /**
  * The recurrence rule as defined by https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10.
@@ -165,7 +154,7 @@ export interface RecurrenceRule {
 /**
  * RecurrenceFrequency values.
  */
-export type RecurrenceFrequency = "Daily" | "Weekly" | "Monthly" | "Yearly";
+export type RecurrenceFrequency = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
 
 /**
  * RecurrenceDayOfWeek interface.
@@ -179,13 +168,13 @@ export interface RecurrenceDayOfWeek {
  * Weekday values.
  */
 export type Weekday =
-  | "Sunday"
-  | "Monday"
-  | "Tuesday"
-  | "Wednesday"
-  | "Thursday"
-  | "Friday"
-  | "Saturday";
+  | 'Sunday'
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday';
 
 /**
  * RecurrenceEnd interface.
@@ -206,7 +195,7 @@ export interface CalendarServiceOptions {
 /**
  * Span values.
  */
-export type Span = "ThisEvent" | "ThisAndFollowingEvents";
+export type Span = 'ThisEvent' | 'ThisAndFollowingEvents';
 
 /**
  * CalendarServiceFailure interface.
@@ -220,7 +209,7 @@ export interface CalendarServiceFailure {
  * Possible failure codes.
  */
 export type CalendarServiceFailureCode =
-  | "USER_DENIED_PERMISSION" // Permission was denied by user when prompt.
-  | "NOT_FOUND" // A specified item (calendar or event) was not found.
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "UNKNOWN_REASON"; // An error happened in the native code that is not permission based. Will give more information in the CalendarServiceFailure message.
+  | 'USER_DENIED_PERMISSION' // Permission was denied by user when prompt.
+  | 'NOT_FOUND' // A specified item (calendar or event) was not found.
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'UNKNOWN_REASON'; // An error happened in the native code that is not permission based. Will give more information in the CalendarServiceFailure message.

@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode DocumentScanner}.
@@ -195,17 +195,17 @@ export interface Entity {
  * EntityType values.
  */
 export type EntityType =
-  | "ADDRESS"
-  | "DATETIME"
-  | "EMAIL"
-  | "FLIGHTNUMBER"
-  | "IBAN"
-  | "ISBN"
-  | "MONEY"
-  | "PAYMENTCARD"
-  | "PHONE"
-  | "TRACKINGNUMBER"
-  | "URL";
+  | 'ADDRESS'
+  | 'DATETIME'
+  | 'EMAIL'
+  | 'FLIGHTNUMBER'
+  | 'IBAN'
+  | 'ISBN'
+  | 'MONEY'
+  | 'PAYMENTCARD'
+  | 'PHONE'
+  | 'TRACKINGNUMBER'
+  | 'URL';
 
 /**
  * DateTimeEntity interface.
@@ -259,15 +259,12 @@ export interface TrackingNumberEntity {
 /**
  * DocumentScannerSource values.
  */
-export type DocumentScannerSource =
-  | "INPUT_IMAGE"
-  | "PHOTO_LIBRARY"
-  | "DEVICE_CAMERA";
+export type DocumentScannerSource = 'INPUT_IMAGE' | 'PHOTO_LIBRARY' | 'DEVICE_CAMERA';
 
 /**
  * Script values.
  */
-export type Script = "CHINESE" | "DEVANAGARI" | "JAPANESE" | "KOREAN" | "LATIN";
+export type Script = 'CHINESE' | 'DEVANAGARI' | 'JAPANESE' | 'KOREAN' | 'LATIN';
 
 /**
  * An object containing configuration details for a document scanning session.
@@ -328,10 +325,10 @@ export interface DocumentScannerFailure {
  * Correlates with the code property on the {@linkcode DocumentScannerFailure} object.
  */
 export type DocumentScannerFailureCode =
-  | "USER_DISMISSED" // User dismissed the scanner.
-  | "USER_DENIED_CAMERA_PERMISSION" // A user denied permission to access the device camera when prompted.
-  | "USER_DENIED_PHOTO_LIBRARY_PERMISSION" // A user denied permission to access the device photo library when prompted.
-  | "NO_SUPPORTED_CAMERA" // The device doesn’t have a supported camera.
-  | "INVALID_INPUT_IMAGE" // The input image data can’t be read as an image.
-  | "SERVICE_NOT_ENABLED" // DocumentScanner is not enabled and cannot be used.
-  | "UNKNOWN_REASON"; // An error occurred in the native code that isn’t related to permissions or hardware issues. More information is provided in the DocumentScannerFailure message.
+  | 'USER_DISMISSED' // User dismissed the scanner.
+  | 'USER_DENIED_CAMERA_PERMISSION' // A user denied permission to access the device camera when prompted.
+  | 'USER_DENIED_PHOTO_LIBRARY_PERMISSION' // A user denied permission to access the device photo library when prompted.
+  | 'NO_SUPPORTED_CAMERA' // The device doesn’t have a supported camera.
+  | 'INVALID_INPUT_IMAGE' // The input image data can’t be read as an image.
+  | 'SERVICE_NOT_ENABLED' // DocumentScanner is not enabled and cannot be used.
+  | 'UNKNOWN_REASON'; // An error occurred in the native code that isn’t related to permissions or hardware issues. More information is provided in the DocumentScannerFailure message.

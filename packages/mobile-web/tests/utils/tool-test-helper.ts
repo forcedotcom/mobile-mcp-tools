@@ -6,13 +6,13 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import { BaseTool } from '../../src/tools/baseTool.js';
+import { BaseTool } from '../../src/tools/native-capabilities/baseTool.js';
 
 export interface ToolTestConfig {
   toolName: string;
-  toolClass: new (server: McpServer, annotations: ToolAnnotations) => BaseTool;
+  toolClass: new () => BaseTool;
   typeDefinitionPath: string;
 }
 
@@ -34,7 +34,7 @@ export function setupToolTest(config: ToolTestConfig) {
       idempotentHint: true,
       openWorldHint: false,
     };
-    tool = new config.toolClass(server, annotations);
+    tool = new config.toolClass();
     vi.clearAllMocks();
   });
 
@@ -45,7 +45,7 @@ export function setupToolTest(config: ToolTestConfig) {
     runCommonTests: () => {
       describe(`${config.toolName} Tool`, () => {
         it('should register the tool without throwing', () => {
-          expect(() => tool?.register()).not.toThrow();
+          expect(() => tool?.register(server, annotations)).not.toThrow();
         });
 
         it('should read the correct type definition file', async () => {
@@ -92,6 +92,33 @@ export function setupToolTest(config: ToolTestConfig) {
               },
             ],
           });
+        });
+
+        it('should create properly formatted service grounding text', () => {
+          const mockTypeDefinitions = 'interface TestService { method(): void; }';
+          const mockBaseCapability = 'interface BaseCapability { id: string; }';
+          const mockMobileCapabilities = 'interface MobileCapabilities { version: string; }';
+
+          const result = (tool as any).createServiceGroundingText(
+            mockTypeDefinitions,
+            mockBaseCapability,
+            mockMobileCapabilities
+          );
+
+          // Check that the grounding text contains the expected sections
+          expect(result).toContain(`# ${tool?.serviceName} Service Grounding Context`);
+          expect(result).toContain('## Base Capability');
+          expect(result).toContain('## Mobile Capabilities');
+          expect(result).toContain(`## ${tool?.serviceName} Service API`);
+
+          // Check for proper markdown formatting
+          expect(result).toContain('```typescript');
+          expect(result).toContain('```');
+
+          // Check that the content is included
+          expect(result).toContain(mockTypeDefinitions);
+          expect(result).toContain(mockBaseCapability);
+          expect(result).toContain(mockMobileCapabilities);
         });
       });
     },

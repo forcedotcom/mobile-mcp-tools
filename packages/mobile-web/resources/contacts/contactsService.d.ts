@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode ContactsService}.
@@ -32,10 +32,7 @@ export interface ContactsService extends BaseCapability {
    *                used to override the device's permission UX sequence text.
    * @returns A resolved promise returns a {@linkcode Contacts} object.
    */
-  putContact(
-    contact: Contact,
-    options?: ContactsServiceOptions,
-  ): Promise<Contact>;
+  putContact(contact: Contact, options?: ContactsServiceOptions): Promise<Contact>;
 }
 
 /**
@@ -218,10 +215,10 @@ export interface ContactsServiceOptions {
  * Possible failure codes.
  */
 export type ContactsServiceFailureCode =
-  | "USER_DISMISSED" // The user clicked the cancel button.
-  | "USER_DENIED_PERMISSION" // Permission was denied to access contacts (older versions of Android only).
-  | "USER_DISABLED_PERMISSION" // Android Only - Permission was denied.  User will need to go to app setting to turn on.
-  | "USER_RESTRICTED_PERMISSION" // The application is restricted (perhaps by parental controls) from accessing Contacts (iOS only).
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "SAVE_OPERATION_FAILED" // The service couldn't save the contact record into the address book.
-  | "UNKNOWN_REASON"; // Generic error that is not captured by any of the above categories
+  | 'USER_DISMISSED' // The user clicked the cancel button.
+  | 'USER_DENIED_PERMISSION' // Permission was denied to access contacts (older versions of Android only).
+  | 'USER_DISABLED_PERMISSION' // Android Only - Permission was denied.  User will need to go to app setting to turn on.
+  | 'USER_RESTRICTED_PERMISSION' // The application is restricted (perhaps by parental controls) from accessing Contacts (iOS only).
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'SAVE_OPERATION_FAILED' // The service couldn't save the contact record into the address book.
+  | 'UNKNOWN_REASON'; // Generic error that is not captured by any of the above categories

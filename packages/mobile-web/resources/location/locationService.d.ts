@@ -4,7 +4,7 @@
  * For full license text, see the LICENSE.txt file
  */
 
-import { BaseCapability } from "../BaseCapability.js";
+import { BaseCapability } from '../BaseCapability.js';
 
 /**
  * Use this factory function to get an instance of {@linkcode LocationService}.
@@ -32,10 +32,7 @@ export interface LocationService extends BaseCapability {
    */
   startWatchingPosition(
     options: LocationServiceOptions | null,
-    callback: (
-      result?: LocationResult,
-      failure?: LocationServiceFailure,
-    ) => void,
+    callback: (result?: LocationResult, failure?: LocationServiceFailure) => void
   ): number;
 
   /**
@@ -130,11 +127,11 @@ export interface LocationServiceFailure {
  * Possible failure codes.
  */
 export type LocationServiceFailureCode =
-  | "LOCATION_SERVICE_DISABLED" // Android only - The code when the location service is disabled on the device, not just for this app.
-  | "USER_DENIED_PERMISSION" // Permission was denied by user when prompt, could ask again
-  | "USER_DISABLED_PERMISSION" // Android: permission was denied along "don't ask again" when prompt, will need to go app setting to turn on. iOS: permission was disabled by the user and will need to be turned on in settings
-  | "SERVICE_NOT_ENABLED" // The service is not enabled and therefore cannot be used.
-  | "UNKNOWN_REASON"; // An error happened in the Native Code that is not permission based. Will give more information in the LocationServiceFailure message.
+  | 'LOCATION_SERVICE_DISABLED' // Android only - The code when the location service is disabled on the device, not just for this app.
+  | 'USER_DENIED_PERMISSION' // Permission was denied by user when prompt, could ask again
+  | 'USER_DISABLED_PERMISSION' // Android: permission was denied along "don't ask again" when prompt, will need to go app setting to turn on. iOS: permission was disabled by the user and will need to be turned on in settings
+  | 'SERVICE_NOT_ENABLED' // The service is not enabled and therefore cannot be used.
+  | 'UNKNOWN_REASON'; // An error happened in the Native Code that is not permission based. Will give more information in the LocationServiceFailure message.
 
 /**
  * An object representing configuration details for a location service session.

@@ -20,7 +20,11 @@
     "update-resources": "tsx src/scripts/update-type-declarations.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.2"
+    "@modelcontextprotocol/sdk": "^1.13.2",
+    "dedent": "^1.5.3",
+    "eslint": "^9.25.1",
+    "meriyah": "^6.0.6",
+    "@salesforce/eslint-plugin-lwc-graph-analyzer": "^1.0.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.15.0",
