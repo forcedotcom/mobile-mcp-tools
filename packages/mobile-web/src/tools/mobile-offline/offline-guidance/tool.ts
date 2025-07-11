@@ -15,6 +15,7 @@ import {
   ExpertCodeAnalysisIssuesSchema,
 } from '../../../schemas/analysisSchema.js';
 import dedent from 'dedent';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 const EMPTY_INPUT_SCHEMA = z.object({}).describe('No input required');
 
@@ -101,7 +102,7 @@ export class OfflineGuidanceTool implements Tool {
         refactoring steps to convert them to legacy directive syntax.
       `,
       expectedResponseFormat: {
-        schema: ExpertCodeAnalysisIssuesSchema.shape,
+        schema: zodToJsonSchema(ExpertCodeAnalysisIssuesSchema),
         inputValues: {
           expertReviewerName,
         },
@@ -135,7 +136,7 @@ export class OfflineGuidanceTool implements Tool {
         configurations and provide actionable steps to extract them to separate getter methods.
       `,
       expectedResponseFormat: {
-        schema: ExpertCodeAnalysisIssuesSchema.shape,
+        schema: zodToJsonSchema(ExpertCodeAnalysisIssuesSchema),
         inputValues: {
           expertReviewerName,
         },
