@@ -12,7 +12,10 @@ import {
   LWCFileType,
   getExtensionType,
   getLwcComponentFromLlmResponse,
+  loadEvaluationUnit,
 } from '../../src/utils/lwcUtils.js';
+import { join } from 'path';
+import { EVAL_DATA_FOLDER } from '../../src/evaluation/evaluator.js';
 
 describe('LWC Utilities', () => {
   describe('getExtensionType', () => {
@@ -323,6 +326,16 @@ const abc = "xyz";
       expect(() => getLwcComponentFromLlmResponse(responseText)).toThrow(
         'More than one js-meta.xml code block found in the response'
       );
+    });
+  });
+
+  describe('loadEvaluationUnit', () => {
+    it('should load an evaluation unit from a directory', async () => {
+      const unit = await loadEvaluationUnit(join(EVAL_DATA_FOLDER, 'mobile-web/qrCodeOnlyScanner'));
+      expect(unit).not.toBeNull();
+      expect(unit?.query).not.toBeNull();
+      expect(unit?.answer).not.toBeNull();
+      expect(unit?.mcpTools?.[0].toolId).toBe('sfmobile-web-barcode-scanner');
     });
   });
 });

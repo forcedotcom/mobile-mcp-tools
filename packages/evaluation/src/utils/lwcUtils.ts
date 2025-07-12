@@ -7,6 +7,7 @@
 
 import { join, extname, basename } from 'path';
 import * as fs from 'node:fs/promises';
+import { z } from 'zod/v4';
 
 const THREE_BACKTICKS = '```';
 
@@ -43,18 +44,23 @@ export interface LWCComponent {
   files: LWCFile[];
 }
 
-export interface TrainingUnit {
+const McpToolSchema = z.object({
+  toolId: z.string(),
+});
+
+const McpToolArraySchema = z.array(McpToolSchema);
+
+type McpTool = z.infer<typeof McpToolSchema>;
+type McpToolArray = z.infer<typeof McpToolArraySchema>;
+
+export interface EvaluationUnit {
   query: string;
   answer: LWCComponent;
+  mcpTools?: McpToolArray;
 }
 
-export interface FormattedTrainingData {
-  prompt: string;
-  response: string;
-}
-
-// Load a training unit from a directory
-export async function loadTrainingUnit(subDirPath: string): Promise<TrainingUnit | null> {
+// Load an evaluation unit from a directory
+export async function loadEvaluationUnit(subDirPath: string): Promise<EvaluationUnit | null> {
   try {
     const promptFile = join(subDirPath, 'prompt', 'prompt.md');
 
@@ -79,11 +85,16 @@ export async function loadTrainingUnit(subDirPath: string): Promise<TrainingUnit
       }
     }
 
+    const mcpToolsPath = join(subDirPath, 'mcpTools.json');
+    const mcpTools = await fs.readFile(mcpToolsPath, 'utf-8');
+    const mcpToolsArray = McpToolArraySchema.parse(JSON.parse(mcpTools));
+
     return {
       query,
       answer: {
         files,
       },
+      mcpTools: mcpToolsArray,
     };
   } catch (error) {
     console.warn(`Warning: Failed to process component in ${subDirPath}:`, error);

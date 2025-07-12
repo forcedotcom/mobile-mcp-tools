@@ -9,13 +9,20 @@ import { z } from 'zod/v4';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { formatComponent4LLM, LWCComponent } from '../utils/lwcUtils.js';
 
-const ScoreEnum = z.enum([
+const ScoreVerdictEnum = z.enum([
   'Pass GA Criteria',
   'Pass Beta Criteria',
   'Pass Dev Preview Criteria',
   'FAIL',
 ]);
-export type Score = z.infer<typeof ScoreEnum>;
+
+const Score = z.object({
+  verdict: ScoreVerdictEnum,
+  rawScore: z.number().min(0).max(100),
+});
+
+export type Score = z.infer<typeof Score>;
+export type ScoreVerdict = z.infer<typeof ScoreVerdictEnum>;
 
 const ScoreCategory = z.enum([
   'Excellent', // Perfect or near-perfect match
@@ -87,7 +94,7 @@ const EvaluationResponseSchema = z.object({
       weight: 0.1,
     }
   ),
-  finalVerdict: ScoreEnum,
+  finalVerdict: ScoreVerdictEnum,
   justification: z.string().min(50),
 });
 
@@ -174,10 +181,16 @@ export function calculateOverallScore(evaluation: EvaluationResponse): number {
 }
 
 function determineVerdict(score: number): Score {
-  if (score >= 85) return 'Pass GA Criteria';
-  if (score >= 70) return 'Pass Beta Criteria';
-  if (score >= 55) return 'Pass Dev Preview Criteria';
-  return 'FAIL';
+  let verdict: ScoreVerdict;
+  if (score >= 85) verdict = 'Pass GA Criteria';
+  else if (score >= 70) verdict = 'Pass Beta Criteria';
+  else if (score >= 55) verdict = 'Pass Dev Preview Criteria';
+  else verdict = 'FAIL';
+
+  return {
+    verdict,
+    rawScore: score,
+  };
 }
 
 /**

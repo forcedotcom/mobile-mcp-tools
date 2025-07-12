@@ -16,7 +16,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
       - run: npm install
-      - run: npm run build:all  
+      - run: npm run build:all
       - run: npm run test:coverage
       # Only run Xvfb cleanup on Ubuntu (Unix systems)
       - if: matrix.os == 'ubuntu-latest'

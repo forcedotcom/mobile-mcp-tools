@@ -7,10 +7,15 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { fileURLToPath } from 'url';
+import path, { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Path to the MCP server entry point
 const SERVER_COMMAND = 'ts-node';
-const SERVER_ARGS = [require.resolve('../../../mobile-web/dist/index.js')];
+const SERVER_ARGS = [join(__dirname, '../../../mobile-web/dist/index.js')];
 
 export class MobileWebMcpClient {
   private client: Client;

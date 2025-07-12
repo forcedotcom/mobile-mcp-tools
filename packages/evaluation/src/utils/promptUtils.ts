@@ -7,6 +7,7 @@
 
 import {
   DEFAULT_INSTRUCTIONS,
+  ASSISTANT_PREFIX,
   END_OF_PROMPT,
   LWC_INSTRUCTIONS,
   SYSTEM_PREFIX,
@@ -21,11 +22,23 @@ export function createUserPrompt(userInstructions: string): string {
   return `${USER_PREFIX}\n${userInstructions}${END_OF_PROMPT}`;
 }
 
+export function createAssistantPrompt(mcpGroundings: string): string {
+  return `${ASSISTANT_PREFIX}\n${mcpGroundings}${END_OF_PROMPT}`;
+}
+
 /**
  * Build prompt to send to LLM with system instructions and user instructions
  */
-export function createLwcGenerationLLMPrompt(userInstructions: string): string {
-  const systemPrompt = createSystemPrompt(DEFAULT_INSTRUCTIONS + LWC_INSTRUCTIONS);
-  const userPrompt = createUserPrompt(userInstructions);
-  return `${systemPrompt}\n${userPrompt}`;
+export function createLwcGenerationLLMPrompt(
+  userInstructions: string,
+  mcpGroundings?: string
+): string {
+  const promptChunks = [
+    createSystemPrompt(DEFAULT_INSTRUCTIONS + LWC_INSTRUCTIONS), // system prompt
+  ];
+  if (mcpGroundings) {
+    promptChunks.push(createAssistantPrompt(mcpGroundings)); // assistant prompt
+  }
+  promptChunks.push(createUserPrompt(userInstructions)); // user prompt
+  return promptChunks.join('\n');
 }
