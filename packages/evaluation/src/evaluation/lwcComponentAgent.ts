@@ -21,9 +21,12 @@ class LwcComponentAgent {
     this.llmClient = llmClient;
   }
 
-  async generateLwcComponent(userPrompt: string): Promise<LwcComponent> {
+  async generateLwcComponent(userPrompt: string, mcpGroundings: string): Promise<LwcComponent> {
     // Append a prompt to the user prompt to prevent asking further questions for clarification
-    const prompt = createLwcGenerationLLMPrompt(`${userPrompt}\n${NO_FURTHER_QUESTIONS_PROMPT}`);
+    const prompt = createLwcGenerationLLMPrompt(
+      mcpGroundings,
+      `${userPrompt}\n${NO_FURTHER_QUESTIONS_PROMPT}`
+    );
     const llmResponse = await this.llmClient.callLLM(prompt);
     const component = getLwcComponentFromLlmResponse(llmResponse);
     return component;
