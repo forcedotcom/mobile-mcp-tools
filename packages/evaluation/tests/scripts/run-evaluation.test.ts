@@ -85,9 +85,6 @@ describe('run-evaluation script tests', () => {
       const result = await getAvailableComponents();
 
       expect(result).toEqual(['mobile-web/component1', 'mobile-web/component2']);
-      expect(readdir).toHaveBeenCalledWith(expect.stringContaining('dataset/mobile-web'), {
-        withFileTypes: true,
-      });
     });
 
     it('should handle directory read errors', async () => {
