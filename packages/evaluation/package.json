@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "lint": "eslint \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
-    "evaluate": "op run --env-file=.env -- tsx src/scripts/run-evaluation.ts"
+    "evaluate": "op run --env-file=.env -- tsx src/scripts/run-evaluation.ts",
+    "evaluate:component": "op run --env-file=.env -- tsx src/scripts/run-evaluation.ts --component"
   },
   "dependencies": {},
   "devDependencies": {}

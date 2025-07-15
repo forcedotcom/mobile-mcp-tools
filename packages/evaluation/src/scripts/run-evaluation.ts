@@ -13,13 +13,13 @@ import { Score } from '../evaluation/lwcEvaluatorAgent.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-interface EvaluationResult {
+export interface EvaluationResult {
   componentName: string;
   score?: Score;
   error?: string;
 }
 
-interface EvaluationSummary {
+export interface EvaluationSummary {
   totalComponents: number;
   successfulEvaluations: number;
   failedEvaluations: number;
@@ -27,7 +27,8 @@ interface EvaluationSummary {
   results: EvaluationResult[];
 }
 
-async function getAvailableComponents(): Promise<string[]> {
+//
+export async function getAvailableComponents(): Promise<string[]> {
   const subDir = 'mobile-web';
   const datasetPath = join(__dirname, `../../dataset/${subDir}`);
   try {
@@ -39,7 +40,7 @@ async function getAvailableComponents(): Promise<string[]> {
   }
 }
 
-async function evaluateComponent(
+export async function evaluateComponent(
   evaluator: Evaluator,
   componentName: string
 ): Promise<EvaluationResult> {
@@ -62,7 +63,7 @@ async function evaluateComponent(
   }
 }
 
-function printSummary(summary: EvaluationSummary): void {
+export function printSummary(summary: EvaluationSummary): void {
   console.log('\n' + '='.repeat(60));
   console.log('📊 EVALUATION SUMMARY');
   console.log('='.repeat(60));
@@ -84,7 +85,7 @@ function printSummary(summary: EvaluationSummary): void {
   }
 }
 
-async function runEvaluation(componentNames?: string[]): Promise<void> {
+export async function runEvaluation(componentNames?: string[]): Promise<void> {
   console.log('🚀 Starting LWC Component Evaluation');
   console.log('='.repeat(60));
 
@@ -140,7 +141,7 @@ async function runEvaluation(componentNames?: string[]): Promise<void> {
     printSummary(summary);
   } catch (error) {
     console.error('💥 Fatal error during evaluation:', error);
-    process.exit(1);
+    throw error;
   } finally {
     if (evaluator) {
       console.log('\n🧹 Cleaning up...');
@@ -150,7 +151,7 @@ async function runEvaluation(componentNames?: string[]): Promise<void> {
   }
 }
 
-function printUsage(): void {
+export function printUsage(): void {
   console.log(`
 Usage: tsx run-evaluation.ts [options] [component-names...]
 
@@ -183,13 +184,13 @@ Environment Variables Required:
 `);
 }
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
   // Handle help flag
   if (args.includes('--help') || args.includes('-h')) {
     printUsage();
-    return;
+    return; // Return early to prevent further execution
   }
 
   // Extract component names (any non-flag arguments)
@@ -202,6 +203,6 @@ async function main(): Promise<void> {
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
     console.error('💥 Unhandled error:', error);
-    process.exit(1);
+    throw error;
   });
 }
