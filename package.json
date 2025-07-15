@@ -47,8 +47,7 @@
     "tar": "^7.4.3",
     "tsx": "^4.19.2",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.35.1",
-    "vite": "^7.0.4"
+    "typescript-eslint": "^8.35.1"
   },
   "nx": {
     "extends": "@nx/workspace/presets/npm.json"
