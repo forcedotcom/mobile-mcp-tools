@@ -35,9 +35,9 @@
   "devDependencies": {
     "@nx/workspace": "^21.2.1",
     "@types/node": "^24.0.10",
-    "eslint": "^9.30.0",
-    "@vitest/coverage-v8": "^3.2.3",
     "@typescript-eslint/eslint-plugin": "^8.35.1",
+    "@vitest/coverage-v8": "^3.2.3",
+    "eslint": "^9.30.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
     "husky": "^9.1.7",
@@ -48,7 +48,7 @@
     "tsx": "^4.19.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.35.1",
-    "vite": "^6.3.5"
+    "vite": "^7.0.4"
   },
   "nx": {
     "extends": "@nx/workspace/presets/npm.json"
