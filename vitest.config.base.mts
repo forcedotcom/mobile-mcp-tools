@@ -57,6 +57,10 @@ export default defineConfig({
     // Timeout in milliseconds for each test. Tests that take longer than this will fail.
     testTimeout: 5000,
 
+    // Timeout in milliseconds for each hook(beforeEach, beforeAll, etc). 
+    // Hooks that take longer than this will fail.
+    hookTimeout: 20000,
+
     // Whether to show console output during test execution
     silent: false,
 
