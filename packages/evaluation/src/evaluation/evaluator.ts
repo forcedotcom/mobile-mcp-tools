@@ -4,7 +4,7 @@ import { LwcEvaluatorAgent, Score } from './lwcEvaluatorAgent.js';
 import LwcComponentAgent from './lwcComponentAgent.js';
 import { loadEvaluationUnit, EvaluationUnit } from '../utils/lwcUtils.js';
 import { LlmClient } from '../llmclient/llmClient.js';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,7 +20,7 @@ import { MobileWebMcpClient } from '../mcpclient/mobileWebMcpClient.js';
 export class Evaluator {
   private readonly evaluatorAgent: LwcEvaluatorAgent;
   private readonly componentAgent: LwcComponentAgent;
-  private serverProcess: import('child_process').ChildProcess;
+  private serverProcess: ChildProcess;
   private mobileWebMcpClient: MobileWebMcpClient;
 
   private constructor() {
@@ -110,7 +110,7 @@ export class Evaluator {
   private async getMcpGroundings(evaluationUnit: EvaluationUnit): Promise<string | undefined> {
     const groundings = [];
     for (const tool of evaluationUnit.mcpTools) {
-      const result = await this.mobileWebMcpClient.callTool(tool.toolId, {});
+      const result = await this.mobileWebMcpClient.callTool(tool.toolId, tool.params);
       const groundingContext = result.content?.[0]?.text;
       if (groundingContext) {
         groundings.push(groundingContext);

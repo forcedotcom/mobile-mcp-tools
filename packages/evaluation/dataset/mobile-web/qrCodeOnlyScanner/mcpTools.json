@@ -1,5 +1,6 @@
 [
   {
-    "toolId": "sfmobile-web-barcode-scanner"
+    "toolId": "sfmobile-web-barcode-scanner",
+    "params": {}
   }
 ]
