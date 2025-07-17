@@ -261,7 +261,8 @@ describe('run-evaluation script tests', () => {
       (readdir as unknown as Mock).mockResolvedValue(mockEntries);
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate = vi.fn()
+      mockEvaluator.evaluate = vi
+        .fn()
         .mockResolvedValueOnce(mockScore)
         .mockRejectedValueOnce(new Error('Evaluation failed'));
 
@@ -278,7 +279,9 @@ describe('run-evaluation script tests', () => {
     });
 
     it('should handle evaluator creation failure', async () => {
-      (Evaluator.create as unknown as Mock).mockRejectedValue(new Error('Failed to create evaluator'));
+      (Evaluator.create as unknown as Mock).mockRejectedValue(
+        new Error('Failed to create evaluator')
+      );
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await expect(runEvaluation()).rejects.toThrow('Failed to create evaluator');
