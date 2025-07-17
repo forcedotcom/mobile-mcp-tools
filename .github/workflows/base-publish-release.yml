@@ -1,0 +1,69 @@
+name: Base Publish Release
+run-name: Publish ${{ inputs.package_display_name }} Release ${{ inputs.release_tag }}
+
+on:
+  workflow_call:
+    inputs:
+      package_display_name:
+        description: 'Display name for the package (e.g., Mobile Web MCP Server)'
+        required: true
+        type: string
+      package_path:
+        description: 'Path to package directory (e.g., packages/mobile-web)'
+        required: true
+        type: string
+      release_tag:
+        description: 'Release tag to publish (e.g., mobile-web-mcp-server_v1.0.0)'
+        required: true
+        type: string
+      npm_tag:
+        description: 'NPM tag to publish under (default: latest)'
+        required: false
+        type: string
+        default: 'latest'
+      dry_run:
+        description: 'Perform a dry run (do not actually publish)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build GitHub Actions Scripts
+        run: npx nx build project-maintenance-utilities
+
+      - name: Publish release using orchestrator
+        uses: actions/github-script@v7
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const { createReleaseOrchestrator } = await import('${{ github.workspace }}/packages/project-maintenance-utilities/dist/index.js');
+
+            const orchestrator = createReleaseOrchestrator(context);
+            await orchestrator.publishRelease({
+              packagePath: '${{ inputs.package_path }}',
+              packageDisplayName: '${{ inputs.package_display_name }}',
+              releaseTag: '${{ inputs.release_tag }}',
+              npmTag: '${{ inputs.npm_tag }}',
+              dryRun: ${{ inputs.dry_run }}
+            });

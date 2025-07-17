@@ -35,8 +35,8 @@ const ScoreCategory = z.enum([
 
 export type ScoreCategory = z.infer<typeof ScoreCategory>;
 
-const withMetadata = <T extends z.ZodTypeAny>(schema: T, metadata: Record<string, any>) => {
-  const extended = schema as T & { _metadata: Record<string, any> };
+const withMetadata = <T extends z.ZodTypeAny>(schema: T, metadata: Record<string, unknown>) => {
+  const extended = schema as T & { _metadata: Record<string, unknown> };
   extended._metadata = metadata;
   return extended;
 };

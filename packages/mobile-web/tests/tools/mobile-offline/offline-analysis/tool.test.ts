@@ -55,9 +55,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -86,9 +86,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -153,9 +153,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -166,7 +166,7 @@ describe('OfflineAnalysisTool', () => {
       // Get the handler function that was passed to registerTool
       const handler = registerToolSpy.mock.calls[0][2] as (
         code: LwcCodeType,
-        extra
+        extra: any
       ) => Promise<any>;
 
       const result = await handler(mockLwcCode, {
@@ -209,9 +209,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -261,9 +261,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -309,9 +309,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -357,9 +357,9 @@ describe('OfflineAnalysisTool', () => {
             disable: vi.fn(),
             name: _id,
             description: '',
-            inputSchema: _config.inputSchema as any,
-            outputSchema: _config.outputSchema as any,
-            annotations: _config.annotations as any,
+            inputSchema: _config.inputSchema,
+            outputSchema: _config.outputSchema,
+            annotations: _config.annotations,
             update: vi.fn(),
             remove: vi.fn(),
           };
@@ -372,7 +372,7 @@ describe('OfflineAnalysisTool', () => {
       ) => Promise<any>;
 
       // Mock the analyzeCode method to throw an error
-      vi.spyOn(tool as any, 'analyzeCode').mockRejectedValue(new Error('Analysis failed'));
+      vi.spyOn(tool, 'analyzeCode').mockRejectedValue(new Error('Analysis failed'));
 
       const testCode: LwcCodeType = {
         name: 'TestComponent',

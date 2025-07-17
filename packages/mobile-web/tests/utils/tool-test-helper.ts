@@ -50,7 +50,7 @@ export function setupToolTest(config: ToolTestConfig) {
 
         it('should read the correct type definition file', async () => {
           const readTypeDefinitionFileSpy = vi
-            .spyOn(tool as any, 'readTypeDefinitionFile')
+            .spyOn(tool, 'readTypeDefinitionFile')
             .mockResolvedValue('');
           await tool?.['handleRequest']();
           expect(readTypeDefinitionFileSpy).toHaveBeenCalled();
@@ -60,12 +60,10 @@ export function setupToolTest(config: ToolTestConfig) {
           const mockTypeDefinitions = 'mock type definitions';
           const mockBaseCapability = 'mock base capability';
           const mockMobileCapabilities = 'mock mobile capabilities';
-          vi.spyOn(tool as any, 'readTypeDefinitionFile').mockResolvedValue(mockTypeDefinitions);
-          vi.spyOn(tool as any, 'readBaseCapability').mockResolvedValue(mockBaseCapability);
-          vi.spyOn(tool as any, 'readMobileCapabilities').mockResolvedValue(mockMobileCapabilities);
-          vi.spyOn(tool as any, 'createServiceGroundingText').mockReturnValue(
-            'mock grounding text'
-          );
+          vi.spyOn(tool, 'readTypeDefinitionFile').mockResolvedValue(mockTypeDefinitions);
+          vi.spyOn(tool, 'readBaseCapability').mockResolvedValue(mockBaseCapability);
+          vi.spyOn(tool, 'readMobileCapabilities').mockResolvedValue(mockMobileCapabilities);
+          vi.spyOn(tool, 'createServiceGroundingText').mockReturnValue('mock grounding text');
 
           const result = await tool?.['handleRequest']();
           expect(result).toEqual({
@@ -80,7 +78,7 @@ export function setupToolTest(config: ToolTestConfig) {
 
         it('should handle errors when reading type definition file', async () => {
           const error = new Error('Failed to read file');
-          vi.spyOn(tool as any, 'readTypeDefinitionFile').mockRejectedValue(error);
+          vi.spyOn(tool, 'readTypeDefinitionFile').mockRejectedValue(error);
 
           const result = await tool?.['handleRequest']();
           expect(result).toEqual({
@@ -99,7 +97,7 @@ export function setupToolTest(config: ToolTestConfig) {
           const mockBaseCapability = 'interface BaseCapability { id: string; }';
           const mockMobileCapabilities = 'interface MobileCapabilities { version: string; }';
 
-          const result = (tool as any).createServiceGroundingText(
+          const result = tool.createServiceGroundingText(
             mockTypeDefinitions,
             mockBaseCapability,
             mockMobileCapabilities

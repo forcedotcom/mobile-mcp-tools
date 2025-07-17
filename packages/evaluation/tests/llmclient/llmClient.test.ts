@@ -242,9 +242,7 @@ describe('BaseModel', () => {
 
     it('throw error when invalid json', () => {
       const value = 'event: generation\n data:{i}';
-      expect(() => model.processStream(value, StreamType.GENERATION)).toThrow(
-        "Expected property name or '}' in JSON at position 1"
-      );
+      expect(() => model.processStream(value, StreamType.GENERATION)).toThrow(/JSON at position 1/);
     });
   });
 });

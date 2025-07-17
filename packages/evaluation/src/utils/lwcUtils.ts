@@ -133,7 +133,7 @@ export function formatComponent4LLM(component: LWCComponent, componentName?: str
  */
 export function getLwcComponentFromLlmResponse(responseText: string): LWCComponent {
   // Extract component name - look for filenames in the response
-  let componentNameMatch =
+  const componentNameMatch =
     responseText.match(/([\w-]+)\.html/) ||
     responseText.match(/([\w-]+)\.js/) ||
     responseText.match(/([\w-]+)\.js-meta\.xml/);

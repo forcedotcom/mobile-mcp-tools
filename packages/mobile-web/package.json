@@ -10,13 +10,16 @@
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "sfdc-mobile-web-mcp-server": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc ",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "lint": "eslint \"src/**/*.ts\"",
+    "lint": "eslint --config ../../eslint.config.mjs \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "update-resources": "tsx src/scripts/update-type-declarations.ts"
   },
@@ -33,7 +36,6 @@
     "tar": "^7.4.3",
     "tsx": "^4.19.2",
     "typescript": "^5.8.3",
-    "vite": "^7.0.0",
     "vitest": "^3.2.3"
   }
 }

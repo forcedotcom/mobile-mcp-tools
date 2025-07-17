@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
 import { spawn } from 'child_process';
-import { execSync } from 'child_process';
 import path from 'path';
 
 // Integration tests against the real MCP server

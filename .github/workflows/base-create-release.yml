@@ -1,0 +1,57 @@
+name: Base Create Release
+run-name: Create GitHub Release for ${{ inputs.package_display_name }}
+
+on:
+  workflow_call:
+    inputs:
+      package_display_name:
+        description: 'Display name for the package (e.g., Mobile Web MCP Server)'
+        required: true
+        type: string
+      package_path:
+        description: 'Path to package directory (e.g., packages/mobile-web)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build GitHub Actions Scripts
+        run: npx nx build project-maintenance-utilities
+
+      - name: Build package
+        run: npx nx build ${{ inputs.package_path }}
+
+      - name: Run tests
+        run: npx nx test ${{ inputs.package_path }}
+
+      - name: Create release using orchestrator
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const { createReleaseOrchestrator } = await import('${{ github.workspace }}/packages/project-maintenance-utilities/dist/index.js');
+
+            const orchestrator = createReleaseOrchestrator(context);
+            await orchestrator.createRelease({
+              packagePath: '${{ inputs.package_path }}',
+              packageDisplayName: '${{ inputs.package_display_name }}'
+            });

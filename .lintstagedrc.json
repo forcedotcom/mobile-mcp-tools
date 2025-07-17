@@ -1,4 +1,7 @@
 {
-  "{src,tests}/**/*.{ts,tsx,js,jsx}": ["prettier --check", "eslint --max-warnings=0"],
+  "{src,tests}/**/*.{ts,tsx,js,jsx}": [
+    "prettier --check",
+    "eslint --config eslint.config.mjs --max-warnings=0"
+  ],
   "**/*.{json,md}": ["prettier --check"]
 }

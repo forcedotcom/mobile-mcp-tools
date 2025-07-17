@@ -8,7 +8,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { fileURLToPath } from 'url';
-import path, { dirname, join } from 'path';
+import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,14 +37,20 @@ export class MobileWebMcpClient {
   }
 
   async disconnect() {
-    await this.client.close();
+    try {
+      console.log('🔄 Closing MCP client connection...');
+      await this.client.close();
+      console.log('✅ MCP client connection closed');
+    } catch (error) {
+      console.warn('Warning: Error closing MCP client:', error);
+    }
   }
 
   async listTools() {
     return this.client.listTools();
   }
 
-  async callTool(toolName: string, params: Record<string, any>) {
+  async callTool(toolName: string, params: Record<string, unknown>) {
     return this.client.callTool({ name: toolName, arguments: params });
   }
 }

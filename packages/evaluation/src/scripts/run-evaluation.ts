@@ -91,6 +91,21 @@ export async function runEvaluation(componentNames?: string[]): Promise<void> {
 
   let evaluator: Evaluator | null = null;
 
+  // Set a timeout to ensure the process doesn't hang indefinitely
+  const timeout = setTimeout(
+    () => {
+      console.error('⏰ Evaluation timed out after 10 minutes');
+      process.exit(1);
+    },
+    10 * 60 * 1000 // 10 minutes
+  );
+
+  // Add process exit handlers for debugging
+  const exitHandler = (code: number) => {
+    console.log(`🔄 Process exiting with code: ${code}`);
+  };
+  process.on('exit', exitHandler);
+
   try {
     // Initialize evaluator
     console.log('🔧 Initializing evaluator...');
@@ -126,7 +141,7 @@ export async function runEvaluation(componentNames?: string[]): Promise<void> {
     const failedResults = results.filter(r => r.error);
     const averageScore =
       successfulResults.length > 0
-        ? successfulResults.reduce((sum, r) => sum + r.score!!.rawScore, 0) /
+        ? successfulResults.reduce((sum, r) => sum + r.score!.rawScore, 0) /
           successfulResults.length
         : 0;
 
@@ -143,10 +158,20 @@ export async function runEvaluation(componentNames?: string[]): Promise<void> {
     console.error('💥 Fatal error during evaluation:', error);
     throw error;
   } finally {
+    // Clear the timeout
+    clearTimeout(timeout);
+
+    // Remove exit handler
+    process.off('exit', exitHandler);
+
     if (evaluator) {
       console.log('\n🧹 Cleaning up...');
-      evaluator.destroy();
-      console.log('✅ Cleanup completed');
+      try {
+        await evaluator.destroy();
+        console.log('✅ Cleanup completed');
+      } catch (error) {
+        console.error('❌ Error during cleanup:', error);
+      }
     }
   }
 }
@@ -200,7 +225,15 @@ export async function main(): Promise<void> {
 }
 
 // Run the script
-main().catch(error => {
-  console.error('💥 Unhandled error:', error);
-  throw error;
-});
+main()
+  .catch(error => {
+    console.error('💥 Unhandled error:', error);
+    process.exit(1);
+  })
+  .finally(() => {
+    // Force exit after a short delay to ensure cleanup completes
+    setTimeout(() => {
+      console.log('🔄 Forcing process exit...');
+      process.exit(0);
+    }, 1000);
+  });

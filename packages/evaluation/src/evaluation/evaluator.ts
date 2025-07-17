@@ -77,13 +77,29 @@ export class Evaluator {
     return evaluator;
   }
 
-  destroy(): void {
+  async destroy(): Promise<void> {
+    console.log('🔄 Starting evaluator cleanup...');
+
     if (this.mobileWebMcpClient) {
-      this.mobileWebMcpClient.disconnect();
+      console.log('🔄 Disconnecting MCP client...');
+      await this.mobileWebMcpClient.disconnect();
+      console.log('✅ MCP client disconnected');
     }
+
     if (this.serverProcess) {
-      this.serverProcess.kill();
+      console.log('🔄 Terminating server process...');
+      this.serverProcess.kill('SIGTERM');
+      // Give the process a moment to terminate gracefully
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Force kill if still running
+      if (!this.serverProcess.killed) {
+        console.log('🔄 Force killing server process...');
+        this.serverProcess.kill('SIGKILL');
+      }
+      console.log('✅ Server process terminated');
     }
+
+    console.log('✅ Evaluator cleanup completed');
   }
 
   /**
@@ -120,10 +136,20 @@ export class Evaluator {
   }
 
   private async initializeMobileWebMcpClient(): Promise<void> {
+    console.log('🔄 Starting MCP server...');
     this.serverProcess = spawn('npm', ['run', 'mobile-web:server:start'], {
       cwd: path.resolve(__dirname, '../../../..'),
-      stdio: 'inherit',
+      stdio: ['pipe', 'pipe', 'pipe'],
       shell: true,
+    });
+
+    // Add process event handlers for debugging
+    this.serverProcess.on('error', error => {
+      console.error('❌ Server process error:', error);
+    });
+
+    this.serverProcess.on('exit', (code, signal) => {
+      console.log(`🔄 Server process exited with code: ${code}, signal: ${signal}`);
     });
 
     this.mobileWebMcpClient = new MobileWebMcpClient();

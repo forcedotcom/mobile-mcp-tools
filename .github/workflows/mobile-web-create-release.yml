@@ -1,0 +1,15 @@
+name: Mobile Web - Create Release
+run-name: Create release for Mobile Web MCP Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    uses: ./.github/workflows/base-create-release.yml
+    with:
+      package_display_name: 'Mobile Web MCP Server'
+      package_path: 'packages/mobile-web'
+    permissions:
+      contents: write
+      packages: write
