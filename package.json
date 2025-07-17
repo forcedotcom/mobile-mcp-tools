@@ -30,7 +30,8 @@
   },
   "homepage": "https://github.com/forcedotcom/mobile-mcp-tools#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.3"
+    "@modelcontextprotocol/sdk": "^1.12.3",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@nx/workspace": "^21.2.1",
