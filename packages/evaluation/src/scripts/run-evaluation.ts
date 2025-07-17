@@ -200,9 +200,7 @@ export async function main(): Promise<void> {
 }
 
 // Run the script
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(error => {
-    console.error('💥 Unhandled error:', error);
-    throw error;
-  });
-}
+main().catch(error => {
+  console.error('💥 Unhandled error:', error);
+  throw error;
+});

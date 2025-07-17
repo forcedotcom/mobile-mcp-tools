@@ -24,7 +24,6 @@
     "@modelcontextprotocol/sdk": "^1.13.2",
     "eslint": "^9.30.0",
     "dedent": "^1.5.3",
-    "zod": "^3.25.67",
     "@salesforce/eslint-plugin-lwc-graph-analyzer": "^1.0.0"
   },
   "devDependencies": {
