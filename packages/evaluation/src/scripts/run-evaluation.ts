@@ -5,7 +5,7 @@
  **/
 
 import { fileURLToPath } from 'url';
-import path, { dirname, join } from 'path';
+import { dirname, join } from 'path';
 import { readdir } from 'node:fs/promises';
 import { Evaluator } from '../evaluation/evaluator.js';
 import { Score } from '../evaluation/lwcEvaluatorAgent.js';

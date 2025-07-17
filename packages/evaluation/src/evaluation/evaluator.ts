@@ -68,7 +68,7 @@ export class Evaluator {
       clientFeatureID: process.env.MODEL_TO_EVAL_CLIENT_FEATURE_ID,
       tenantId: process.env.MODEL_TO_EVAL_TENANT_ID,
     });
-    this.componentAgent = new LwcComponentAgent(evaluatorLlmClient);
+    this.componentAgent = new LwcComponentAgent(componentLlmClient);
   }
 
   static async create(): Promise<Evaluator> {
@@ -125,10 +125,43 @@ export class Evaluator {
       stdio: 'inherit',
       shell: true,
     });
-    // Wait for the server to be ready (simple delay, adjust as needed)
-    await new Promise(resolve => setTimeout(resolve, 5000));
 
     this.mobileWebMcpClient = new MobileWebMcpClient();
-    await this.mobileWebMcpClient.connect();
+    await this.connectToMcpServer();
+  }
+
+  /**
+   * Connect to the MCP server and wait for it to be ready
+   * @param maxRetries - The maximum number of retries
+   * @param retryIntervalMs - The interval between retries
+   */
+  private async connectToMcpServer(
+    maxRetries: number = 30,
+    retryIntervalMs: number = 1000
+  ): Promise<void> {
+    let retries = 0;
+
+    while (retries < maxRetries) {
+      try {
+        // Try to create and connect a test client
+
+        await this.mobileWebMcpClient.connect();
+        // If we can list tools, server is ready
+        await this.mobileWebMcpClient.listTools();
+        console.log('MCP server is ready');
+        return;
+      } catch (error) {
+        retries++;
+        console.log(`Waiting for MCP server to be ready... (attempt ${retries}/${maxRetries})`);
+
+        if (retries >= maxRetries) {
+          throw new Error(
+            `MCP server failed to start after ${maxRetries} attempts. Last error: ${error}`
+          );
+        }
+
+        await new Promise(resolve => setTimeout(resolve, retryIntervalMs));
+      }
+    }
   }
 }

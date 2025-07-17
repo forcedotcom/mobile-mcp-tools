@@ -46,7 +46,10 @@ export interface LWCComponent {
 
 const McpToolSchema = z.object({
   toolId: z.string(),
-  params: z.record(z.string(), z.any()).describe('The parameters to pass to the MCP tool').optional(),
+  params: z
+    .record(z.string(), z.any())
+    .describe('The parameters to pass to the MCP tool')
+    .optional(),
 });
 
 const McpToolArraySchema = z.array(McpToolSchema);

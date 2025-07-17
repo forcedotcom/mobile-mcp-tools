@@ -23,6 +23,20 @@
       "options": {
         "tsConfig": "packages/evaluation/tsconfig.json"
       }
+    },
+    "evaluate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run evaluate",
+        "cwd": "packages/evaluation"
+      }
+    },
+    "evaluate:component": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run evaluate:component",
+        "cwd": "packages/evaluation"
+      }
     }
   }
 }
