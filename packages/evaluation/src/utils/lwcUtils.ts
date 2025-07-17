@@ -54,7 +54,6 @@ const McpToolSchema = z.object({
 
 const McpToolArraySchema = z.array(McpToolSchema);
 
-type McpTool = z.infer<typeof McpToolSchema>;
 type McpToolArray = z.infer<typeof McpToolArraySchema>;
 
 export interface EvaluationUnit {

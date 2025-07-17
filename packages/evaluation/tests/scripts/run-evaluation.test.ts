@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { readdir } from 'node:fs/promises';
 import { Score } from '../../src/evaluation/lwcEvaluatorAgent.js';
 import { Evaluator } from '../../src/evaluation/evaluator.js';
@@ -34,9 +34,9 @@ vi.spyOn(process, 'exit').mockImplementation(() => {
 });
 
 describe('run-evaluation script tests', () => {
-  let mockEvaluator: any;
+  let mockEvaluator: Evaluator;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset all mocks
     vi.clearAllMocks();
 
@@ -56,15 +56,17 @@ describe('run-evaluation script tests', () => {
       MODEL_TO_EVAL_TENANT_ID: 'test-tenant',
     });
 
-    // Setup mock evaluator
+    // Setup mock evaluator with proper mock methods
     mockEvaluator = {
       evaluate: vi.fn(),
       destroy: vi.fn(),
-    };
-    (Evaluator.create as any).mockResolvedValue(mockEvaluator);
+    } as unknown as Evaluator;
+
+    // Mock Evaluator.create to return our mock evaluator
+    (Evaluator.create as unknown as Mock).mockResolvedValue(mockEvaluator);
 
     // Mock console methods
-    global.console = mockConsole as any;
+    global.console = mockConsole as unknown as Console;
   });
 
   afterEach(() => {
@@ -78,7 +80,7 @@ describe('run-evaluation script tests', () => {
         { name: 'component2', isDirectory: () => true },
         { name: 'file.txt', isDirectory: () => false },
       ];
-      (readdir as any).mockResolvedValue(mockEntries);
+      (readdir as unknown as Mock).mockResolvedValue(mockEntries);
 
       // Import the function directly
       const { getAvailableComponents } = await import('../../src/scripts/run-evaluation.ts');
@@ -88,7 +90,7 @@ describe('run-evaluation script tests', () => {
     });
 
     it('should handle directory read errors', async () => {
-      (readdir as any).mockRejectedValue(new Error('Directory not found'));
+      (readdir as unknown as Mock).mockRejectedValue(new Error('Directory not found'));
 
       const { getAvailableComponents } = await import('../../src/scripts/run-evaluation.ts');
       const result = await getAvailableComponents();
@@ -104,7 +106,7 @@ describe('run-evaluation script tests', () => {
   describe('evaluateComponent', () => {
     it('should successfully evaluate a component', async () => {
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       const { evaluateComponent } = await import('../../src/scripts/run-evaluation.ts');
       const result = await evaluateComponent(mockEvaluator, 'test-component');
@@ -124,7 +126,7 @@ describe('run-evaluation script tests', () => {
 
     it('should handle evaluation errors', async () => {
       const error = new Error('Evaluation failed');
-      mockEvaluator.evaluate.mockRejectedValue(error);
+      mockEvaluator.evaluate = vi.fn().mockRejectedValue(error);
 
       const { evaluateComponent } = await import('../../src/scripts/run-evaluation.ts');
       const result = await evaluateComponent(mockEvaluator, 'test-component');
@@ -140,7 +142,7 @@ describe('run-evaluation script tests', () => {
     });
 
     it('should handle non-Error exceptions', async () => {
-      mockEvaluator.evaluate.mockRejectedValue('String error');
+      mockEvaluator.evaluate = vi.fn().mockRejectedValue('String error');
 
       const { evaluateComponent } = await import('../../src/scripts/run-evaluation.ts');
       const result = await evaluateComponent(mockEvaluator, 'test-component');
@@ -212,10 +214,10 @@ describe('run-evaluation script tests', () => {
         { name: 'comp1', isDirectory: () => true },
         { name: 'comp2', isDirectory: () => true },
       ];
-      (readdir as any).mockResolvedValue(mockEntries);
+      (readdir as unknown as Mock).mockResolvedValue(mockEntries);
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await runEvaluation();
@@ -229,7 +231,7 @@ describe('run-evaluation script tests', () => {
 
     it('should run evaluation for specific components', async () => {
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await runEvaluation(['comp1', 'comp2']);
@@ -240,7 +242,7 @@ describe('run-evaluation script tests', () => {
     });
 
     it('should handle no components found', async () => {
-      (readdir as any).mockResolvedValue([]);
+      (readdir as unknown as Mock).mockResolvedValue([]);
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await runEvaluation();
@@ -256,10 +258,10 @@ describe('run-evaluation script tests', () => {
         { name: 'comp1', isDirectory: () => true },
         { name: 'comp2', isDirectory: () => true },
       ];
-      (readdir as any).mockResolvedValue(mockEntries);
+      (readdir as unknown as Mock).mockResolvedValue(mockEntries);
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate
+      mockEvaluator.evaluate = vi.fn()
         .mockResolvedValueOnce(mockScore)
         .mockRejectedValueOnce(new Error('Evaluation failed'));
 
@@ -276,7 +278,7 @@ describe('run-evaluation script tests', () => {
     });
 
     it('should handle evaluator creation failure', async () => {
-      (Evaluator.create as any).mockRejectedValue(new Error('Failed to create evaluator'));
+      (Evaluator.create as unknown as Mock).mockRejectedValue(new Error('Failed to create evaluator'));
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await expect(runEvaluation()).rejects.toThrow('Failed to create evaluator');
@@ -284,10 +286,10 @@ describe('run-evaluation script tests', () => {
 
     it('should handle evaluator destruction in finally block', async () => {
       const mockEntries = [{ name: 'comp1', isDirectory: () => true }];
-      (readdir as any).mockResolvedValue(mockEntries);
+      (readdir as unknown as Mock).mockResolvedValue(mockEntries);
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await runEvaluation();
@@ -339,7 +341,7 @@ describe('run-evaluation script tests', () => {
       process.argv = ['node', 'run-evaluation.ts', 'comp1', 'comp2'];
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       const { main } = await import('../../src/scripts/run-evaluation.ts');
       await main();
@@ -352,10 +354,10 @@ describe('run-evaluation script tests', () => {
       process.argv = ['node', 'run-evaluation.ts'];
 
       const mockEntries = [{ name: 'comp1', isDirectory: () => true }];
-      (readdir as any).mockResolvedValue(mockEntries);
+      (readdir as unknown as Mock).mockResolvedValue(mockEntries);
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       const { main } = await import('../../src/scripts/run-evaluation.ts');
       await main();
@@ -365,7 +367,7 @@ describe('run-evaluation script tests', () => {
 
     it('should handle unhandled errors', async () => {
       process.argv = ['node', 'run-evaluation.ts'];
-      (Evaluator.create as any).mockRejectedValue(new Error('Unhandled error'));
+      (Evaluator.create as unknown as Mock).mockRejectedValue(new Error('Unhandled error'));
 
       const { main } = await import('../../src/scripts/run-evaluation.ts');
       await expect(main()).rejects.toThrow('Unhandled error');
@@ -376,10 +378,10 @@ describe('run-evaluation script tests', () => {
     it.skip('should execute main function when run directly', async () => {
       // Mock import.meta.url to simulate direct execution
       const originalImportMeta = global.importMeta;
-      global.importMeta = { url: `file://${process.argv[1]}` } as any;
+      global.importMeta = { url: `file://${process.argv[1]}` } as unknown as ImportMeta;
 
       const mockScore: Score = { rawScore: 85, verdict: 'Pass GA Criteria' as const };
-      mockEvaluator.evaluate.mockResolvedValue(mockScore);
+      mockEvaluator.evaluate = vi.fn().mockResolvedValue(mockScore);
 
       // This would normally trigger the script execution
       // We'll test the main function directly instead
