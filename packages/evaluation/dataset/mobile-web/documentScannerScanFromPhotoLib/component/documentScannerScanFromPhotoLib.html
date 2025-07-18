@@ -1,0 +1,109 @@
+<template>
+  <lightning-card title="Document Scanner" icon-name="utility:scan">
+    <div class="slds-p-around_medium">
+      <!-- Script Selection -->
+      <lightning-combobox
+        label="Script"
+        value="{scriptHint}"
+        options="{scriptOptions}"
+        onchange="{handleScriptChange}"
+      >
+      </lightning-combobox>
+
+      <!-- Entity Extraction Toggle -->
+      <lightning-input
+        type="toggle"
+        label="Extract Entities"
+        checked="{extractEntities}"
+        message="Enable to extract entities like dates, phone numbers, etc."
+        onchange="{handleEntityExtractionChange}"
+      >
+      </lightning-input>
+
+      <!-- Language Selection (only shown when entity extraction is enabled) -->
+      <template if:true="{extractEntities}">
+        <lightning-combobox
+          label="Entity Extraction Language"
+          value="{entityExtractionLanguage}"
+          options="{languageOptions}"
+          onchange="{handleLanguageChange}"
+        >
+        </lightning-combobox>
+      </template>
+
+      <!-- Scan Buttons -->
+      <div class="slds-m-top_medium slds-grid slds-gutters">
+        <div class="slds-col">
+          <lightning-button
+            label="Scan from Photo Library"
+            variant="brand"
+            onclick="{scanFromLibrary}"
+            disabled="{isScanning}"
+          >
+          </lightning-button>
+        </div>
+        <div class="slds-col">
+          <lightning-button
+            label="Scan with Camera"
+            variant="brand"
+            onclick="{scanFromCamera}"
+            disabled="{isScanning}"
+          >
+          </lightning-button>
+        </div>
+      </div>
+
+      <!-- Loading Indicator -->
+      <template if:true="{isScanning}">
+        <div class="slds-m-top_medium slds-align_absolute-center">
+          <lightning-spinner alternative-text="Scanning..."></lightning-spinner>
+        </div>
+      </template>
+
+      <!-- Error Message -->
+      <template if:true="{hasError}">
+        <div class="slds-m-top_medium slds-notify slds-notify_alert slds-theme_error">
+          <span class="slds-assistive-text">Error</span>
+          <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small">
+            <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+          </span>
+          <h2>{error}</h2>
+        </div>
+      </template>
+
+      <!-- Scan Results -->
+      <template if:true="{hasScannedDocument}">
+        <div class="slds-m-top_large">
+          <h3 class="slds-text-heading_small">Scanned Document</h3>
+
+          <!-- Display scanned image -->
+          <div class="slds-box slds-m-top_small">
+            <img src="{scannedDocument.imageBytes}" class="scanned-image" />
+          </div>
+
+          <!-- Action buttons -->
+          <div class="slds-m-top_medium slds-grid slds-gutters">
+            <div class="slds-col">
+              <lightning-button
+                if:true="{showText}"
+                label="View Extracted Text"
+                variant="brand"
+                onclick="{viewExtractedText}"
+              >
+              </lightning-button>
+            </div>
+            <div class="slds-col">
+              <lightning-button
+                if:true="{showEntities}"
+                label="View Extracted Entities"
+                variant="brand"
+                onclick="{viewExtractedEntities}"
+              >
+              </lightning-button>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>

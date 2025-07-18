@@ -1,0 +1,60 @@
+<template>
+  <lightning-card title="Add Calendar Event" icon-name="standard:event">
+    <div class="slds-p-around_medium">
+      <lightning-input
+        label="Event Title"
+        value="{eventTitle}"
+        onchange="{handleTitleChange}"
+        required
+      >
+      </lightning-input>
+
+      <lightning-input
+        type="datetime"
+        label="Start Time"
+        value="{startTime}"
+        onchange="{handleStartTimeChange}"
+        required
+      >
+      </lightning-input>
+
+      <lightning-input
+        type="datetime"
+        label="End Time"
+        value="{endTime}"
+        onchange="{handleEndTimeChange}"
+        required
+      >
+      </lightning-input>
+
+      <lightning-combobox
+        label="Calendar"
+        value="{selectedCalendarId}"
+        placeholder="Select a calendar"
+        options="{calendarOptions}"
+        onchange="{handleCalendarChange}"
+      >
+      </lightning-combobox>
+
+      <lightning-input
+        label="Location (optional)"
+        value="{location}"
+        onchange="{handleLocationChange}"
+      >
+      </lightning-input>
+
+      <lightning-textarea label="Notes (optional)" value="{notes}" onchange="{handleNotesChange}">
+      </lightning-textarea>
+
+      <div class="slds-m-top_medium">
+        <lightning-button
+          label="Add Event"
+          variant="brand"
+          onclick="{handleAddEvent}"
+          disabled="{isAddDisabled}"
+        >
+        </lightning-button>
+      </div>
+    </div>
+  </lightning-card>
+</template>
