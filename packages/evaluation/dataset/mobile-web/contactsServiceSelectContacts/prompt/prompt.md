@@ -1,0 +1,1 @@
+Develop a Lightning Web Component (LWC) that enables a user to select multiple contacts from their device's address book on an iOS mobile device. The component should handle permission requests and display a list of selected contacts' names and phone numbers. Ensure the component checks if the ContactsService is available and provides user feedback if it's not.

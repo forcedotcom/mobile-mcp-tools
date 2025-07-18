@@ -1,0 +1,44 @@
+<template>
+  <lightning-card title="App Review" icon-name="custom:custom14">
+    <div class="slds-p-around_medium">
+      <template if:true="{showReviewPrompt}">
+        <div class="slds-notify slds-notify_toast slds-theme_info">
+          <span class="slds-assistive-text">Info</span>
+          <span class="slds-icon_container slds-icon-utility-info slds-m-right_x-small">
+            <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+          </span>
+          <h2>Enjoying our app?</h2>
+          <p>We'd love your feedback! Please consider leaving a review.</p>
+          <div class="slds-m-top_small">
+            <lightning-button label="Leave Review" variant="brand" onclick="{handleReviewRequest}">
+            </lightning-button>
+            <lightning-button label="Maybe Later" variant="neutral" onclick="{handleDismiss}">
+            </lightning-button>
+          </div>
+        </div>
+      </template>
+
+      <template if:true="{showSuccessMessage}">
+        <div class="slds-notify slds-notify_toast slds-theme_success">
+          <span class="slds-assistive-text">Success</span>
+          <span class="slds-icon_container slds-icon-utility-success slds-m-right_x-small">
+            <lightning-icon icon-name="utility:success" size="small"></lightning-icon>
+          </span>
+          <h2>Thank you!</h2>
+          <p>We appreciate you taking the time to review our app.</p>
+        </div>
+      </template>
+
+      <template if:true="{showErrorMessage}">
+        <div class="slds-notify slds-notify_toast slds-theme_error">
+          <span class="slds-assistive-text">Error</span>
+          <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small">
+            <lightning-icon icon-name="utility:error" size="small"></lightning-icon>
+          </span>
+          <h2>Unable to request review</h2>
+          <p>{errorMessage}</p>
+        </div>
+      </template>
+    </div>
+  </lightning-card>
+</template>

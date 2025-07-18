@@ -214,7 +214,6 @@ export class LwcEvaluatorAgent {
 
   private parseResponse(llmResponse: string): EvaluationResponse {
     try {
-      console.log(`llmResponse:${llmResponse}`);
       const jsonResponse = this.getJsonResponse(llmResponse);
       return EvaluationResponseSchema.parse(JSON.parse(jsonResponse));
     } catch (error) {

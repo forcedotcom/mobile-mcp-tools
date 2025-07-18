@@ -143,9 +143,6 @@ export class LlmClient {
               '[ERROR] xGen response terminated before completion due to reaching max tokens limit!'
             );
           }
-          console.debug(
-            `Prompt tokens: ${parameters?.prompt_tokens}, Generated tokens: ${parameters?.generated_tokens}`
-          );
         }
         continue; // As long as we receive successful generation stream continue ...
       }

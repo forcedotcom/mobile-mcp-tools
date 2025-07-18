@@ -1,0 +1,139 @@
+<template>
+  <div class="container slds-p-around_medium">
+    <template if:true="{isServiceAvailable}">
+      <div class="slds-box slds-theme_default">
+        <h2 class="slds-text-heading_medium slds-m-bottom_medium">Room Scanner</h2>
+
+        <lightning-button
+          label="Scan Room"
+          variant="brand"
+          onclick="{handleScanRoom}"
+          class="slds-m-bottom_medium"
+        >
+        </lightning-button>
+
+        <template if:true="{isLoading}">
+          <lightning-spinner
+            alternative-text="Scanning in progress"
+            size="large"
+          ></lightning-spinner>
+          <p class="slds-m-top_small">Please move your device slowly around the room...</p>
+        </template>
+
+        <template if:true="{hasError}">
+          <div
+            class="slds-notify slds-notify_alert slds-theme_error slds-m-bottom_medium"
+            role="alert"
+          >
+            <span class="slds-assistive-text">Error</span>
+            <span class="slds-icon_container slds-icon-utility-error slds-m-right_x-small">
+              <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+            </span>
+            <h2>{errorMessage}</h2>
+          </div>
+        </template>
+
+        <template if:true="{hasScanData}">
+          <h3 class="slds-text-heading_small slds-m-bottom_small">Room Scan Results</h3>
+          <div class="map-container">
+            <svg width="100%" height="400" viewBox="0 0 500 400" class="room-map">
+              <!-- Background -->
+              <rect x="0" y="0" width="500" height="400" fill="#f3f2f2" />
+
+              <!-- Walls -->
+              <template for:each="{walls}" for:item="wall">
+                <line
+                  key="{wall.id}"
+                  x1="{wall.x1}"
+                  y1="{wall.y1}"
+                  x2="{wall.x2}"
+                  y2="{wall.y2}"
+                  stroke="#333"
+                  stroke-width="8"
+                />
+              </template>
+
+              <!-- Doors -->
+              <template for:each="{doors}" for:item="door">
+                <rect
+                  key="{door.id}"
+                  x="{door.x}"
+                  y="{door.y}"
+                  width="{door.width}"
+                  height="{door.height}"
+                  fill="#8b4513"
+                  stroke="#5d2906"
+                  stroke-width="2"
+                />
+              </template>
+
+              <!-- Windows -->
+              <template for:each="{windows}" for:item="window">
+                <rect
+                  key="{window.id}"
+                  x="{window.x}"
+                  y="{window.y}"
+                  width="{window.width}"
+                  height="{window.height}"
+                  fill="#add8e6"
+                  stroke="#4682b4"
+                  stroke-width="2"
+                />
+              </template>
+
+              <!-- Openings -->
+              <template for:each="{openings}" for:item="opening">
+                <rect
+                  key="{opening.id}"
+                  x="{opening.x}"
+                  y="{opening.y}"
+                  width="{opening.width}"
+                  height="{opening.height}"
+                  fill="#d3d3d3"
+                  stroke="#a9a9a9"
+                  stroke-width="2"
+                />
+              </template>
+
+              <!-- Legend -->
+              <g transform="translate(20, 20)">
+                <rect x="0" y="0" width="15" height="15" fill="#333" />
+                <text x="25" y="12" font-size="12">Wall</text>
+
+                <rect x="0" y="25" width="15" height="15" fill="#8b4513" />
+                <text x="25" y="37" font-size="12">Door</text>
+
+                <rect x="0" y="50" width="15" height="15" fill="#add8e6" />
+                <text x="25" y="62" font-size="12">Window</text>
+
+                <rect x="0" y="75" width="15" height="15" fill="#d3d3d3" />
+                <text x="25" y="87" font-size="12">Opening</text>
+              </g>
+            </svg>
+          </div>
+
+          <div class="slds-m-top_medium">
+            <h4 class="slds-text-heading_small">Scan Summary</h4>
+            <ul class="slds-list_dotted">
+              <li>Walls detected: {walls.length}</li>
+              <li>Doors detected: {doors.length}</li>
+              <li>Windows detected: {windows.length}</li>
+              <li>Openings detected: {openings.length}</li>
+            </ul>
+          </div>
+        </template>
+      </div>
+    </template>
+
+    <template if:false="{isServiceAvailable}">
+      <div class="slds-notify slds-notify_alert slds-theme_warning" role="alert">
+        <span class="slds-assistive-text">Warning</span>
+        <span class="slds-icon_container slds-icon-utility-warning slds-m-right_x-small">
+          <lightning-icon icon-name="utility:warning" size="x-small"></lightning-icon>
+        </span>
+        <h2>AR Space Capture is not available on this device.</h2>
+        <p>This feature requires an iOS device with AR capabilities.</p>
+      </div>
+    </template>
+  </div>
+</template>
