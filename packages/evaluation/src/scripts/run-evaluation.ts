@@ -48,7 +48,9 @@ export async function evaluateComponent(
     console.log(`\n🔍 Evaluating component: ${componentName}`);
     const score = await evaluator.evaluate(componentName);
 
-    console.log(`✅ ${componentName} - Score: ${score.rawScore}/100`);
+    console.log(
+      `${score.verdict == 'FAIL' ? '❌' : '✅'} ${componentName} - Verdict: ${score.verdict}, Score: ${score.rawScore}/100`
+    );
 
     return {
       componentName,
@@ -76,7 +78,7 @@ export function printSummary(summary: EvaluationSummary): void {
     console.log('\n📋 Detailed Results:');
     console.log('-'.repeat(60));
     summary.results.forEach(result => {
-      const status = result.error ? '❌ FAILED' : '✅ PASSED';
+      const status = result.error || result.score?.verdict == 'FAIL' ? '❌ FAILED' : '✅ PASSED';
       console.log(`${status} ${result.componentName}: ${result.score?.rawScore}/100`);
       if (result.error) {
         console.log(`   Error: ${result.error}`);
@@ -137,8 +139,8 @@ export async function runEvaluation(componentNames?: string[]): Promise<void> {
     }
 
     // Calculate summary
-    const successfulResults = results.filter(r => !r.error);
-    const failedResults = results.filter(r => r.error);
+    const successfulResults = results.filter(r => !r.error && r.score?.verdict != 'FAIL');
+    const failedResults = results.filter(r => r.error || r.score?.verdict == 'FAIL');
     const averageScore =
       successfulResults.length > 0
         ? successfulResults.reduce((sum, r) => sum + r.score!.rawScore, 0) /

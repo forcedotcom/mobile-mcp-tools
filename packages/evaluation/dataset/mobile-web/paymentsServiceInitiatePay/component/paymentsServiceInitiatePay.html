@@ -1,0 +1,81 @@
+<template>
+  <lightning-card title="Mobile Payment Processor" icon-name="custom:custom18">
+    <div class="slds-p-around_medium">
+      <template if:true="{paymentServiceUnavailable}">
+        <p class="slds-text-color_error">{paymentsServiceResponse}</p>
+      </template>
+
+      <template if:false="{paymentServiceUnavailable}">
+        <div class="slds-form-element">
+          <lightning-input
+            label="Amount"
+            type="text"
+            value="{amountValue}"
+            onchange="{handleAmountInput}"
+            class="{inputValidationClass}"
+            required
+          >
+          </lightning-input>
+        </div>
+
+        <div class="slds-form-element">
+          <lightning-input
+            label="Currency Code"
+            type="text"
+            value="{currencyCodeValue}"
+            onchange="{handleCurrencyCodeInput}"
+            required
+          >
+          </lightning-input>
+        </div>
+
+        <div class="slds-form-element">
+          <lightning-input
+            label="Merchant Name"
+            type="text"
+            value="{merchantNameValue}"
+            onchange="{handleMerchantNameInput}"
+            required
+          >
+          </lightning-input>
+        </div>
+
+        <template if:true="{showPaymentMethodSelection}">
+          <div class="slds-form-element">
+            <lightning-combobox
+              name="paymentMethod"
+              label="Payment Method"
+              value="{paymentMethodValue}"
+              placeholder="Select Payment Method"
+              options="{paymentMethodOptions}"
+              onchange="{handlePaymentMethodChange}"
+              required
+            >
+            </lightning-combobox>
+          </div>
+
+          <div class="slds-m-top_medium">
+            <lightning-button
+              variant="brand"
+              label="Process Payment"
+              onclick="{handleProcessPayment}"
+              disabled="{spinnerEnabled}"
+            >
+            </lightning-button>
+          </div>
+        </template>
+
+        <template if:true="{spinnerEnabled}">
+          <lightning-spinner alternative-text="Processing" size="large"></lightning-spinner>
+        </template>
+
+        <template if:true="{paymentsServiceResponse}">
+          <div class="slds-m-top_medium">
+            <h3 class="slds-text-heading_small">Response:</h3>
+            <pre>{paymentsServiceResponse}</pre>
+          </div>
+        </template>
+      </template>
+    </div>
+  </lightning-card>
+</template>

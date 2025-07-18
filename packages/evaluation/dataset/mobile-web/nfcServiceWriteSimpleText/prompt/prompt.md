@@ -1,0 +1,1 @@
+Create an LWC that enables users to write a simple text message to an NFC tag on their Samsung Galaxy S series or iPhone. The component should include a text input field for the user to enter the message, a button to write the message to the NFC tag, and error handling to display appropriate messages if the operation fails or NFC is unavailable.

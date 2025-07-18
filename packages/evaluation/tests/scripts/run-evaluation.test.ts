@@ -120,7 +120,7 @@ describe('run-evaluation script tests', () => {
         expect.stringContaining('🔍 Evaluating component: test-component')
       );
       expect(mockConsole.log).toHaveBeenCalledWith(
-        expect.stringContaining('✅ test-component - Score: 85/100')
+        expect.stringContaining('✅ test-component - Verdict: Pass GA Criteria, Score: 85/100')
       );
     });
 
