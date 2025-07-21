@@ -26,6 +26,7 @@ import { NfcTool } from './tools/native-capabilities/nfc/tool.js';
 import { PaymentsTool } from './tools/native-capabilities/payments/tool.js';
 import { OfflineAnalysisTool } from './tools/mobile-offline/offline-analysis/tool.js';
 import { OfflineGuidanceTool } from './tools/mobile-offline/offline-guidance/tool.js';
+import { QuickActionConfigurationTool } from './tools/mobile-docs/quick-action-configuration/tool.js';
 
 const server = new McpServer({
   name: 'sfdc-mobile-web-mcp-server',
@@ -54,6 +55,7 @@ const tools = [
   new PaymentsTool(),
   new OfflineAnalysisTool(),
   new OfflineGuidanceTool(),
+  new QuickActionConfigurationTool(),
 ];
 
 // Register all tools
