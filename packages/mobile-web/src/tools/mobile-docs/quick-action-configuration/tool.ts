@@ -117,28 +117,6 @@ export class QuickActionConfigurationTool implements Tool {
       ## Quick Action Metadata Guidance
 
       - Use the provided metadata examples as a guide, DO NOT add any additional elements.
-
-      ## Mobile-Specific Considerations
-
-      ### Touch-Friendly Design
-      - Ensure minimum 44px touch targets for all interactive elements
-      - Use mobile-friendly spacing and typography
-      - Test on actual devices, not just browser dev tools
-
-      ### Performance Optimization
-      - Keep initial load lightweight for mobile networks
-      - Use lazy loading for non-critical components
-      - Minimize external dependencies
-
-      ### Screen Size Adaptation
-      - Design mobile-first with responsive layouts
-      - Consider both phone and tablet orientations
-      - Use SLDS (Salesforce Lightning Design System) components
-
-      ### Navigation Patterns
-      - Provide clear navigation and exit paths
-      - Use standard mobile interaction patterns
-      - Include appropriate loading states and error handling
     `;
   }
 }
