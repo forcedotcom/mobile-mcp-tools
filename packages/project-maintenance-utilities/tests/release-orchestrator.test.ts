@@ -169,7 +169,7 @@ describe('ReleaseOrchestrator', () => {
       mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
       // Mock npm publish command
       mockProcess.setCommandResponse(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest"`,
+        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
         ''
       );
       // Mock tar commands for tarball verification
@@ -248,7 +248,7 @@ describe('ReleaseOrchestrator', () => {
       mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
       // Mock npm publish command with dry run
       mockProcess.setCommandResponse(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --dry-run`,
+        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public --dry-run`,
         ''
       );
       // Mock tar commands for tarball verification
@@ -491,7 +491,7 @@ describe('ReleaseOrchestrator', () => {
       );
       // Make npm publish fail
       mockProcess.setCommandToThrow(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest"`,
+        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
         'npm ERR! 403 Forbidden'
       );
 
@@ -565,7 +565,7 @@ describe('ReleaseOrchestrator', () => {
         ''
       );
       mockProcess.setCommandResponse(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest"`,
+        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
         ''
       );
 
@@ -698,7 +698,7 @@ describe('ReleaseOrchestrator', () => {
           ''
         );
         mockProcess.setCommandResponse(
-          `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest"`,
+          `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
           'published'
         );
 
@@ -725,6 +725,100 @@ describe('ReleaseOrchestrator', () => {
         expect(mockActions.getOutput('package_identifier')).toBe('test-package');
         expect(mockActions.getOutput('package_version')).toBe('1.0.0');
         expect(mockActions.getOutput('package_full_name')).toBe('@test/package');
+      });
+
+      it('should update release description after successful publish', async () => {
+        // Setup package service
+        mockPackage.setReleaseTag('test-package_v1.0.0', {
+          packageIdentifier: 'test-package',
+          packageVersion: '1.0.0',
+        });
+
+        mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+          packageFullName: '@test/package',
+          version: '1.0.0',
+          tagName: 'test-package_v1.0.0',
+          tagPrefix: 'test-package',
+        });
+
+        // Setup GitHub service with a release
+        mockGitHub.clear();
+        mockGitHub.setRelease('test-package_v1.0.0', {
+          id: 123,
+          name: 'Test Package v1.0.0',
+          body: 'Release candidate for @test/package v1.0.0...',
+          prerelease: true,
+          assets: [
+            {
+              id: 456,
+              name: 'test-package-1.0.0.tgz',
+              browser_download_url: 'https://example.com/test-package-1.0.0.tgz',
+            },
+          ],
+        });
+
+        // Setup mock asset data
+        mockGitHub.setAssetData(456, Buffer.from('tarball content'));
+
+        // Setup process service for npm commands
+        mockProcess.clear();
+        mockProcess.setCommandToThrow(
+          'npm view "@test/package@1.0.0" version',
+          'Version not found'
+        );
+        mockProcess.setCommandResponse(
+          `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
+          ''
+        );
+        mockProcess.setCommandResponse(
+          `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+          'package/package.json\npackage/index.js'
+        );
+        mockProcess.setCommandResponse(
+          `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+          ''
+        );
+
+        // Setup filesystem
+        mockFs.clear();
+        mockFs.setFileContent(
+          join('temp-verify', 'package', 'package.json'),
+          JSON.stringify({
+            name: '@test/package',
+            version: '1.0.0',
+          })
+        );
+
+        const options = {
+          packagePath: join('.', 'test-package'),
+          packageDisplayName: 'Test Package',
+          releaseTag: 'test-package_v1.0.0',
+          npmTag: 'latest',
+          dryRun: false,
+        };
+
+        await orchestrator.publishRelease(options);
+
+        // Verify that updateRelease was called with the new description
+        const releaseData = mockGitHub.getReleaseData();
+        const updatedRelease = releaseData.get('test-package_v1.0.0');
+        if (!updatedRelease) {
+          throw new Error('Expected release to be found in mock data');
+        }
+        expect(updatedRelease.prerelease).toBe(false);
+        expect(updatedRelease.body).toContain('✅ **Published to NPM**');
+        expect(updatedRelease.body).toContain(
+          '@test/package v1.0.0 has been successfully published'
+        );
+        expect(updatedRelease.body).toContain('npm install @test/package@1.0.0');
+        expect(updatedRelease.body).toContain(
+          'https://www.npmjs.com/package/@test/package/v/1.0.0'
+        );
+
+        expect(mockActions.getInfoMessages()).toContain('✅ Package published successfully!');
+        expect(mockActions.getInfoMessages()).toContain(
+          '✅ Release updated - marked as published with updated description'
+        );
       });
     });
   });

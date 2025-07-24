@@ -1,209 +1,70 @@
 # mobile-mcp-tools
 
-A collection of Model Context Protocol (MCP) tools for Salesforce Mobile Web applications. These tools provide expert grounding for implementing various mobile capabilities in Salesforce Lightning Web Components (LWC).
+An open source monorepo for extensible Salesforce Mobile Model Context Protocol (MCP) servers and tools, maintained by the Mobile Platform Experience team.
 
 [![Codecov](https://codecov.io/gh/forcedotcom/mobile-mcp-tools/branch/main/graph/badge.svg?flag=monorepo)](https://codecov.io/gh/forcedotcom/mobile-mcp-tools?flag=monorepo)
 [![mobile-web coverage](https://codecov.io/gh/forcedotcom/mobile-mcp-tools/branch/main/graph/badge.svg?flag=mobile-web)](https://codecov.io/gh/forcedotcom/mobile-mcp-tools?flag=mobile-web)
 [![Build Status](https://github.com/forcedotcom/mobile-mcp-tools/workflows/run-tests/badge.svg)](https://github.com/forcedotcom/mobile-mcp-tools/actions)
 
-## Features
+## Overview
 
-- **App Review**: Implement app store review functionality
-- **AR Space Capture**: Capture and process AR space data
-- **Barcode Scanner**: Scan and process barcodes
-- **Biometrics**: Implement biometric authentication
-- **Calendar**: Access and manage device calendar
-- **Contacts**: Access and manage device contacts
-- **Document Scanner**: Scan and process documents
-- **Geofencing**: Implement location-based geofencing
-- **Location**: Access device location services
-- **NFC**: Implement NFC functionality
-- **Payments**: Process mobile payments
+Modern large language models (LLMs) often lack sufficient context about the APIs and development patterns available within the Salesforce Mobile Platform ecosystem. This project provides Model Context Protocol (MCP) servers that deliver precise, context-specific grounding information—including TypeScript types, API documentation, usage patterns, and platform-specific guidance—enabling LLMs to produce exceptional, production-ready mobile solutions.
 
-## Prerequisites
+The `mobile-mcp-tools` project provides a robust, extensible monorepo for developing and publishing MCP servers and tools that deliver grounding context for Salesforce Mobile Platform development scenarios. The architecture is intentionally flexible to support multiple MCP servers and tools as the mobile development landscape evolves.
 
-- Visual Studio Code or Cursor IDE (for debugging)
+## Project Goals
 
-## Installation
+- **Centralize MCP Server Development**: Provide a single, well-structured repository for developing, maintaining, and publishing MCP servers and tools related to Salesforce Mobile Platform development
+- **Extensibility**: Architect the project as an "umbrella project" to support a growing ecosystem of MCP servers and tools targeting different aspects of the mobile development experience
+- **Open Source Best Practices**: Foster community collaboration, transparency, and code quality through open source standards and clear documentation
+- **Broad MCP Host Compatibility**: Ensure compatibility across the MCP ecosystem while optimizing for Salesforce development workflows
 
-1. Clone the repository:
+For detailed project vision and design principles, see [Project Overview](./docs/1_project_overview.md).
 
-```bash
-git clone https://github.com/forcedotcom/mobile-mcp-tools.git
-cd mobile-mcp-tools
-```
+## Packages
 
-2. Install dependencies:
+This monorepo contains the following packages:
 
-```bash
-npm install
-```
+### [@salesforce/mobile-web-mcp-server](./packages/mobile-web/)
 
-## MCP Server Configuration
+Our first MCP server providing comprehensive tooling support for Salesforce Mobile and Hybrid Web development scenarios. Includes:
 
-To use this MCP server with various AI assistants and code editors, you'll need to add it to their MCP configuration files. Below are instructions for the most popular MCP-compatible clients.
+- **Native Capabilities**: Tools for integrating device capabilities (barcode scanning, location services, contacts, etc.)
+- **Mobile Offline**: Tools for implementing offline-first design patterns and compatibility analysis
+- **Future Tool Suites**: Extensible architecture for additional mobile web development scenarios
 
-### Claude Desktop
+**Installation**: `npx -y @salesforce/mobile-web-mcp-server`
 
-1. **Locate your configuration file:**
-   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+### [project-maintenance-utilities](./packages/project-maintenance-utilities/)
 
-2. **Add the server configuration:**
+TypeScript utilities for managing projects within the monorepo, including:
 
-   ```json
-   {
-     "mcpServers": {
-       "mobile-web": {
-         "command": "npx",
-         "args": ["-y", "@salesforce/mobile-web-mcp-server"],
-         "env": {}
-       }
-     }
-   }
-   ```
+- **Release Orchestration**: Automated GitHub Actions workflows for creating and publishing package releases
+- **Package Management**: Utilities for package.json operations, version management, and tarball creation
+- **GitHub Integration**: Tools for GitHub API operations, release management, and workflow automation
+- **NPM Operations**: Utilities for NPM publishing, version checking, and package validation
 
-   Or if you're running from a local build:
+### [evaluation](./packages/evaluation/)
 
-   ```json
-   {
-     "mcpServers": {
-       "mobile-web": {
-         "command": "node",
-         "args": ["./packages/mobile-web/dist/index.js"],
-         "env": {}
-       }
-     }
-   }
-   ```
+Testing and evaluation framework for assessing MCP tool effectiveness:
 
-3. **Restart Claude Desktop** completely to load the new configuration.
+- **Component Testing**: Automated testing of generated Lightning web components
+- **Accuracy Scoring**: Evaluation metrics for component quality and mobile capability usage
+- **MCP Client Integration**: Testing framework for MCP host/client interactions
+- **Quality Assurance**: Regression detection and performance validation tools
 
-### Cursor
+### Future MCP Servers
 
-Add this configuration to your Cursor `mcp.json` file (typically located in the `.cursor` directory):
-
-```json
-{
-  "mcpServers": {
-    "mobile-web": {
-      "command": "npx",
-      "args": ["-y", "@salesforce/mobile-web-mcp-server"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Cline (VS Code Extension)
-
-Add this configuration to your Cline MCP settings file:
-
-- **Windows**: `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`
-- **macOS**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
-
-```json
-{
-  "mcpServers": {
-    "mobile-web": {
-      "command": "npx",
-      "args": ["-y", "@salesforce/mobile-web-mcp-server"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Windsurf
-
-Add this configuration to your Windsurf `mcp_config.json` file:
-
-- **Windows**: `%APPDATA%\WindSurf\mcp_settings.json`
-- **macOS**: `~/.codeium/windsurf/mcp_config.json`
-
-```json
-{
-  "mcpServers": {
-    "mobile-web": {
-      "command": "npx",
-      "args": ["-y", "@salesforce/mobile-web-mcp-server"],
-      "env": {}
-    }
-  }
-}
-```
-
-### Zed
-
-Add this configuration to your Zed `settings.json`:
-
-```json
-{
-  "context_servers": {
-    "mobile-web": {
-      "command": {
-        "path": "npx",
-        "args": ["-y", "@salesforce/mobile-web-mcp-server"],
-        "env": {}
-      }
-    }
-  }
-}
-```
-
-### Local Development Configuration
-
-If you're running from a local build instead of the npm package, replace the command configuration in any of the above clients with:
-
-```json
-{
-  "command": "node",
-  "args": ["./packages/mobile-web/dist/index.js"],
-  "env": {}
-}
-```
-
-Make sure to adjust the path relative to where you're running the client from.
-
-### Available Tools
-
-Once configured, you'll have access to the following mobile capability tools:
-
-- **App Review** (`sfmobile-web-appReview`): App store review functionality
-- **AR Space Capture** (`sfmobile-web-arSpaceCapture`): AR space data capture
-- **Barcode Scanner** (`sfmobile-web-barcodeScanner`): Barcode scanning
-- **Biometrics** (`sfmobile-web-biometrics`): Biometric authentication
-- **Calendar** (`sfmobile-web-calendar`): Device calendar access
-- **Contacts** (`sfmobile-web-contacts`): Device contacts management
-- **Document Scanner** (`sfmobile-web-documentScanner`): Document scanning
-- **Geofencing** (`sfmobile-web-geofencing`): Location-based geofencing
-- **Location** (`sfmobile-web-location`): Device location services
-- **NFC** (`sfmobile-web-nfc`): NFC functionality
-- **Payments** (`sfmobile-web-payments`): Mobile payment processing
-
-### Verifying Your Configuration
-
-After adding the configuration and restarting your client:
-
-- **Claude Desktop**: Look for the mobile-web tools in the tools panel when starting a new conversation
-- **Cursor**: Check that the MCP server appears in your MCP status indicator
-- **Cline**: The tools should be available in the Cline sidebar
-- **Windsurf**: MCP tools will appear in the context menu
-- **Zed**: Context servers will be shown in the status bar
-
-### Testing the Connection
-
-You can test that the server is working by asking your AI assistant to:
-
-```
-"Show me how to implement biometric authentication in a Salesforce Lightning Web Component"
-```
-
-The assistant should use the biometrics tool to provide you with detailed implementation guidance including type definitions and code examples.
+The monorepo is designed to support additional MCP servers in the future, as we build out our agentic support for additional Salesforce Mobile Platform development scenarios. If you have functionality you'd like to see, feel free to [file an issue](/issues/new/choose) and we'd be happy to consider it.
 
 ## Documentation
 
-For comprehensive project documentation, including setup guides, API references, and implementation details, please see the [Documentation](./docs/README.md) section.
+For comprehensive project documentation, including setup guides, API references, and implementation details:
+
+- **[Project Overview](./docs/1_project_overview.md)**: Project goals, architecture, and design principles
+- **[Salesforce Mobile Web MCP Server](./docs/2_salesforce-mobile-web-mcp-server.md)**: Server design and technical implementation
+- **[Mobile Native Capabilities](./docs/3_mobile_native_capabilities.md)**: Tool suite for device capabilities
+- **[Mobile Offline](./docs/4_mobile_offline.md)**: Tool suite for offline compatibility
 
 ## Development
 
@@ -223,67 +84,49 @@ Run all unit tests:
 npm run test:all
 ```
 
-### Debugging
-
-The project includes a VS Code/Cursor debug configuration for testing with the MCP Inspector:
-
-1. Set breakpoints in your TypeScript files
-2. Press `F5` or select `Run > Start Debugging`
-3. The debugger will start and attach to the MCP server
-
-You should see the following output:
+Run tests with coverage:
 
 ```bash
-Starting MCP inspector...
-Debugger attached.
-⚙️ Proxy server listening on port 6277
-Debugger attached.
-🔍 MCP Inspector is up and running at http://127.0.0.1:6274 🚀
+npm run test:coverage
 ```
 
-4. Open the MCP Inspector URL (e.g., http://127.0.0.1:6274)
-5. Click "Connect" to connect to the MCP server
+### Linting and Formatting
 
-![image](https://github.com/user-attachments/assets/7886de99-3a9c-46a3-9749-1c2334c17ff2)
-
-6. Click "List Tools" to see available tools
-   ![image](https://github.com/user-attachments/assets/dc38c37c-04ed-41e5-8af8-69978694841f)
-
-7. Select a tool and click "Run Tool" to test it
-   ![image](https://github.com/user-attachments/assets/0a128ee3-74f3-44d0-ad27-6cf8bf3825dd)
-
-8. If you set a breakpoint, execution will pause there for debugging
-   ![image](https://github.com/user-attachments/assets/e77d36da-6f5f-4edf-bb47-e2aecc4e53d6)
+```bash
+npm run lint             # Run ESLint
+npm run prettier:verify  # Check code formatting
+npm run prettier:fix     # Fix code formatting
+```
 
 ## Project Structure
 
 ```
-packages/
-  mobile-web/
-    src/
-      tools/           # Tool implementations
-        appReview/     # App Review tool
-        arSpaceCapture/# AR Space Capture tool
-        barcodeScanner/# Barcode Scanner tool
-        biometrics/    # Biometrics tool
-        calendar/      # Calendar tool
-        contacts/      # Contacts tool
-        documentScanner/# Document Scanner tool
-        geofencing/    # Geofencing tool
-        location/      # Location tool
-        nfc/          # NFC tool
-        payments/     # Payments tool
-      utils/          # Utility functions
-    resources/        # Type definitions
-    tests/           # Unit tests
+mobile-mcp-tools/
+├── packages/
+│   ├── mobile-web/                     # @salesforce/mobile-web-mcp-server
+│   ├── evaluation/                     # Testing and evaluation utilities
+│   ├── github-actions-scripts/         # CI/CD automation (deprecated)
+│   └── project-maintenance-utilities/  # Project automation utilities
+├── docs/                               # Project documentation
+│   ├── 1_project_overview.md
+│   ├── 2_salesforce-mobile-web-mcp-server.md
+│   ├── 3_mobile_native_capabilities.md
+│   └── 4_mobile_offline.md
+├── .github/workflows/           # GitHub Actions workflows
+├── nx.json                      # Nx workspace configuration
+├── package.json                 # Monorepo dependencies and scripts
+└── tsconfig.base.json           # Shared TypeScript configuration
 ```
 
 ## Contributing
 
-1. Create a feature branch
+1. Fork the repo and create a feature branch
 2. Make your changes
 3. Run tests: `npm run test:all`
-4. Submit a pull request
+4. Run linting: `npm run lint`
+5. Submit a pull request
+
+Please see our [Contributing Guidelines](./CONTRIBUTING.md) for detailed information.
 
 ## License
 

@@ -30,7 +30,7 @@ export interface GitHubServiceProvider {
     owner: string,
     repo: string,
     releaseId: number,
-    updateData: { prerelease?: boolean }
+    updateData: { prerelease?: boolean; draft?: boolean; name?: string; body?: string }
   ): Promise<void>;
   downloadReleaseAsset(owner: string, repo: string, assetId: number): Promise<Buffer>;
 }
