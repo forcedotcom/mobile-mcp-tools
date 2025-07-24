@@ -4,7 +4,8 @@
   "type": "module",
   "files": [
     "dist",
-    "resources"
+    "resources",
+    "README.md"
   ],
   "description": "Salesforce Mobile Web MCP Server",
   "license": "MIT",
