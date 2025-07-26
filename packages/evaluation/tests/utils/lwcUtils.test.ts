@@ -15,7 +15,7 @@ import {
   loadEvaluationUnit,
 } from '../../src/utils/lwcUtils.js';
 import { join } from 'path';
-import { EVAL_DATA_FOLDER } from '../../src/evaluation/evaluator.js';
+import { EVAL_DATA_FOLDER } from '../../src/evaluator/lwcGenerationEvaluator.js';
 
 describe('LWC Utilities', () => {
   describe('getExtensionType', () => {
@@ -334,8 +334,8 @@ const abc = "xyz";
       const unit = await loadEvaluationUnit(join(EVAL_DATA_FOLDER, 'mobile-web/qrCodeOnlyScanner'));
       expect(unit).not.toBeNull();
       expect(unit?.query).not.toBeNull();
-      expect(unit?.answer).not.toBeNull();
-      expect(unit?.mcpTools?.[0].toolId).toBe('sfmobile-web-barcode-scanner');
+      expect(unit?.component).not.toBeNull();
+      expect(unit?.config.mcpTools?.[0].toolId).toBe('sfmobile-web-barcode-scanner');
     });
   });
 });

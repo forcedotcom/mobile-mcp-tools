@@ -196,3 +196,65 @@ export class LlmClient {
     }
   }
 }
+
+/**
+ * Create a Component LLM client from environment variables
+ * @returns A new LlmClient instance configured for component generation
+ * @throws Error if required environment variables are not set
+ */
+export function createComponentLlmClient(): LlmClient {
+  if (
+    !process.env.MODEL_TO_EVAL ||
+    !process.env.MODEL_TO_EVAL_PROVIDER ||
+    !process.env.MODEL_TO_EVAL_API_KEY ||
+    !process.env.MODEL_TO_EVAL_BASE_URL ||
+    !process.env.MODEL_TO_EVAL_CLIENT_FEATURE_ID ||
+    !process.env.MODEL_TO_EVAL_TENANT_ID
+  ) {
+    throw new Error(
+      'MODEL_TO_EVAL, MODEL_TO_EVAL_PROVIDER, MODEL_TO_EVAL_API_KEY, MODEL_TO_EVAL_BASE_URL, MODEL_TO_EVAL_CLIENT_FEATURE_ID, and MODEL_TO_EVAL_TENANT_ID must be set'
+    );
+  }
+
+  const modelConfig: ModelConfig = {
+    model: process.env.MODEL_TO_EVAL,
+    provider: process.env.MODEL_TO_EVAL_PROVIDER,
+    apiKey: process.env.MODEL_TO_EVAL_API_KEY,
+    baseUrl: process.env.MODEL_TO_EVAL_BASE_URL,
+    clientFeatureID: process.env.MODEL_TO_EVAL_CLIENT_FEATURE_ID,
+    tenantId: process.env.MODEL_TO_EVAL_TENANT_ID,
+  };
+
+  return new LlmClient(modelConfig);
+}
+
+/**
+ * Create an evaluator LLM client from environment variables
+ * @returns A new LlmClient instance configured for evaluation/judging
+ * @throws Error if required environment variables are not set
+ */
+export function createEvaluatorLlmClient(): LlmClient {
+  if (
+    !process.env.JUDGE_MODEL ||
+    !process.env.JUDGE_MODEL_PROVIDER ||
+    !process.env.JUDGE_MODEL_API_KEY ||
+    !process.env.JUDGE_MODEL_BASE_URL ||
+    !process.env.JUDGE_MODEL_CLIENT_FEATURE_ID ||
+    !process.env.JUDGE_MODEL_TENANT_ID
+  ) {
+    throw new Error(
+      'JUDGE_MODEL, JUDGE_MODEL_PROVIDER, JUDGE_MODEL_API_KEY, JUDGE_MODEL_BASE_URL, JUDGE_MODEL_CLIENT_FEATURE_ID, and JUDGE_MODEL_TENANT_ID must be set'
+    );
+  }
+
+  const modelConfig: ModelConfig = {
+    model: process.env.JUDGE_MODEL,
+    provider: process.env.JUDGE_MODEL_PROVIDER,
+    apiKey: process.env.JUDGE_MODEL_API_KEY,
+    baseUrl: process.env.JUDGE_MODEL_BASE_URL,
+    clientFeatureID: process.env.JUDGE_MODEL_CLIENT_FEATURE_ID,
+    tenantId: process.env.JUDGE_MODEL_TENANT_ID,
+  };
+
+  return new LlmClient(modelConfig);
+}

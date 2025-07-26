@@ -14,7 +14,7 @@ const NO_FURTHER_QUESTIONS_PROMPT = `DO NOT ask further questions for clarificat
 /**
  * This class calls the LLM model to generate an LWC component from a user prompt.
  */
-class LwcComponentAgent {
+export class LwcComponentAgent {
   private readonly llmClient: LlmClient;
 
   constructor(llmClient: LlmClient) {

@@ -1,0 +1,9 @@
+{
+  "mcpTools": [
+    {
+      "toolId": "sfmobile-web-biometrics",
+      "params": {}
+    }
+  ],
+  "type": "lwc-generation"
+}

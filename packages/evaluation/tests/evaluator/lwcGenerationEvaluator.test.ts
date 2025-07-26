@@ -6,10 +6,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Evaluator } from '../../src/evaluation/evaluator.js';
-import LwcEvaluatorAgent from '../../src/evaluation/lwcEvaluatorAgent.js';
-import LwcComponentAgent from '../../src/evaluation/lwcComponentAgent.js';
-import { LWCFileType } from '../../src/utils/lwcUtils.js';
+import {
+  EVAL_DATA_FOLDER,
+  LwcGenerationEvaluator,
+} from '../../src/evaluator/lwcGenerationEvaluator.js';
+import { LwcEvaluatorAgent } from '../../src/agent/lwcEvaluatorAgent.js';
+import LwcComponentAgent from '../../src/agent/lwcComponentAgent.js';
+import { loadEvaluationUnit, LWCFileType } from '../../src/utils/lwcUtils.js';
+import {
+  createEvaluatorLlmClient,
+  createComponentLlmClient,
+} from '../../src/llmclient/llmClient.js';
+import { join } from 'path';
 
 describe('evaluator tests', () => {
   beforeEach(() => {
@@ -32,10 +40,12 @@ describe('evaluator tests', () => {
   });
 
   describe('evaluate tests', () => {
-    let evaluator: Evaluator;
+    let evaluator: LwcGenerationEvaluator;
 
     beforeEach(async () => {
-      evaluator = await Evaluator.create();
+      const evaluatorLlmClient = createEvaluatorLlmClient();
+      const componentLlmClient = createComponentLlmClient();
+      evaluator = await LwcGenerationEvaluator.create(evaluatorLlmClient, componentLlmClient);
     });
     afterEach(async () => {
       if (evaluator) {
@@ -44,8 +54,17 @@ describe('evaluator tests', () => {
     });
 
     it(`exception thrown for no existing component name`, async () => {
-      await expect(evaluator.evaluate('nonexistent')).rejects.toThrow(
-        'Evaluation unit not found for component nonexistent'
+      // Create a mock evaluation unit with undefined config to test error handling
+      const mockEvaluationUnit = {
+        query: 'test query',
+        component: {
+          files: [],
+        },
+        config: undefined as any,
+      };
+
+      await expect(evaluator.evaluate(mockEvaluationUnit)).rejects.toThrow(
+        "Cannot read properties of undefined (reading 'mcpTools')"
       );
     });
 
@@ -67,10 +86,17 @@ describe('evaluator tests', () => {
           ],
         });
 
-      vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue('Pass GA Criteria');
+      vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue({
+        rawScore: 85,
+        verdict: 'Pass GA Criteria',
+      });
 
-      const score = await evaluator.evaluate('mobile-web/qrCodeOnlyScanner');
-      expect(score).toBe('Pass GA Criteria');
+      const mockEvaluationUnit = await loadEvaluationUnit(
+        join(EVAL_DATA_FOLDER, 'mobile-web/qrCodeOnlyScanner')
+      );
+
+      const score = await evaluator.evaluate(mockEvaluationUnit!!);
+      expect(score).toEqual({ rawScore: 85, verdict: 'Pass GA Criteria' });
 
       // Verify generateLwcComponent was called with expected parameters
       expect(generateLwcComponentSpy).toHaveBeenCalledTimes(1);
@@ -98,10 +124,17 @@ describe('evaluator tests', () => {
         ],
       });
 
-      vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue('FAIL');
+      vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue({
+        rawScore: 30,
+        verdict: 'FAIL',
+      });
 
-      const score = await evaluator.evaluate('mobile-web/qrCodeOnlyScanner');
-      expect(score).toBe('FAIL');
+      const mockEvaluationUnit = await loadEvaluationUnit(
+        join(EVAL_DATA_FOLDER, 'mobile-web/qrCodeOnlyScanner')
+      );
+      const score = await evaluator.evaluate(mockEvaluationUnit!!);
+
+      expect(score).toEqual({ rawScore: 30, verdict: 'FAIL' });
     });
   });
 });

@@ -1,0 +1,9 @@
+{
+  "mcpTools": [
+    {
+      "toolId": "sfmobile-web-nfc",
+      "params": {}
+    }
+  ],
+  "type": "lwc-generation"
+}

@@ -7,8 +7,9 @@
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdir } from 'node:fs/promises';
-import { Evaluator } from '../evaluation/evaluator.js';
-import { Score } from '../evaluation/lwcEvaluatorAgent.js';
+import { Score } from '../agent/lwcEvaluatorAgent.js';
+import { createEvaluatorLlmClient, createComponentLlmClient } from '../llmclient/llmClient.js';
+import { Evaluator } from '../evaluator/evaluator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,7 +34,12 @@ export async function getAvailableComponents(): Promise<string[]> {
   const datasetPath = join(__dirname, `../../dataset/${subDir}`);
   try {
     const entries = await readdir(datasetPath, { withFileTypes: true });
-    return entries.filter(entry => entry.isDirectory()).map(entry => `${subDir}/${entry.name}`);
+    return entries
+      .filter(
+        entry => entry.isDirectory()
+        //  && (entry.name.endsWith('offlineBadWith3Issues') || entry.name.indexOf('comp') > 0)
+      )
+      .map(entry => `${subDir}/${entry.name}`);
   } catch (error) {
     console.error('Error reading dataset directory:', error);
     return [];
@@ -111,8 +117,10 @@ export async function runEvaluation(componentNames?: string[]): Promise<void> {
   try {
     // Initialize evaluator
     console.log('🔧 Initializing evaluator...');
-    evaluator = await Evaluator.create();
-    console.log('✅ Evaluator initialized successfully');
+    const evaluatorLlmClient = createEvaluatorLlmClient();
+    const componentLlmClient = createComponentLlmClient();
+    evaluator = await Evaluator.create(evaluatorLlmClient, componentLlmClient);
+    console.log('✅ LwcGenerationEvaluator initialized successfully');
 
     // Get components to evaluate
     let componentsToEvaluate: string[];

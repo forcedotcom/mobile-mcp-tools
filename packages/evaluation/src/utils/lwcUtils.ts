@@ -56,10 +56,20 @@ const McpToolArraySchema = z.array(McpToolSchema);
 
 type McpToolArray = z.infer<typeof McpToolArraySchema>;
 
+const EvaluationTypeSchema = z.enum(['lwc-generation', 'review-refactor']);
+
+export const EvalConfigSchema = z.object({
+  mcpTools: McpToolArraySchema.optional(),
+  type: EvaluationTypeSchema,
+});
+
+type EvaluationType = z.infer<typeof EvaluationTypeSchema>;
+type EvalConfig = z.infer<typeof EvalConfigSchema>;
+
 export interface EvaluationUnit {
-  query: string;
-  answer: LWCComponent;
-  mcpTools?: McpToolArray;
+  query?: string;
+  component: LWCComponent;
+  config: EvalConfig;
 }
 
 // Load an evaluation unit from a directory
@@ -88,16 +98,17 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
       }
     }
 
-    const mcpToolsPath = join(subDirPath, 'mcpTools.json');
-    const mcpTools = await fs.readFile(mcpToolsPath, 'utf-8');
-    const mcpToolsArray = McpToolArraySchema.parse(JSON.parse(mcpTools));
+    const evalConfigPath = join(subDirPath, 'evalConfig.json');
+    const evalConfig = await fs.readFile(evalConfigPath, 'utf-8');
+    const evalConfigObj = JSON.parse(evalConfig);
+    const parsedConfig = EvalConfigSchema.parse(evalConfigObj);
 
     return {
       query,
-      answer: {
+      component: {
         files,
       },
-      mcpTools: mcpToolsArray,
+      config: parsedConfig,
     };
   } catch (error) {
     console.warn(`Warning: Failed to process component in ${subDirPath}:`, error);

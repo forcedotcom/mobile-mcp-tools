@@ -1,0 +1,9 @@
+{
+  "mcpTools": [
+    {
+      "toolId": "sfmobile-web-contacts",
+      "params": {}
+    }
+  ],
+  "type": "lwc-generation"
+}

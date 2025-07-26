@@ -3,7 +3,7 @@ import {
   EvaluationResponse,
   calculateOverallScore,
   ScoreCategory,
-} from '../../src/evaluation/lwcEvaluatorAgent.js';
+} from '../../src/agent/lwcEvaluatorAgent.js';
 
 function createEvaluationResponse(
   coreFunctionalityScore: ScoreCategory,

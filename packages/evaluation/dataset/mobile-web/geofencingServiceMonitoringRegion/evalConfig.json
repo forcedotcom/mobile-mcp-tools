@@ -1,0 +1,9 @@
+{
+  "mcpTools": [
+    {
+      "toolId": "sfmobile-web-geofencing",
+      "params": {}
+    }
+  ],
+  "type": "lwc-generation"
+}

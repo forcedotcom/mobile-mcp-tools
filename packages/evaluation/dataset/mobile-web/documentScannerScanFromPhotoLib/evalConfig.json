@@ -1,0 +1,9 @@
+{
+  "mcpTools": [
+    {
+      "toolId": "sfmobile-web-document-scanner",
+      "params": {}
+    }
+  ],
+  "type": "lwc-generation"
+}

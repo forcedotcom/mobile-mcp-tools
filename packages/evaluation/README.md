@@ -92,7 +92,7 @@ dataset/
         │   └── componentName.js-meta.xml
         ├── prompt/
         │   └── prompt.md
-        └── mcpTools.json
+        └── evalConfig.json
 ```
 
 ### Directory Structure Explanation
@@ -100,16 +100,18 @@ dataset/
 - **componentName/**: Directory named after the component being evaluated
 - **component/**: Contains the reference LWC component files
 - **prompt/**: Contains the prompt used to generate the component
-- **mcpTools.json**: JSON array specifying which MCP tools should be used
+- **evalConfig.json**: Specifying evaluation configuration
 
-### Example mcpTools.json
+### Example evalConfig.json
 
 ```json
-[
-  {
-    "toolId": "sfmobile-web-barcode-scanner"
-  }
-]
+{
+  "mcpTools": [
+    {
+      "toolId": "sfmobile-web-barcode-scanner"
+    }
+  ]
+}
 ```
 
 ## Output
@@ -171,7 +173,7 @@ Average Score: 8.50/10
 1. Create a new directory in `dataset/mobile-web/` with the component name
 2. Add the reference component files in the `component/` subdirectory
 3. Create a `prompt/` directory with a `prompt.md` file containing the generation prompt
-4. Add an `mcpTools.json` file specifying required MCP tools
+4. Add an `evalConfig.json` file specifying required MCP tools
 
 ### Extending the Evaluator
 

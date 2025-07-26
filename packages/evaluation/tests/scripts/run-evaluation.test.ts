@@ -7,8 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { readdir } from 'node:fs/promises';
-import { Score } from '../../src/evaluation/lwcEvaluatorAgent.js';
-import { Evaluator } from '../../src/evaluation/evaluator.js';
+import { Score } from '../../src/agent/lwcEvaluatorAgent.js';
+import { Evaluator } from '../../src/evaluator/evaluator.js';
 
 // Mock the fs/promises module
 vi.mock('node:fs/promises', () => ({
@@ -16,8 +16,15 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 // Mock the Evaluator class
-vi.mock('../../src/evaluation/evaluator.js', () => ({
+vi.mock('../../src/evaluator/evaluator.js', () => ({
   Evaluator: {
+    create: vi.fn(),
+  },
+}));
+
+// Mock the LwcGenerationEvaluator class
+vi.mock('../../src/evaluator/lwcGenerationEvaluator.js', () => ({
+  LwcGenerationEvaluator: {
     create: vi.fn(),
   },
 }));
@@ -63,7 +70,8 @@ describe('run-evaluation script tests', () => {
     } as unknown as Evaluator;
 
     // Mock Evaluator.create to return our mock evaluator
-    (Evaluator.create as unknown as Mock).mockResolvedValue(mockEvaluator);
+    const { Evaluator: MockedEvaluator } = await import('../../src/evaluator/evaluator.js');
+    (MockedEvaluator.create as Mock).mockResolvedValue(mockEvaluator);
 
     // Mock console methods
     global.console = mockConsole as unknown as Console;
@@ -222,7 +230,8 @@ describe('run-evaluation script tests', () => {
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await runEvaluation();
 
-      expect(Evaluator.create).toHaveBeenCalled();
+      const { Evaluator: MockedEvaluator } = await import('../../src/evaluator/evaluator.js');
+      expect(MockedEvaluator.create).toHaveBeenCalled();
       expect(mockEvaluator.evaluate).toHaveBeenCalledTimes(2);
       expect(mockEvaluator.evaluate).toHaveBeenCalledWith('mobile-web/comp1');
       expect(mockEvaluator.evaluate).toHaveBeenCalledWith('mobile-web/comp2');
@@ -279,9 +288,8 @@ describe('run-evaluation script tests', () => {
     });
 
     it('should handle evaluator creation failure', async () => {
-      (Evaluator.create as unknown as Mock).mockRejectedValue(
-        new Error('Failed to create evaluator')
-      );
+      const { Evaluator: MockedEvaluator } = await import('../../src/evaluator/evaluator.js');
+      (MockedEvaluator.create as Mock).mockRejectedValue(new Error('Failed to create evaluator'));
 
       const { runEvaluation } = await import('../../src/scripts/run-evaluation.ts');
       await expect(runEvaluation()).rejects.toThrow('Failed to create evaluator');
@@ -370,7 +378,8 @@ describe('run-evaluation script tests', () => {
 
     it('should handle unhandled errors', async () => {
       process.argv = ['node', 'run-evaluation.ts'];
-      (Evaluator.create as unknown as Mock).mockRejectedValue(new Error('Unhandled error'));
+      const { Evaluator: MockedEvaluator } = await import('../../src/evaluator/evaluator.js');
+      (MockedEvaluator.create as Mock).mockRejectedValue(new Error('Unhandled error'));
 
       const { main } = await import('../../src/scripts/run-evaluation.ts');
       await expect(main()).rejects.toThrow('Unhandled error');

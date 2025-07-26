@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
-import LwcComponentAgent from '../../src/evaluation/lwcComponentAgent.js';
+import { LwcComponentAgent } from '../../src/agent/lwcComponentAgent.js';
 import { ModelConfig } from '../../src/llmclient/modelConfig.js';
 
 describe('LwcComponentAgent', () => {
