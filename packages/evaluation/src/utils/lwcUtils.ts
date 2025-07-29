@@ -86,13 +86,20 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
 
     const componentFiles = await fs.readdir(componentPath);
     for (const file of componentFiles) {
-      const ext = extname(file).slice(1);
-      if (isLWCFileType(ext)) {
-        const name = basename(file, `.${ext}`);
+      // Handle compound extensions like js-meta.xml
+      let fileType: string;
+      if (file.endsWith('.js-meta.xml')) {
+        fileType = 'js-meta.xml';
+      } else {
+        fileType = extname(file).slice(1);
+      }
+      
+      if (isLWCFileType(fileType)) {
+        const name = basename(file, `.${fileType}`);
         const content = await fs.readFile(join(componentPath, file), 'utf-8');
         files.push({
           name,
-          type: ext,
+          type: fileType,
           content,
         });
       }

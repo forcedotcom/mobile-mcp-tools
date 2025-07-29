@@ -37,7 +37,7 @@ export async function getAvailableComponents(): Promise<string[]> {
     return entries
       .filter(
         entry => entry.isDirectory()
-        //  && (entry.name.endsWith('offlineBadWith3Issues') || entry.name.indexOf('comp') > 0)
+        && (entry.name.endsWith('offlineBadWith3Issues') || entry.name.indexOf('comp') > 0)
       )
       .map(entry => `${subDir}/${entry.name}`);
   } catch (error) {
@@ -247,3 +247,5 @@ main()
       process.exit(0);
     }, 1000);
   });
+
+

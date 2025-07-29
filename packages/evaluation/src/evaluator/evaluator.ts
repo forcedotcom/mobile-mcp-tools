@@ -12,26 +12,33 @@ import { EVAL_DATA_FOLDER, LwcGenerationEvaluator } from './lwcGenerationEvaluat
 import { LwcReviewRefactorEvaluator } from './lwcReviewRefactorEvaluator.js';
 import { loadEvaluationUnit } from '../utils/lwcUtils.js';
 import { BaseEvaluator } from './baseEvaluator.js';
+import { MobileWebMcpClient } from '../mcpclient/mobileWebMcpClient.js';
 
 export class Evaluator extends BaseEvaluator {
   private readonly generationEvaluator: LwcGenerationEvaluator;
   private readonly reviewRefactorEvaluator: LwcReviewRefactorEvaluator;
+  private readonly mcpClient: MobileWebMcpClient;
   constructor(
     generationEvaluator: LwcGenerationEvaluator,
-    reviewRefactorEvaluator: LwcReviewRefactorEvaluator
+    reviewRefactorEvaluator: LwcReviewRefactorEvaluator,
+    mcpClient: MobileWebMcpClient
   ) {
     super();
     this.generationEvaluator = generationEvaluator;
     this.reviewRefactorEvaluator = reviewRefactorEvaluator;
+    this.mcpClient = mcpClient;
   }
 
   static async create(
     evaluatorLlmClient: LlmClient,
     componentLlmClient: LlmClient
   ): Promise<Evaluator> {
+    const mcpClient = new MobileWebMcpClient();
+    await mcpClient.connect();
     return new Evaluator(
-      await LwcGenerationEvaluator.create(evaluatorLlmClient, componentLlmClient),
-      new LwcReviewRefactorEvaluator(evaluatorLlmClient, componentLlmClient)
+      await LwcGenerationEvaluator.create(evaluatorLlmClient, componentLlmClient, mcpClient),
+      new LwcReviewRefactorEvaluator(evaluatorLlmClient, componentLlmClient, mcpClient),
+      mcpClient
     );
   }
   /**
@@ -58,5 +65,6 @@ export class Evaluator extends BaseEvaluator {
   async destroy(): Promise<void> {
     await this.generationEvaluator.destroy();
     await this.reviewRefactorEvaluator.destroy();
+    await this.mcpClient.disconnect();
   }
 }

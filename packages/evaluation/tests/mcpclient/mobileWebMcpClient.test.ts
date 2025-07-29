@@ -9,16 +9,6 @@ describe('MobileWebMcpClient (integration)', () => {
   let serverProcess: import('child_process').ChildProcess;
 
   beforeAll(async () => {
-    // Start the MCP server
-    serverProcess = spawn('npm', ['run', 'mobile-web:server:start'], {
-      cwd: path.resolve(__dirname, '../../../..'),
-      stdio: 'inherit',
-      shell: true,
-    });
-
-    // Wait for the server to be ready (simple delay, adjust as needed)
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
     client = new MobileWebMcpClient();
     await client.connect();
   });
@@ -26,9 +16,6 @@ describe('MobileWebMcpClient (integration)', () => {
   afterAll(async () => {
     if (client) {
       await client.disconnect();
-    }
-    if (serverProcess) {
-      serverProcess.kill();
     }
   });
 

@@ -10,6 +10,16 @@
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schemas/analysisSchema": {
+      "types": "./dist/schemas/analysisSchema.d.ts",
+      "import": "./dist/schemas/analysisSchema.js"
+    }
+  },
   "bin": {
     "sfdc-mobile-web-mcp-server": "dist/index.js"
   },

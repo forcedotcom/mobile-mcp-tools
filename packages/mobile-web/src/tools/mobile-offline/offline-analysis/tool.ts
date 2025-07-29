@@ -106,7 +106,7 @@ export class OfflineAnalysisTool implements Tool {
     });
 
     const offlineAnalysisIssues = this.analyzeIssues(jsCode, messages);
-
+    console.log(jsCode);
     return {
       analysisResults: [offlineAnalysisIssues],
       orchestrationInstructions: this.getOrchestrationInstructions(),
