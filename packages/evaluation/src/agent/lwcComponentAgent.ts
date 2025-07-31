@@ -5,7 +5,8 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { getLwcComponentFromLlmResponse, LWCComponent as LwcComponent } from '../utils/lwcUtils.js';
+import { getLwcComponentFromLlmResponse } from '../utils/lwcUtils.js';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
 import { createLwcGenerationLLMPrompt } from '../utils/promptUtils.js';
 import { LlmClient } from '../llmclient/llmClient.js';
 
@@ -21,7 +22,7 @@ export class LwcComponentAgent {
     this.llmClient = llmClient;
   }
 
-  async generateLwcComponent(userPrompt: string, mcpGroundings: string): Promise<LwcComponent> {
+  async generateLwcComponent(userPrompt: string, mcpGroundings?: string): Promise<LwcCodeType> {
     // Append a prompt to the user prompt to prevent asking further questions for clarification
     const prompt = createLwcGenerationLLMPrompt(
       `${userPrompt}\n${NO_FURTHER_QUESTIONS_PROMPT}`,

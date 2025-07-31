@@ -16,7 +16,7 @@ import { getJsonResponse } from '../utils/responseUtils.js';
 
 const jsonSchema = z.toJSONSchema(CorrectnessScoreSchema);
 
-export class LwdRefactorCorrectnessEvaluatorAgent {
+export class LwcRefactorCorrectnessEvaluatorAgent {
   private readonly llmClient: LlmClient;
 
   constructor(llmClient: LlmClient) {

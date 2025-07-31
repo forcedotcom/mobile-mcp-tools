@@ -8,18 +8,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { LwcComponentAgent } from '../../src/agent/lwcComponentAgent.js';
-import { ModelConfig } from '../../src/llmclient/modelConfig.js';
+import { mockConfig } from '../testUtils.js';
 
 describe('LwcComponentAgent', () => {
   let componentAgent: LwcComponentAgent;
-  const mockConfig: ModelConfig = {
-    model: 'test-model',
-    provider: 'test-provider',
-    apiKey: 'test-api-key',
-    baseUrl: 'https://test-api.com',
-    clientFeatureID: 'test-feature',
-    tenantId: 'test-tenant',
-  };
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -37,15 +29,26 @@ describe('LwcComponentAgent', () => {
         \`\`\`javascript
         const a = 1;
         \`\`\`
+
+        component.js-meta.xml
+        \`\`\`xml
+        <?xml version="1.0" encoding="UTF-8"?>
+        <LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+        </LightningComponentBundle>
+        \`\`\`
       `);
 
       componentAgent = new LwcComponentAgent(new LlmClient(mockConfig));
 
       const result = await componentAgent.generateLwcComponent('Create a test component');
 
-      expect(result.files).toHaveLength(2);
-      expect(result.files[0].content).toBe('<template></template>');
-      expect(result.files[1].content).toBe('const a = 1;');
+      expect(result.name).toBe('component');
+      expect(result.namespace).toBe('c');
+      expect(result.html).toHaveLength(1);
+      expect(result.js).toHaveLength(1);
+      expect(result.css).toHaveLength(0);
+      expect(result.html![0].content).toBe('<template></template>');
+      expect(result.js![0].content).toBe('const a = 1;');
     });
 
     it('should throw error when no component is found in response', async () => {

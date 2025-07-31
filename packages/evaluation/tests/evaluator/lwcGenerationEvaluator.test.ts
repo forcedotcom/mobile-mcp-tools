@@ -45,7 +45,15 @@ describe('evaluator tests', () => {
     beforeEach(async () => {
       const evaluatorLlmClient = createEvaluatorLlmClient();
       const componentLlmClient = createComponentLlmClient();
-      evaluator = await LwcGenerationEvaluator.create(evaluatorLlmClient, componentLlmClient);
+      const mockMcpClient = {
+        connect: vi.fn().mockResolvedValue(undefined),
+        callTool: vi.fn().mockResolvedValue({ content: [{ text: 'mock grounding' }] }),
+      } as any;
+      evaluator = await LwcGenerationEvaluator.create(
+        evaluatorLlmClient,
+        componentLlmClient,
+        mockMcpClient
+      );
     });
     afterEach(async () => {
       if (evaluator) {
@@ -58,7 +66,16 @@ describe('evaluator tests', () => {
       const mockEvaluationUnit = {
         query: 'test query',
         component: {
-          files: [],
+          name: 'testComponent',
+          namespace: 'c',
+          html: [],
+          js: [],
+          css: [],
+          jsMetaXml: {
+            path: 'testComponent.js-meta.xml',
+            content:
+              '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+          },
         },
         config: undefined as any,
       };
@@ -72,18 +89,26 @@ describe('evaluator tests', () => {
       const generateLwcComponentSpy = vi
         .spyOn(LwcComponentAgent.prototype, 'generateLwcComponent')
         .mockResolvedValue({
-          files: [
+          name: 'test',
+          namespace: 'c',
+          html: [
             {
-              name: 'test.html',
-              type: LWCFileType.HTML,
+              path: 'test.html',
               content: '<template>Test</template>',
             },
+          ],
+          js: [
             {
-              name: 'test.js',
-              type: LWCFileType.JS,
+              path: 'test.js',
               content: 'console.log("Test");',
             },
           ],
+          css: [],
+          jsMetaXml: {
+            path: 'test.js-meta.xml',
+            content:
+              '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+          },
         });
 
       vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue({
@@ -110,18 +135,26 @@ describe('evaluator tests', () => {
 
     it(`evaluation fails`, async () => {
       vi.spyOn(LwcComponentAgent.prototype, 'generateLwcComponent').mockResolvedValue({
-        files: [
+        name: 'test',
+        namespace: 'c',
+        html: [
           {
-            name: 'test.html',
-            type: LWCFileType.HTML,
+            path: 'test.html',
             content: '<template>Test</template>',
           },
+        ],
+        js: [
           {
-            name: 'test.js',
-            type: LWCFileType.JS,
+            path: 'test.js',
             content: 'console.log("Test");',
           },
         ],
+        css: [],
+        jsMetaXml: {
+          path: 'test.js-meta.xml',
+          content:
+            '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+        },
       });
 
       vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue({

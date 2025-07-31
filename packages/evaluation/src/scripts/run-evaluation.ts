@@ -36,7 +36,9 @@ export async function getAvailableComponents(): Promise<string[]> {
     const entries = await readdir(datasetPath, { withFileTypes: true });
     return entries
       .filter(
-        entry => entry.isDirectory()
+        entry =>
+          entry.isDirectory() &&
+          (entry.name.endsWith('productCatalogBrowser') || entry.name.indexOf('comp') > 0)
       )
       .map(entry => `${subDir}/${entry.name}`);
   } catch (error) {

@@ -5,53 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-/**
- * LwcReviewAgent - Reviews LWC components using mobile-web offline analysis and guidance tools
- *
- * Usage Example:
- * ```typescript
- * import { LwcReviewAgent } from './lwcReviewAgent.js';
- * import { MobileWebMcpClient } from '../mcpclient/mobileWebMcpClient.js';
- * import { LWCComponent } from '../utils/lwcUtils.js';
- *
- * // Create an LWC component to review
- * const component: LWCComponent = {
- *   files: [
- *     {
- *       name: 'myComponent',
- *       type: 'html',
- *       content: '<template><div>Hello World</div></template>',
- *     },
- *     {
- *       name: 'myComponent',
- *       type: 'js',
- *       content: 'export default class MyComponent extends LightningElement {}',
- *     },
- *     {
- *       name: 'myComponent',
- *       type: 'js-meta.xml',
- *       content: '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle>...</LightningComponentBundle>',
- *     },
- *   ],
- * };
- *
- * // Create and use the review agent
- * const mcpClient = new MobileWebMcpClient();
- * const reviewAgent = new LwcReviewAgent(mcpClient);
- *
- * try {
- *   const analysisResults = await reviewAgent.reviewLwcComponent(component);
- *   console.log('Found issues:', analysisResults.analysisResults);
- * } catch (error) {
- *   console.error('Review failed:', error);
- * }
- * ```
- */
-
-import { z } from 'zod';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { MobileWebMcpClient } from '../mcpclient/mobileWebMcpClient.js';
-import { formatLwcCode4LLM, LWCComponent, convertToLwcCodeType } from '../utils/lwcUtils.js';
+import { formatLwcCode4LLM } from '../utils/lwcUtils.js';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import {
@@ -83,14 +39,14 @@ export class LwcReviewAgent {
    * @param component - The LWC component to review
    * @returns Promise containing the analysis results with found issues
    */
-  async reviewLwcComponent(lwcCode: LwcCodeType): Promise<CodeAnalysisIssuesType> {
+  async reviewLwcComponent(component: LwcCodeType): Promise<CodeAnalysisIssuesType> {
     try {
-      const issues = await this.reviewBasedOnOfflineGuidance(lwcCode);
+      const issues = await this.reviewBasedOnOfflineGuidance(component);
 
       // Run offline analysis
       const analysisResult = await this.mcpClient.callTool(
         'sfmobile-web-offline-analysis',
-        lwcCode as unknown as Record<string, unknown>
+        component as unknown as Record<string, unknown>
       );
       const analysisContent = analysisResult.content[0]?.text;
 

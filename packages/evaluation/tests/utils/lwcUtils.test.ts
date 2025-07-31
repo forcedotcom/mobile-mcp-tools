@@ -8,12 +8,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatComponent4LLM,
-  LWCComponent,
   LWCFileType,
   getExtensionType,
   getLwcComponentFromLlmResponse,
   loadEvaluationUnit,
 } from '../../src/utils/lwcUtils.js';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
 import { join } from 'path';
 import { EVAL_DATA_FOLDER } from '../../src/evaluator/lwcGenerationEvaluator.js';
 
@@ -39,14 +39,22 @@ describe('LWC Utilities', () => {
   describe('formatComponent4LLM', () => {
     it('should correctly format an LWC component with a single file', () => {
       // Prepare test data
-      const component: LWCComponent = {
-        files: [
+      const component: LwcCodeType = {
+        name: 'testComponent',
+        namespace: 'c',
+        html: [],
+        js: [
           {
-            name: 'testComponent',
-            type: LWCFileType.JS,
+            path: 'testComponent.js',
             content: 'export default class TestComponent {}',
           },
         ],
+        css: [],
+        jsMetaXml: {
+          path: 'testComponent.js-meta.xml',
+          content:
+            '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+        },
       };
 
       // Execute function
@@ -60,24 +68,32 @@ describe('LWC Utilities', () => {
 
     it('should correctly format an LWC component with multiple files', () => {
       // Prepare test data
-      const component: LWCComponent = {
-        files: [
+      const component: LwcCodeType = {
+        name: 'testComponent',
+        namespace: 'c',
+        html: [
           {
-            name: 'testComponent',
-            type: LWCFileType.JS,
-            content: 'export default class TestComponent {}',
-          },
-          {
-            name: 'testComponent',
-            type: LWCFileType.HTML,
+            path: 'testComponent.html',
             content: '<template><div>Hello</div></template>',
           },
+        ],
+        js: [
           {
-            name: 'testComponent',
-            type: LWCFileType.CSS,
+            path: 'testComponent.js',
+            content: 'export default class TestComponent {}',
+          },
+        ],
+        css: [
+          {
+            path: 'testComponent.css',
             content: '.container { color: red; }',
           },
         ],
+        jsMetaXml: {
+          path: 'testComponent.js-meta.xml',
+          content:
+            '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+        },
       };
 
       // Execute function
@@ -85,8 +101,8 @@ describe('LWC Utilities', () => {
 
       // Verify result
       const expected =
-        'testComponent.js\n```javascript\nexport default class TestComponent {}\n```\n' +
-        'testComponent.html\n```html\n<template><div>Hello</div></template>\n```\n' +
+        'testComponent.html\n```html\n<template><div>Hello</div></template>\n```\n\n' +
+        'testComponent.js\n```javascript\nexport default class TestComponent {}\n```\n\n' +
         'testComponent.css\n```css\n.container { color: red; }\n```\n';
 
       expect(result).toBe(expected);
@@ -94,8 +110,17 @@ describe('LWC Utilities', () => {
 
     it('should handle empty components', () => {
       // Prepare test data
-      const component: LWCComponent = {
-        files: [],
+      const component: LwcCodeType = {
+        name: 'testComponent',
+        namespace: 'c',
+        html: [],
+        js: [],
+        css: [],
+        jsMetaXml: {
+          path: 'testComponent.js-meta.xml',
+          content:
+            '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+        },
       };
 
       // Execute function
@@ -107,35 +132,43 @@ describe('LWC Utilities', () => {
 
     it('should use correct syntax highlighting for js-meta.xml files', () => {
       // Prepare test data
-      const component: LWCComponent = {
-        files: [
-          {
-            name: 'testComponent',
-            type: LWCFileType.JS_META,
-            content:
-              '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
-          },
-        ],
+      const component: LwcCodeType = {
+        name: 'testComponent',
+        namespace: 'c',
+        html: [],
+        js: [],
+        css: [],
+        jsMetaXml: {
+          path: 'testComponent.js-meta.xml',
+          content:
+            '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+        },
       };
 
       // Execute function
       const result = formatComponent4LLM(component);
 
-      // Verify result
-      expect(result).toBe(
-        'testComponent.js-meta.xml\n```xml\n<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>\n```\n'
-      );
+      // Verify result - js-meta.xml is not included in LLM prompts as it's configuration
+      expect(result).toBe('');
     });
 
     it('should use the component name if provided', () => {
-      const component: LWCComponent = {
-        files: [
+      const component: LwcCodeType = {
+        name: 'testComponent',
+        namespace: 'c',
+        html: [],
+        js: [
           {
-            name: 'testComponent',
-            type: LWCFileType.JS,
+            path: 'testComponent.js',
             content: 'export default class TestComponent {}',
           },
         ],
+        css: [],
+        jsMetaXml: {
+          path: 'testComponent.js-meta.xml',
+          content:
+            '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
+        },
       };
       const result = formatComponent4LLM(component, 'xyz');
       expect(result).toBe('xyz.js\n```javascript\nexport default class TestComponent {}\n```\n');
@@ -166,20 +199,21 @@ testComponent.js-meta.xml
 
       const result = getLwcComponentFromLlmResponse(responseText);
 
-      expect(result.files).toHaveLength(3);
-      expect(result.files[0]).toEqual({
-        name: 'testComponent.html',
-        type: LWCFileType.HTML,
+      expect(result.name).toBe('testComponent');
+      expect(result.namespace).toBe('c');
+      expect(result.html!).toHaveLength(1);
+      expect(result.js!).toHaveLength(1);
+      expect(result.css!).toHaveLength(0);
+      expect(result.html![0]).toEqual({
+        path: 'testComponent.html',
         content: '<template></template>',
       });
-      expect(result.files[1]).toEqual({
-        name: 'testComponent.js',
-        type: LWCFileType.JS,
+      expect(result.js![0]).toEqual({
+        path: 'testComponent.js',
         content: 'const abc = "xyz";',
       });
-      expect(result.files[2]).toEqual({
-        name: 'testComponent.js-meta.xml',
-        type: LWCFileType.JS_META,
+      expect(result.jsMetaXml).toEqual({
+        path: 'testComponent.js-meta.xml',
         content:
           '<?xml version="1.0" encoding="UTF-8"?>\n<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n</LightningComponentBundle>',
       });
@@ -196,13 +230,20 @@ testComponent.js
 \`\`\`javascript
 const abc = "xyz";
 \`\`\`
+
+testComponent.js-meta.xml
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+</LightningComponentBundle>
+\`\`\`
       `;
 
       const result = getLwcComponentFromLlmResponse(responseText);
 
-      expect(result.files).toHaveLength(2);
-      expect(result.files[0].type).toBe(LWCFileType.HTML);
-      expect(result.files[1].type).toBe(LWCFileType.JS);
+      expect(result.html!).toHaveLength(1);
+      expect(result.js!).toHaveLength(1);
+      expect(result.css!).toHaveLength(0);
     });
 
     it('should handle response with no component name specified', () => {
@@ -214,15 +255,22 @@ const abc = "xyz";
 \`\`\`javascript
 const abc = "xyz";
 \`\`\`
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+</LightningComponentBundle>
+\`\`\`
       `;
 
       const result = getLwcComponentFromLlmResponse(responseText);
 
-      expect(result.files).toHaveLength(2);
-      expect(result.files[0].type).toBe(LWCFileType.HTML);
-      expect(result.files[0].name).toBe('component.html');
-      expect(result.files[1].type).toBe(LWCFileType.JS);
-      expect(result.files[1].name).toBe('component.js');
+      expect(result.name).toBe('component');
+      expect(result.html!).toHaveLength(1);
+      expect(result.js!).toHaveLength(1);
+      expect(result.css!).toHaveLength(0);
+      expect(result.html![0].path).toBe('component.html');
+      expect(result.js![0].path).toBe('component.js');
     });
     it('should throw error when no HTML code block is found', () => {
       const responseText = `

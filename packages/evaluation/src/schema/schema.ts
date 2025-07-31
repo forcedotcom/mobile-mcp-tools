@@ -36,7 +36,27 @@ export const CorrectnessScoreSchema = ScoreSchema.extend({
     .describe('List of issues that represent incorrect or unauthorized changes'),
 });
 
+export const McpToolSchema = z.object({
+  toolId: z.string(),
+  params: z
+    .record(z.string(), z.any())
+    .describe('The parameters to pass to the MCP tool')
+    .optional(),
+});
+
+export const McpToolArraySchema = z.array(McpToolSchema);
+
+export const EvaluationTypeSchema = z.enum(['lwc-generation', 'review-refactor']);
+
+export const EvalConfigSchema = z.object({
+  mcpTools: McpToolArraySchema.optional(),
+  type: EvaluationTypeSchema,
+});
+
 export type Score = z.infer<typeof ScoreSchema>;
 export type ScoreVerdict = z.infer<typeof ScoreVerdictEnum>;
 export type ScoreCategory = z.infer<typeof ScoreCategorySchema>;
 export type CorrectnessScore = z.infer<typeof CorrectnessScoreSchema>;
+export type McpToolArray = z.infer<typeof McpToolArraySchema>;
+export type EvaluationType = z.infer<typeof EvaluationTypeSchema>;
+export type EvalConfig = z.infer<typeof EvalConfigSchema>;

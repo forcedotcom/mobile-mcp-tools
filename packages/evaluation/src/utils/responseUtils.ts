@@ -18,8 +18,8 @@ export function getJsonResponse(llmResponse: string): string {
   }
   // Sometimes LLM returns the json without the ```json\n and \n``` tags
   if (
-    llmResponse.startsWith('{') && llmResponse.endsWith('}') ||
-    llmResponse.startsWith('[') && llmResponse.endsWith(']')
+    (llmResponse.startsWith('{') && llmResponse.endsWith('}')) ||
+    (llmResponse.startsWith('[') && llmResponse.endsWith(']'))
   ) {
     return llmResponse;
   }

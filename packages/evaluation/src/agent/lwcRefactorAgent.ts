@@ -42,24 +42,13 @@ export class LwcRefactorAgent {
     // Parse the response to get the refactored component
     const refactoredComponent = getLwcComponentFromLlmResponse(llmResponse);
 
+    // only refactor the html, js, and css files, use original other field values
     const resultComponent = {
       name: lwcCode.name,
       namespace: lwcCode.namespace,
-      html: [
-        {
-          path: `${lwcCode.name}.html`,
-          content:
-            refactoredComponent.files.find(file => file.type === LWCFileType.HTML)?.content || '',
-        },
-      ],
-      js: [
-        {
-          path: `${lwcCode.name}.js`,
-          content:
-            refactoredComponent.files.find(file => file.type === LWCFileType.JS)?.content || '',
-        },
-      ],
-      css: lwcCode.css,
+      html: refactoredComponent.html,
+      js: refactoredComponent.js,
+      css: refactoredComponent.css,
       jsMetaXml: lwcCode.jsMetaXml,
     };
 

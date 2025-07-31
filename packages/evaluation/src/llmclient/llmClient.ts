@@ -174,7 +174,7 @@ export class LlmClient {
 
     if (events.length > 0) {
       const event = this.getEvent(events[0]);
-      if (streamType === StreamType.GENERATION && isGenerationEvent(event)) {
+      if (streamType === StreamType.GENERATION && event && isGenerationEvent(event)) {
         for (let i = 1; i < events.length; i++) {
           const moreEvent = this.getEvent(events[i]);
           if (moreEvent && isGenerationEvent(moreEvent)) {

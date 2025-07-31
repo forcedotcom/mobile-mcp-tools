@@ -8,7 +8,15 @@
 import { join, extname, basename } from 'path';
 import * as fs from 'node:fs/promises';
 import { z } from 'zod/v4';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
+import {
+  McpToolArraySchema,
+  type McpToolArray,
+  EvaluationTypeSchema,
+  EvalConfigSchema,
+  type EvaluationType,
+  type EvalConfig,
+} from '../schema/schema.js';
 
 const THREE_BACKTICKS = '```';
 
@@ -35,41 +43,9 @@ export function getExtensionType(fileType: LWCFileType): string {
   }
 }
 
-export interface LWCFile {
-  name: string;
-  type: LWCFileType;
-  content: string;
-}
-
-export interface LWCComponent {
-  files: LWCFile[];
-}
-
-const McpToolSchema = z.object({
-  toolId: z.string(),
-  params: z
-    .record(z.string(), z.any())
-    .describe('The parameters to pass to the MCP tool')
-    .optional(),
-});
-
-const McpToolArraySchema = z.array(McpToolSchema);
-
-type McpToolArray = z.infer<typeof McpToolArraySchema>;
-
-const EvaluationTypeSchema = z.enum(['lwc-generation', 'review-refactor']);
-
-export const EvalConfigSchema = z.object({
-  mcpTools: McpToolArraySchema.optional(),
-  type: EvaluationTypeSchema,
-});
-
-type EvaluationType = z.infer<typeof EvaluationTypeSchema>;
-type EvalConfig = z.infer<typeof EvalConfigSchema>;
-
 export interface EvaluationUnit {
   query?: string;
-  component: LWCComponent;
+  component: LwcCodeType;
   config: EvalConfig;
 }
 
@@ -81,7 +57,13 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
     // Load prompt from prompt.md file
     const query = await fs.readFile(promptFile, 'utf-8');
 
-    const files: LWCFile[] = [];
+    const html: Array<{ path: string; content: string }> = [];
+    const js: Array<{ path: string; content: string }> = [];
+    const css: Array<{ path: string; content: string }> = [];
+    let jsMetaXml: { path: string; content: string } | undefined;
+    let componentName = 'component';
+    let namespace = 'c';
+
     // Load component files
     const componentPath = join(subDirPath, 'component');
 
@@ -98,13 +80,46 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
       if (isLWCFileType(fileType)) {
         const name = basename(file, `.${fileType}`);
         const content = await fs.readFile(join(componentPath, file), 'utf-8');
-        files.push({
-          name,
-          type: fileType,
-          content,
-        });
+        const filePath = `${name}.${fileType}`;
+
+        switch (fileType) {
+          case 'html':
+            html.push({ path: filePath, content });
+            if (!componentName || componentName === 'component') {
+              componentName = name;
+            }
+            break;
+          case 'js':
+            js.push({ path: filePath, content });
+            if (!componentName || componentName === 'component') {
+              componentName = name;
+            }
+            break;
+          case 'css':
+            css.push({ path: filePath, content });
+            break;
+          case 'js-meta.xml':
+            jsMetaXml = { path: filePath, content };
+            // Extract namespace from meta XML if available
+            const namespaceMatch = content.match(
+              /<targetConfigs>\s*<targetConfig targets="lightning__AppPage">\s*<property name="namespace" value="([^"]+)"/
+            );
+            if (namespaceMatch) {
+              namespace = namespaceMatch[1];
+            }
+            break;
+        }
       }
     }
+
+    const component: LwcCodeType = {
+      name: componentName,
+      namespace,
+      html,
+      js,
+      css,
+      jsMetaXml,
+    };
 
     const evalConfigPath = join(subDirPath, 'evalConfig.json');
     const evalConfig = await fs.readFile(evalConfigPath, 'utf-8');
@@ -113,9 +128,7 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
 
     return {
       query,
-      component: {
-        files,
-      },
+      component,
       config: parsedConfig,
     };
   } catch (error) {
@@ -127,17 +140,35 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
 /**
  * Format the LWC component according to the standard format for LLM
  */
-export function formatComponent4LLM(component: LWCComponent, componentName?: string): string {
+export function formatComponent4LLM(component: LwcCodeType, componentName?: string): string {
   const promptElements: string[] = [];
 
-  promptElements.push(
-    component.files
-      .map(
-        (file: LWCFile) =>
-          `${componentName || file.name}.${file.type}\n${THREE_BACKTICKS}${getExtensionType(file.type)}\n${file.content}\n${THREE_BACKTICKS}\n`
-      )
-      .join('')
-  );
+  // Format HTML files
+  component.html.forEach(file => {
+    const fileName = componentName || component.name;
+    promptElements.push(
+      `${fileName}.html\n${THREE_BACKTICKS}html\n${file.content}\n${THREE_BACKTICKS}\n`
+    );
+  });
+
+  // Format JS files
+  component.js.forEach(file => {
+    const fileName = componentName || component.name;
+    promptElements.push(
+      `${fileName}.js\n${THREE_BACKTICKS}javascript\n${file.content}\n${THREE_BACKTICKS}\n`
+    );
+  });
+
+  // Format CSS files
+  component.css.forEach(file => {
+    const fileName = componentName || component.name;
+    promptElements.push(
+      `${fileName}.css\n${THREE_BACKTICKS}css\n${file.content}\n${THREE_BACKTICKS}\n`
+    );
+  });
+
+  // Format JS meta XML (optional, only if explicitly requested)
+  // Note: js-meta.xml is typically not included in LLM prompts as it's configuration
 
   return promptElements.join('\n');
 }
@@ -167,7 +198,7 @@ export function formatLwcCode4LLM(component: LwcCodeType): string {
  * @param responseText - The response text from the LLM
  * @returns The LWC component
  */
-export function getLwcComponentFromLlmResponse(responseText: string): LWCComponent {
+export function getLwcComponentFromLlmResponse(responseText: string): LwcCodeType {
   // Extract component name - look for filenames in the response
   const componentNameMatch =
     responseText.match(/([\w-]+)\.html/) ||
@@ -177,7 +208,10 @@ export function getLwcComponentFromLlmResponse(responseText: string): LWCCompone
   // If no component name is found, use 'component' as the default name
   const componentName = componentNameMatch ? componentNameMatch[1] : 'component';
 
-  const files: LWCFile[] = [];
+  const html: Array<{ path: string; content: string }> = [];
+  const js: Array<{ path: string; content: string }> = [];
+  const css: Array<{ path: string; content: string }> = [];
+  let jsMetaXml: { path: string; content: string } | undefined;
 
   // Extract code blocks using regex
   const htmlCodeBlockRegex = /```html\s*([\s\S]*?)\s*```/gi;
@@ -186,9 +220,8 @@ export function getLwcComponentFromLlmResponse(responseText: string): LWCCompone
     console.debug(`responseText:${responseText}`);
     throw new Error('No html code block found in the response');
   }
-  files.push({
-    name: `${componentName}.html`,
-    type: LWCFileType.HTML,
+  html.push({
+    path: `${componentName}.html`,
     content: htmlMatch[1],
   });
   if (htmlCodeBlockRegex.exec(responseText)) {
@@ -202,9 +235,8 @@ export function getLwcComponentFromLlmResponse(responseText: string): LWCCompone
     console.debug(`responseText:${responseText}`);
     throw new Error('No js code block found in the response');
   }
-  files.push({
-    name: `${componentName}.js`,
-    type: LWCFileType.JS,
+  js.push({
+    path: `${componentName}.js`,
     content: jsMatch[1],
   });
   if (jsCodeBlockRegex.exec(responseText)) {
@@ -215,86 +247,27 @@ export function getLwcComponentFromLlmResponse(responseText: string): LWCCompone
   const xmlMetaCodeBlockRegex = /```xml\s*([\s\S]*?)\s*```/gi;
   const xmlMatch = xmlMetaCodeBlockRegex.exec(responseText);
   if (xmlMatch) {
-    files.push({
-      name: `${componentName}.js-meta.xml`,
-      type: LWCFileType.JS_META,
+    jsMetaXml = {
+      path: `${componentName}.js-meta.xml`,
       content: xmlMatch[1],
-    });
+    };
     if (xmlMetaCodeBlockRegex.exec(responseText)) {
       console.debug(`responseText:${responseText}`);
       throw new Error('More than one js-meta.xml code block found in the response');
     }
   }
 
-  const component = {
-    files,
-  };
-
-  return component;
-}
-
-// Check if a file type is a valid LWC file type
-function isLWCFileType(value: string): value is LWCFileType {
-  return Object.values(LWCFileType).includes(value as LWCFileType);
-}
-
-/**
- * Converts LWCComponent to LwcCodeType format expected by mobile-web tools
- * @param component - The LWC component to convert
- * @returns LwcCodeType format
- */
-export function convertToLwcCodeType(component: LWCComponent): LwcCodeType {
-  const html: Array<{ path: string; content: string }> = [];
-  const js: Array<{ path: string; content: string }> = [];
-  const css: Array<{ path: string; content: string }> = [];
-  let jsMetaXml: { path: string; content: string } | undefined;
-
-  // Extract component name from files
-  let componentName = 'component';
-  let namespace = 'c';
-
-  for (const file of component.files) {
-    const filePath = `${file.name}.${file.type}`;
-
-    switch (file.type) {
-      case 'html':
-        html.push({ path: filePath, content: file.content });
-        if (!componentName || componentName === 'component') {
-          componentName = file.name;
-        }
-        break;
-      case 'js':
-        js.push({ path: filePath, content: file.content });
-        if (!componentName || componentName === 'component') {
-          componentName = file.name;
-        }
-        break;
-      case 'css':
-        css.push({ path: filePath, content: file.content });
-        break;
-      case 'js-meta.xml':
-        jsMetaXml = { path: filePath, content: file.content };
-        // Extract namespace from meta XML if available
-        const namespaceMatch = file.content.match(
-          /<targetConfigs>\s*<targetConfig targets="lightning__AppPage">\s*<property name="namespace" value="([^"]+)"/
-        );
-        if (namespaceMatch) {
-          namespace = namespaceMatch[1];
-        }
-        break;
-    }
-  }
-
-  if (!jsMetaXml) {
-    throw new Error('LWC component must include a js-meta.xml file');
-  }
-
   return {
     name: componentName,
-    namespace,
+    namespace: 'c',
     html,
     js,
     css,
     jsMetaXml,
   };
+}
+
+// Check if a file type is a valid LWC file type
+function isLWCFileType(value: string): value is LWCFileType {
+  return Object.values(LWCFileType).includes(value as LWCFileType);
 }

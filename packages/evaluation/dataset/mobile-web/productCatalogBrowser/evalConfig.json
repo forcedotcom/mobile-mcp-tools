@@ -1,9 +1,3 @@
 {
-  "mcpTools": [
-    {
-      "toolId": "sfmobile-web-barcode-scanner",
-      "params": {}
-    }
-  ],
   "type": "review-refactor"
 }

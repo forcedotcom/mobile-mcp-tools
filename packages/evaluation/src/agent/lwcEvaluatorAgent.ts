@@ -7,7 +7,8 @@
 
 import { z } from 'zod/v4';
 import { LlmClient } from '../llmclient/llmClient.js';
-import { formatComponent4LLM, LWCComponent } from '../utils/lwcUtils.js';
+import { formatComponent4LLM } from '../utils/lwcUtils.js';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
 import { getJsonResponse } from '../utils/responseUtils.js';
 import { Score, ScoreVerdict, ScoreVerdictEnum, ScoreCategorySchema } from '../schema/schema.js';
 
@@ -179,7 +180,7 @@ export class LwcEvaluatorAgent {
     this.llmClient = llmClient;
   }
 
-  async evaluate(referenceLWC: LWCComponent, developmentLWC: LWCComponent): Promise<Score> {
+  async evaluate(referenceLWC: LwcCodeType, developmentLWC: LwcCodeType): Promise<Score> {
     const prompt = this.createLLMPrompt(referenceLWC, developmentLWC);
     const llmResponse = await this.llmClient.callLLM(prompt);
     const evaluationResponse = this.parseResponse(llmResponse);
@@ -204,7 +205,7 @@ export class LwcEvaluatorAgent {
    * @param resultLWC - The development LWC component.
    * @returns The prompt for the LLM model.
    */
-  private createLLMPrompt(referenceLWC: LWCComponent, resultLWC: LWCComponent): string {
+  private createLLMPrompt(referenceLWC: LwcCodeType, resultLWC: LwcCodeType): string {
     const referenceLwcString = formatComponent4LLM(referenceLWC, 'referenceLWC');
     const developmentLwcString = formatComponent4LLM(resultLWC, 'developmentLWC');
 

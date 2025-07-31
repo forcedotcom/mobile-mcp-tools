@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { ModelConfig } from '../../src/llmclient/modelConfig.js';
 import { StreamType } from '../../src/llmclient/llmClient.js';
+import { mockConfig } from '../testUtils.js';
 
 // Mock TextDecoderStream
 class MockTextDecoderStream {
@@ -42,14 +43,6 @@ class TestModel extends LlmClient {
 
 describe('BaseModel', () => {
   let model: TestModel;
-  const mockConfig: ModelConfig = {
-    model: 'test-model',
-    provider: 'test-provider',
-    apiKey: 'test-api-key',
-    baseUrl: 'https://test-api.com',
-    clientFeatureID: 'test-feature',
-    tenantId: 'test-tenant',
-  };
 
   beforeEach(() => {
     model = new TestModel(mockConfig);

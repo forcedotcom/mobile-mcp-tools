@@ -8,10 +8,10 @@
 import { CorrectnessScore } from '../schema/schema.js';
 import LwcRefactorAgent from '../agent/lwcRefactorAgent.js';
 import { LwcReviewAgent } from '../agent/lwcReviewAgent.js';
-import { LwdRefactorCorrectnessEvaluatorAgent as LwcRefactorCorrectnessEvaluatorAgent } from '../agent/lwdRefactorCorrectnessEvaluatorAgent.js';
+import { LwcRefactorCorrectnessEvaluatorAgent as LwcRefactorCorrectnessEvaluatorAgent } from '../agent/lwcRefactorCorrectnessEvaluatorAgent.js';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { MobileWebMcpClient } from '../mcpclient/mobileWebMcpClient.js';
-import { convertToLwcCodeType, EvaluationUnit } from '../utils/lwcUtils.js';
+import { EvaluationUnit } from '../utils/lwcUtils.js';
 import { BaseEvaluator } from './baseEvaluator.js';
 
 export class LwcReviewRefactorEvaluator extends BaseEvaluator {
@@ -31,19 +31,22 @@ export class LwcReviewRefactorEvaluator extends BaseEvaluator {
   }
 
   async evaluate(evaluationUnit: EvaluationUnit): Promise<CorrectnessScore> {
-    const originalLwcCode = convertToLwcCodeType(evaluationUnit.component);
+    const originalComponent = evaluationUnit.component;
 
-    const issues = await this.reviewAgent.reviewLwcComponent(originalLwcCode);
+    const issues = await this.reviewAgent.reviewLwcComponent(originalComponent);
 
-    const refactoredLwcCode = await this.refactorAgent.refactorComponent(originalLwcCode, issues);
-
-    const refactorCorrectorResult = await this.correctnessEvaluatorAgent.scoreRefactorChanges(
-      originalLwcCode,
-      issues,
-      refactoredLwcCode
+    const refactoredComponent = await this.refactorAgent.refactorComponent(
+      originalComponent,
+      issues
     );
 
-    return refactorCorrectorResult;
+    const score = await this.correctnessEvaluatorAgent.scoreRefactorChanges(
+      originalComponent,
+      issues,
+      refactoredComponent
+    );
+
+    return score;
   }
 
   async destroy(): Promise<void> {
