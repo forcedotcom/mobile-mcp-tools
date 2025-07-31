@@ -8,8 +8,7 @@
 import { LlmClient } from '../llmclient/llmClient.js';
 import { CorrectnessScore, CorrectnessScoreSchema } from '../schema/schema.js';
 import { createTwoFilesPatch } from 'diff';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
-import { CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server/schemas/analysisSchema';
+import { LwcCodeType, CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server';
 import { LWCFileType } from '../utils/lwcUtils.js';
 import { z } from 'zod/v4';
 import { getJsonResponse } from '../utils/responseUtils.js';

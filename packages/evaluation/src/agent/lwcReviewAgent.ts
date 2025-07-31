@@ -15,8 +15,8 @@ import {
   ExpertsReviewInstructionsType,
   CodeAnalysisIssuesType,
   CodeAnalysisIssuesSchema,
-} from '@salesforce/mobile-web-mcp-server/schemas/analysisSchema';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
+  LwcCodeType,
+} from '@salesforce/mobile-web-mcp-server';
 import { getJsonResponse } from '../utils/responseUtils.js';
 
 const jsonSchema = zodToJsonSchema(CodeAnalysisIssuesSchema);

@@ -8,7 +8,7 @@
 import { z } from 'zod/v4';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { formatComponent4LLM } from '../utils/lwcUtils.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
 import { getJsonResponse } from '../utils/responseUtils.js';
 import { Score, ScoreVerdict, ScoreVerdictEnum, ScoreCategorySchema } from '../schema/schema.js';
 

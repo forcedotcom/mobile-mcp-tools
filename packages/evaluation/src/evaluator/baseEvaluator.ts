@@ -19,7 +19,7 @@ export abstract class BaseEvaluator {
    * @param input - The input to evaluate (can be component names, LWC components, etc.)
    * @returns A promise that resolves to a Score
    */
-  abstract evaluate(input: any): Promise<Score>;
+  abstract evaluate(input: unknown): Promise<Score>;
 
   /**
    * Optional cleanup method for resources that need to be disposed.

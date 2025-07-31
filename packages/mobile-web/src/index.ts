@@ -29,9 +29,12 @@ import { OfflineGuidanceTool } from './tools/mobile-offline/offline-guidance/too
 
 // Export schema types for use by other packages
 export {
+  ExpertsCodeAnalysisIssuesSchema,
+  CodeAnalysisIssuesSchema,
   ExpertsCodeAnalysisIssuesType,
   ExpertsReviewInstructionsType,
   CodeAnalysisIssueType,
+  CodeAnalysisIssuesType,
   ExpertCodeAnalysisIssuesType,
   ExpectedResponseFormatType,
   ExpertReviewInstructionsType,

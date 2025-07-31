@@ -12,12 +12,13 @@ import {
 } from '../../src/evaluator/lwcGenerationEvaluator.js';
 import { LwcEvaluatorAgent } from '../../src/agent/lwcEvaluatorAgent.js';
 import LwcComponentAgent from '../../src/agent/lwcComponentAgent.js';
-import { loadEvaluationUnit, LWCFileType } from '../../src/utils/lwcUtils.js';
+import { loadEvaluationUnit, EvaluationUnit } from '../../src/utils/lwcUtils.js';
 import {
   createEvaluatorLlmClient,
   createComponentLlmClient,
 } from '../../src/llmclient/llmClient.js';
 import { join } from 'path';
+import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
 
 describe('evaluator tests', () => {
   beforeEach(() => {
@@ -48,7 +49,7 @@ describe('evaluator tests', () => {
       const mockMcpClient = {
         connect: vi.fn().mockResolvedValue(undefined),
         callTool: vi.fn().mockResolvedValue({ content: [{ text: 'mock grounding' }] }),
-      } as any;
+      } as unknown as MobileWebMcpClient;
       evaluator = await LwcGenerationEvaluator.create(
         evaluatorLlmClient,
         componentLlmClient,
@@ -57,7 +58,7 @@ describe('evaluator tests', () => {
     });
     afterEach(async () => {
       if (evaluator) {
-        evaluator.destroy();
+        await evaluator.destroy();
       }
     });
 
@@ -77,8 +78,8 @@ describe('evaluator tests', () => {
               '<?xml version="1.0" encoding="UTF-8"?><LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata"></LightningComponentBundle>',
           },
         },
-        config: undefined as any,
-      };
+        config: undefined,
+      } as unknown as EvaluationUnit;
 
       await expect(evaluator.evaluate(mockEvaluationUnit)).rejects.toThrow(
         "Cannot read properties of undefined (reading 'mcpTools')"
@@ -119,8 +120,8 @@ describe('evaluator tests', () => {
       const mockEvaluationUnit = await loadEvaluationUnit(
         join(EVAL_DATA_FOLDER, 'mobile-web/qrCodeOnlyScanner')
       );
-
-      const score = await evaluator.evaluate(mockEvaluationUnit!!);
+      if (!mockEvaluationUnit) throw new Error('mockEvaluationUnit is null');
+      const score = await evaluator.evaluate(mockEvaluationUnit);
       expect(score).toEqual({ rawScore: 85, verdict: 'Pass GA Criteria' });
 
       // Verify generateLwcComponent was called with expected parameters
@@ -157,7 +158,7 @@ describe('evaluator tests', () => {
         },
       });
 
-      vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate').mockResolvedValue({
+      (vi.spyOn(LwcEvaluatorAgent.prototype, 'evaluate') as vi.Mock).mockResolvedValue({
         rawScore: 30,
         verdict: 'FAIL',
       });
@@ -165,8 +166,8 @@ describe('evaluator tests', () => {
       const mockEvaluationUnit = await loadEvaluationUnit(
         join(EVAL_DATA_FOLDER, 'mobile-web/qrCodeOnlyScanner')
       );
-      const score = await evaluator.evaluate(mockEvaluationUnit!!);
-
+      if (!mockEvaluationUnit) throw new Error('mockEvaluationUnit is null');
+      const score = await evaluator.evaluate(mockEvaluationUnit);
       expect(score).toEqual({ rawScore: 30, verdict: 'FAIL' });
     });
   });

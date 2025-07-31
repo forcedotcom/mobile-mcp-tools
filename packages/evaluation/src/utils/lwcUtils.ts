@@ -7,16 +7,8 @@
 
 import { join, extname, basename } from 'path';
 import * as fs from 'node:fs/promises';
-import { z } from 'zod/v4';
 import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
-import {
-  McpToolArraySchema,
-  type McpToolArray,
-  EvaluationTypeSchema,
-  EvalConfigSchema,
-  type EvaluationType,
-  type EvalConfig,
-} from '../schema/schema.js';
+import { EvalConfigSchema, type EvalConfig } from '../schema/schema.js';
 
 const THREE_BACKTICKS = '```';
 
@@ -62,7 +54,6 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
     const css: Array<{ path: string; content: string }> = [];
     let jsMetaXml: { path: string; content: string } | undefined;
     let componentName = 'component';
-    let namespace = 'c';
 
     // Load component files
     const componentPath = join(subDirPath, 'component');
@@ -100,13 +91,6 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
             break;
           case 'js-meta.xml':
             jsMetaXml = { path: filePath, content };
-            // Extract namespace from meta XML if available
-            const namespaceMatch = content.match(
-              /<targetConfigs>\s*<targetConfig targets="lightning__AppPage">\s*<property name="namespace" value="([^"]+)"/
-            );
-            if (namespaceMatch) {
-              namespace = namespaceMatch[1];
-            }
             break;
         }
       }
@@ -114,7 +98,7 @@ export async function loadEvaluationUnit(subDirPath: string): Promise<Evaluation
 
     const component: LwcCodeType = {
       name: componentName,
-      namespace,
+      namespace: 'c',
       html,
       js,
       css,

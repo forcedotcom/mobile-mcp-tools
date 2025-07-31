@@ -8,8 +8,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { LwcRefactorCorrectnessEvaluatorAgent } from '../../src/agent/lwcRefactorCorrectnessEvaluatorAgent.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
-import { CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server/schemas/analysisSchema';
+import { LwcCodeType, CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server';
 import { CorrectnessScore } from '../../src/schema/schema.js';
 import * as responseUtils from '../../src/utils/responseUtils.js';
 import { LWCFileType } from '../../src/utils/lwcUtils.js';
@@ -372,7 +371,7 @@ describe('LwcRefactorCorrectnessEvaluatorAgent', () => {
     });
 
     it('should return empty string for unknown file type', () => {
-      const result = evaluatorAgent['getLwcCodeText'](mockOriginalCode, 'unknown' as any);
+      const result = evaluatorAgent['getLwcCodeText'](mockOriginalCode, 'unknown' as LWCFileType);
       expect(result).toBe('');
     });
 

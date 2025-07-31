@@ -13,7 +13,7 @@ import {
   getLwcComponentFromLlmResponse,
   loadEvaluationUnit,
 } from '../../src/utils/lwcUtils.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
 import { join } from 'path';
 import { EVAL_DATA_FOLDER } from '../../src/evaluator/lwcGenerationEvaluator.js';
 

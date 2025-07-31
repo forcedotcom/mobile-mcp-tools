@@ -1,12 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
-import { spawn } from 'child_process';
-import path from 'path';
 
 // Integration tests against the real MCP server
 describe('MobileWebMcpClient (integration)', () => {
   let client: MobileWebMcpClient;
-  let serverProcess: import('child_process').ChildProcess;
 
   beforeAll(async () => {
     client = new MobileWebMcpClient();

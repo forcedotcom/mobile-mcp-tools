@@ -38,7 +38,6 @@ describe('Evaluator', () => {
       JUDGE_MODEL_BASE_URL: 'https://test-api.com',
       JUDGE_MODEL_CLIENT_FEATURE_ID: 'test-feature',
       JUDGE_MODEL_TENANT_ID: 'test-tenant',
-
       MODEL_TO_EVAL: 'test-model',
       MODEL_TO_EVAL_PROVIDER: 'test-provider',
       MODEL_TO_EVAL_API_KEY: 'test-api-key',
@@ -48,28 +47,24 @@ describe('Evaluator', () => {
     });
 
     // Create mock instances
-    mockLlmClient = {} as any;
-
+    mockLlmClient = { callLLM: vi.fn() } as unknown as LlmClient;
     mockMcpClient = {
       connect: vi.fn().mockResolvedValue(undefined),
       disconnect: vi.fn().mockResolvedValue(undefined),
       callTool: vi.fn().mockResolvedValue({ content: [{ text: 'mock grounding' }] }),
-    } as any;
-
+    } as unknown as MobileWebMcpClient;
     mockGenerationEvaluator = {
-      evaluate: vi.fn() as any,
-      destroy: vi.fn().mockResolvedValue(undefined) as any,
-    } as any;
-
+      evaluate: vi.fn(),
+      destroy: vi.fn().mockResolvedValue(undefined),
+    } as unknown as LwcGenerationEvaluator;
     mockReviewRefactorEvaluator = {
-      evaluate: vi.fn() as any,
-      destroy: vi.fn().mockResolvedValue(undefined) as any,
-    } as any;
-
+      evaluate: vi.fn(),
+      destroy: vi.fn().mockResolvedValue(undefined),
+    } as unknown as LwcReviewRefactorEvaluator;
     // Mock the static create methods
-    vi.mocked(LwcGenerationEvaluator.create).mockResolvedValue(mockGenerationEvaluator);
-    vi.mocked(LwcReviewRefactorEvaluator).mockImplementation(() => mockReviewRefactorEvaluator);
-    vi.mocked(MobileWebMcpClient).mockImplementation(() => mockMcpClient);
+    (vi.mocked(LwcGenerationEvaluator.create) as unknown as vi.Mock).mockResolvedValue(mockGenerationEvaluator);
+    (vi.mocked(LwcReviewRefactorEvaluator) as unknown as vi.Mock).mockImplementation(() => mockReviewRefactorEvaluator);
+    (vi.mocked(MobileWebMcpClient) as unknown as vi.Mock).mockImplementation(() => mockMcpClient);
   });
 
   afterEach(() => {
@@ -100,7 +95,8 @@ describe('Evaluator', () => {
 
     it('should handle MCP client connection errors', async () => {
       const connectionError = new Error('Connection failed');
-      mockMcpClient.connect.mockRejectedValue(connectionError);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockMcpClient.connect as any).mockRejectedValue(connectionError);
 
       const evaluatorLlmClient = mockLlmClient;
       const componentLlmClient = mockLlmClient;
@@ -156,7 +152,8 @@ describe('Evaluator', () => {
         verdict: 'Pass GA Criteria',
       };
 
-      mockGenerationEvaluator.evaluate.mockResolvedValue(expectedScore);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockGenerationEvaluator.evaluate as vi.Mock).mockResolvedValue(expectedScore);
 
       const result = await evaluator.evaluate('testComponent');
 
@@ -184,7 +181,8 @@ describe('Evaluator', () => {
       };
 
       vi.mocked(loadEvaluationUnit).mockResolvedValue(reviewRefactorEvaluationUnit);
-      mockReviewRefactorEvaluator.evaluate.mockResolvedValue(expectedScore);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockReviewRefactorEvaluator.evaluate as vi.Mock).mockResolvedValue(expectedScore);
 
       const result = await evaluator.evaluate('testComponent');
 
@@ -212,9 +210,9 @@ describe('Evaluator', () => {
         ...mockEvaluationUnit,
         config: {
           ...mockEvaluationUnit.config,
-          type: 'unsupported-type' as any,
+          type: 'unsupported-type',
         },
-      };
+      } as unknown as EvaluationUnit;
 
       vi.mocked(loadEvaluationUnit).mockResolvedValue(unsupportedEvaluationUnit);
 
@@ -228,7 +226,8 @@ describe('Evaluator', () => {
 
     it('should propagate errors from generation evaluator', async () => {
       const evaluationError = new Error('Generation evaluation failed');
-      mockGenerationEvaluator.evaluate.mockRejectedValue(evaluationError);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockGenerationEvaluator.evaluate as vi.Mock).mockRejectedValue(evaluationError);
 
       await expect(evaluator.evaluate('testComponent')).rejects.toThrow(
         'Generation evaluation failed'
@@ -247,7 +246,8 @@ describe('Evaluator', () => {
       vi.mocked(loadEvaluationUnit).mockResolvedValue(reviewRefactorEvaluationUnit);
 
       const evaluationError = new Error('Review-refactor evaluation failed');
-      mockReviewRefactorEvaluator.evaluate.mockRejectedValue(evaluationError);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockReviewRefactorEvaluator.evaluate as vi.Mock).mockRejectedValue(evaluationError);
 
       await expect(evaluator.evaluate('testComponent')).rejects.toThrow(
         'Review-refactor evaluation failed'
@@ -297,7 +297,8 @@ describe('Evaluator', () => {
         verdict: 'Pass GA Criteria',
       };
 
-      mockGenerationEvaluator.evaluate.mockResolvedValue(expectedScore);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mockGenerationEvaluator.evaluate as vi.Mock).mockResolvedValue(expectedScore);
       vi.mocked(loadEvaluationUnit).mockResolvedValue(mockEvaluationUnit);
 
       const result = await evaluator.evaluate('component-with-dashes');

@@ -6,11 +6,10 @@
  */
 
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import { LwcReviewAgent } from '../../src/agent/lwcReviewAgent.js';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
-import { LwcReviewAgent } from '../../src/agent/lwcReviewAgent.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
-import { mockConfig } from '../testUtils.js';
+import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
 
 // Mock the dependencies
 vi.mock('../../src/mcpclient/mobileWebMcpClient.js');
@@ -21,8 +20,8 @@ vi.mock('../../src/utils/responseUtils.js', () => ({
 
 describe('LwcReviewAgent', () => {
   let reviewAgent: LwcReviewAgent;
-  let mockMcpClient: vi.Mocked<MobileWebMcpClient>;
-  let mockLlmClient: vi.Mocked<LlmClient>;
+  let mockMcpClient: MobileWebMcpClient;
+  let mockLlmClient: LlmClient;
 
   const mockComponent: LwcCodeType = {
     name: 'testComponent',
@@ -124,11 +123,11 @@ describe('LwcReviewAgent', () => {
       connect: vi.fn(),
       disconnect: vi.fn(),
       listTools: vi.fn(),
-    } as any;
+    } as unknown as MobileWebMcpClient;
 
     mockLlmClient = {
       callLLM: vi.fn(),
-    } as any;
+    } as unknown as LlmClient;
 
     // Create the review agent with mocked dependencies
     reviewAgent = new LwcReviewAgent(mockMcpClient, mockLlmClient);
@@ -141,12 +140,12 @@ describe('LwcReviewAgent', () => {
   describe('reviewLwcComponent', () => {
     it('should successfully review an LWC component and return combined issues', async () => {
       // Mock the guidance tool call
-      mockMcpClient.callTool
+      (mockMcpClient.callTool as vi.Mock)
         .mockResolvedValueOnce(mockGuidanceResponse) // First call for guidance
         .mockResolvedValueOnce(mockAnalysisResponse); // Second call for analysis
 
       // Mock the LLM call
-      mockLlmClient.callLLM.mockResolvedValue(mockLlmResponse);
+      (mockLlmClient.callLLM as vi.Mock).mockResolvedValue(mockLlmResponse);
 
       const result = await reviewAgent.reviewLwcComponent(mockComponent);
 
@@ -198,7 +197,7 @@ describe('LwcReviewAgent', () => {
 
     it('should handle empty guidance response', async () => {
       // Mock empty guidance response
-      mockMcpClient.callTool
+      (mockMcpClient.callTool as vi.Mock)
         .mockResolvedValueOnce({ content: [] })
         .mockResolvedValueOnce(mockAnalysisResponse);
 
@@ -209,11 +208,11 @@ describe('LwcReviewAgent', () => {
 
     it('should handle empty analysis response', async () => {
       // Mock guidance response but empty analysis response
-      mockMcpClient.callTool
+      (mockMcpClient.callTool as vi.Mock)
         .mockResolvedValueOnce(mockGuidanceResponse)
         .mockResolvedValueOnce({ content: [] });
 
-      mockLlmClient.callLLM.mockResolvedValue(mockLlmResponse);
+      (mockLlmClient.callLLM as vi.Mock).mockResolvedValue(mockLlmResponse);
 
       await expect(reviewAgent.reviewLwcComponent(mockComponent)).rejects.toThrow(
         'Failed to get analysis results from mobile-web offline-analysis tool'
@@ -235,7 +234,7 @@ describe('LwcReviewAgent', () => {
         content: [{ text: 'invalid json' }],
       });
 
-      mockLlmClient.callLLM.mockResolvedValue(mockLlmResponse);
+      (mockLlmClient.callLLM as vi.Mock).mockResolvedValue(mockLlmResponse);
 
       await expect(reviewAgent.reviewLwcComponent(mockComponent)).rejects.toThrow();
     });
@@ -246,7 +245,7 @@ describe('LwcReviewAgent', () => {
         .mockResolvedValueOnce(mockGuidanceResponse)
         .mockResolvedValueOnce(mockAnalysisResponse);
 
-      mockLlmClient.callLLM.mockResolvedValue('invalid json response');
+      (mockLlmClient.callLLM as vi.Mock).mockResolvedValue('invalid json response');
 
       await expect(reviewAgent.reviewLwcComponent(mockComponent)).rejects.toThrow();
     });
@@ -266,7 +265,7 @@ describe('LwcReviewAgent', () => {
         .mockResolvedValueOnce(mockGuidanceResponse)
         .mockResolvedValueOnce(mockAnalysisResponse);
 
-      mockLlmClient.callLLM.mockRejectedValue(new Error('LLM API error'));
+      (mockLlmClient.callLLM as vi.Mock).mockRejectedValue(new Error('LLM API error'));
 
       await expect(reviewAgent.reviewLwcComponent(mockComponent)).rejects.toThrow('LLM API error');
     });
@@ -317,7 +316,7 @@ describe('LwcReviewAgent', () => {
         .mockResolvedValueOnce(emptyGuidanceResponse)
         .mockResolvedValueOnce(emptyAnalysisResponse);
 
-      mockLlmClient.callLLM.mockResolvedValue(JSON.stringify([]));
+      (mockLlmClient.callLLM as vi.Mock).mockResolvedValue(JSON.stringify([]));
 
       const result = await reviewAgent.reviewLwcComponent(mockComponent);
 

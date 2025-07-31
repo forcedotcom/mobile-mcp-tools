@@ -1,7 +1,6 @@
 import { LightningElement, wire, track } from 'lwc';
 import { getPicklistValues } from 'lightning/uiObjectInfoApi';
 import FAMILY_FIELD from '@salesforce/schema/Product2.Family';
-import productFamilyLabel from '@salesforce/label/c.Product_Family_Default';
 
 export default class ProductCatalogBrowser extends LightningElement {
   recordTypeId = '012000000000000AAA';

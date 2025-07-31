@@ -6,13 +6,8 @@
  */
 
 import { LlmClient } from '../llmclient/llmClient.js';
-import {
-  formatLwcCode4LLM,
-  getLwcComponentFromLlmResponse,
-  LWCFileType,
-} from '../utils/lwcUtils.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server/schemas/lwcSchema';
-import { CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server/schemas/analysisSchema';
+import { formatLwcCode4LLM, getLwcComponentFromLlmResponse } from '../utils/lwcUtils.js';
+import { LwcCodeType, CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server';
 
 /**
  * This class calls the LLM model to refactor an LWC component based on identified issues.
