@@ -6,7 +6,7 @@
  */
 
 import { join } from 'path';
-import { Score } from '../agent/lwcEvaluatorAgent.js';
+import { Score } from '../schema/schema.js';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { EVAL_DATA_FOLDER, LwcGenerationEvaluator } from './lwcGenerationEvaluator.js';
 import { LwcReviewRefactorEvaluator } from './lwcReviewRefactorEvaluator.js';

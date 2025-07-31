@@ -5,15 +5,19 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { Score } from '../agent/lwcEvaluatorAgent.js';
+import { CorrectnessScore } from '../schema/schema.js';
+import LwcRefactorAgent from '../agent/lwcRefactorAgent.js';
 import { LwcReviewAgent } from '../agent/lwcReviewAgent.js';
+import { LwdRefactorCorrectnessEvaluatorAgent as LwcRefactorCorrectnessEvaluatorAgent } from '../agent/lwdRefactorCorrectnessEvaluatorAgent.js';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { MobileWebMcpClient } from '../mcpclient/mobileWebMcpClient.js';
-import { EvaluationUnit } from '../utils/lwcUtils.js';
+import { convertToLwcCodeType, EvaluationUnit } from '../utils/lwcUtils.js';
 import { BaseEvaluator } from './baseEvaluator.js';
 
 export class LwcReviewRefactorEvaluator extends BaseEvaluator {
-  private readonly reviewRefactorAgent: LwcReviewAgent;
+  private readonly reviewAgent: LwcReviewAgent;
+  private readonly refactorAgent: LwcRefactorAgent;
+  private readonly correctnessEvaluatorAgent: LwcRefactorCorrectnessEvaluatorAgent;
 
   constructor(
     evaluatorLlmClient: LlmClient,
@@ -21,18 +25,25 @@ export class LwcReviewRefactorEvaluator extends BaseEvaluator {
     mcpClient: MobileWebMcpClient
   ) {
     super();
-    this.reviewRefactorAgent = new LwcReviewAgent(mcpClient);
+    this.reviewAgent = new LwcReviewAgent(mcpClient, componentLlmClient);
+    this.refactorAgent = new LwcRefactorAgent(componentLlmClient);
+    this.correctnessEvaluatorAgent = new LwcRefactorCorrectnessEvaluatorAgent(evaluatorLlmClient);
   }
 
-  async evaluate(evaluationUnit: EvaluationUnit): Promise<Score> {
-    const reviewResult = await this.reviewRefactorAgent.reviewLwcComponent(evaluationUnit.component);
+  async evaluate(evaluationUnit: EvaluationUnit): Promise<CorrectnessScore> {
+    const originalLwcCode = convertToLwcCodeType(evaluationUnit.component);
 
-    
+    const issues = await this.reviewAgent.reviewLwcComponent(originalLwcCode);
 
-    return {
-      verdict: 'Pass GA Criteria',
-      rawScore: 0.8,
-    };
+    const refactoredLwcCode = await this.refactorAgent.refactorComponent(originalLwcCode, issues);
+
+    const refactorCorrectorResult = await this.correctnessEvaluatorAgent.scoreRefactorChanges(
+      originalLwcCode,
+      issues,
+      refactoredLwcCode
+    );
+
+    return refactorCorrectorResult;
   }
 
   async destroy(): Promise<void> {

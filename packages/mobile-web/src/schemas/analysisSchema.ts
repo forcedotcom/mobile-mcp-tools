@@ -35,13 +35,13 @@ export const CodeAnalysisIssueSchema = CodeAnalysisBaseIssueSchema.extend({
     .describe('Provide the exact line number(s) and column number(s) where the issue occurs'),
 });
 
+export const CodeAnalysisIssuesSchema = z
+  .array(CodeAnalysisIssueSchema)
+  .describe('Specific issues found during the analysis. Should be empty if no issues were found.');
+
 export const ExpertCodeAnalysisIssuesSchema = z.object({
   expertReviewerName: ExpertReviewerNameSchema,
-  issues: z
-    .array(CodeAnalysisIssueSchema)
-    .describe(
-      'Specific issues found during the analysis. Should be empty if no issues were found.'
-    ),
+  issues: CodeAnalysisIssuesSchema,
 });
 
 export const ExpertsCodeAnalysisIssuesSchema = z.object({
@@ -105,6 +105,7 @@ export const ExpertsReviewInstructionsSchema = z.object({
 });
 
 export type CodeAnalysisIssueType = z.infer<typeof CodeAnalysisIssueSchema>;
+export type CodeAnalysisIssuesType = z.infer<typeof CodeAnalysisIssuesSchema>;
 export type CodeAnalysisBaseIssueType = z.infer<typeof CodeAnalysisBaseIssueSchema>;
 export type ExpertCodeAnalysisIssuesType = z.infer<typeof ExpertCodeAnalysisIssuesSchema>;
 export type ExpertsCodeAnalysisIssuesType = z.infer<typeof ExpertsCodeAnalysisIssuesSchema>;

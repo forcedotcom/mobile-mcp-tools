@@ -18,6 +18,10 @@
     "./schemas/analysisSchema": {
       "types": "./dist/schemas/analysisSchema.d.ts",
       "import": "./dist/schemas/analysisSchema.js"
+    },
+    "./schemas/lwcSchema": {
+      "types": "./dist/schemas/lwcSchema.d.ts",
+      "import": "./dist/schemas/lwcSchema.js"
     }
   },
   "bin": {

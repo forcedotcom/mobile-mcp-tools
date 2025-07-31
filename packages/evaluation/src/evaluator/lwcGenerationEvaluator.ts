@@ -1,7 +1,7 @@
-
 import { fileURLToPath } from 'url';
 import path, { dirname, join } from 'path';
-import { LwcEvaluatorAgent, Score } from '../agent/lwcEvaluatorAgent.js';
+import { LwcEvaluatorAgent } from '../agent/lwcEvaluatorAgent.js';
+import { Score } from '../schema/schema.js';
 import LwcComponentAgent from '../agent/lwcComponentAgent.js';
 import { EvaluationUnit } from '../utils/lwcUtils.js';
 import { LlmClient } from '../llmclient/llmClient.js';
@@ -23,7 +23,11 @@ export class LwcGenerationEvaluator extends BaseEvaluator {
   private readonly componentAgent: LwcComponentAgent;
   private mobileWebMcpClient: MobileWebMcpClient;
 
-  constructor(evaluatorLlmClient: LlmClient, componentLlmClient: LlmClient, mcpClient: MobileWebMcpClient) {
+  constructor(
+    evaluatorLlmClient: LlmClient,
+    componentLlmClient: LlmClient,
+    mcpClient: MobileWebMcpClient
+  ) {
     super();
     this.evaluatorAgent = new LwcEvaluatorAgent(evaluatorLlmClient);
     this.componentAgent = new LwcComponentAgent(componentLlmClient);

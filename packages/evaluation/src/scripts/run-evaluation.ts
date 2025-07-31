@@ -7,7 +7,7 @@
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readdir } from 'node:fs/promises';
-import { Score } from '../agent/lwcEvaluatorAgent.js';
+import { Score } from '../schema/schema.js';
 import { createEvaluatorLlmClient, createComponentLlmClient } from '../llmclient/llmClient.js';
 import { Evaluator } from '../evaluator/evaluator.js';
 
@@ -37,7 +37,6 @@ export async function getAvailableComponents(): Promise<string[]> {
     return entries
       .filter(
         entry => entry.isDirectory()
-        && (entry.name.endsWith('offlineBadWith3Issues') || entry.name.indexOf('comp') > 0)
       )
       .map(entry => `${subDir}/${entry.name}`);
   } catch (error) {
@@ -247,5 +246,3 @@ main()
       process.exit(0);
     }, 1000);
   });
-
-

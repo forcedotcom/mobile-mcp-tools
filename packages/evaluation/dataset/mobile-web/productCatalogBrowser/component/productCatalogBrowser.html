@@ -1,0 +1,26 @@
+<template>
+    <lightning-card title="Product Catalog Browser" icon-name="standard:product">
+        <div class="slds-p-horizontal_medium">
+            <template lwc:if={hasOptions}>
+                <lightning-combobox
+                    name="productFamily"
+                    label="Product Family"
+                    value={selectedFamily}
+                    placeholder="Select Product Family"
+                    options={familyOptions}
+                    onchange={handleFamilyChange}>
+                </lightning-combobox>
+            </template>
+            <template lwc:else>
+                <template lwc:if={familyPicklistValues.error}>
+                    <p class="slds-text-color_error">
+                        Error loading product families: {familyPicklistValues.error.body.message}
+                    </p>
+                </template>
+                <template lwc:else>
+                    <lightning-spinner alternative-text="Loading product families..."></lightning-spinner>
+                </template>
+            </template>
+        </div>
+    </lightning-card>
+</template> 

@@ -7,7 +7,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { readdir } from 'node:fs/promises';
-import { Score } from '../../src/agent/lwcEvaluatorAgent.js';
+import { Score } from '../../src/schema/schema.js';
 import { Evaluator } from '../../src/evaluator/evaluator.js';
 
 // Mock the fs/promises module

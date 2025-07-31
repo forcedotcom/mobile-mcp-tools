@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { Score } from '../agent/lwcEvaluatorAgent.js';
+import { Score } from '../schema/schema.js';
 
 /**
  * Abstract base class for evaluation agents.
