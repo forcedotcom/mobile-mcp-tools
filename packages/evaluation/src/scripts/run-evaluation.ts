@@ -34,13 +34,7 @@ export async function getAvailableComponents(): Promise<string[]> {
   const datasetPath = join(__dirname, `../../dataset/${subDir}`);
   try {
     const entries = await readdir(datasetPath, { withFileTypes: true });
-    return entries
-      .filter(
-        entry =>
-          entry.isDirectory() &&
-          (entry.name.endsWith('productCatalogBrowser') || entry.name.indexOf('comp') > 0)
-      )
-      .map(entry => `${subDir}/${entry.name}`);
+    return entries.filter(entry => entry.isDirectory()).map(entry => `${subDir}/${entry.name}`);
   } catch (error) {
     console.error('Error reading dataset directory:', error);
     return [];

@@ -3,6 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "packages/evaluation/src",
   "projectType": "library",
+  "dependencies": [
+    {
+      "source": "@salesforce/mobile-web-mcp-server",
+      "type": "static"
+    }
+  ],
   "targets": {
     "build": {
       "executor": "nx:run-commands",

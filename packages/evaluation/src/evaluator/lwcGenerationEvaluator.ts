@@ -1,5 +1,12 @@
+/*
+ * Copyright (c) 2025, salesforce.com, inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: MIT
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
+ */
+
 import { fileURLToPath } from 'url';
-import path, { dirname, join } from 'path';
+import { dirname, join } from 'path';
 import { LwcEvaluatorAgent } from '../agent/lwcEvaluatorAgent.js';
 import { Score } from '../schema/schema.js';
 import LwcComponentAgent from '../agent/lwcComponentAgent.js';

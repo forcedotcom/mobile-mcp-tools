@@ -76,7 +76,7 @@ The evaluation system at runtime requires the following environment variables to
 - `MODEL_TO_EVAL_CLIENT_FEATURE_ID` - Client feature ID for model to evaluate
 - `MODEL_TO_EVAL_TENANT_ID` - Tenant ID for model to evaluate
 
-.env has these configuration value as 'op://....'. so setup 1password and get access to ADK shared values. slack channel: (#a4d-adk-help)[https://salesforce.enterprise.slack.com/archives/C06A2J4AB2S]
+.env has these configuration value as 'op://....'. so setup 1password and get access to ADK shared values. slack channel: [#a4d-adk-help](https://salesforce.enterprise.slack.com/archives/C06A2J4AB2S)
 
 ## Dataset Structure
 
@@ -99,18 +99,28 @@ dataset/
 
 - **componentName/**: Directory named after the component being evaluated
 - **component/**: Contains the reference LWC component files
-- **prompt/**: Contains the prompt used to generate the component
-- **evalConfig.json**: Specifying evaluation configuration
+- **prompt/**: Contains the prompt used to generate the LWC component
+- **evalConfig.json**: Specifying evaluation type: lwc-generation or review-refactor, and mcp tool to call if needed
 
-### Example evalConfig.json
+### Example evalConfig.json for lwc-generation evaluation
 
 ```json
 {
   "mcpTools": [
     {
-      "toolId": "sfmobile-web-barcode-scanner"
+      "toolId": "sfmobile-web-barcode-scanner",
+      "params": {}
     }
-  ]
+  ],
+  "type": "lwc-generation"
+}
+```
+
+### Example evalConfig.json for review-refactor evaluation
+
+```json
+{
+  "type": "review-refactor"
 }
 ```
 
@@ -173,7 +183,7 @@ Average Score: 8.50/10
 1. Create a new directory in `dataset/mobile-web/` with the component name
 2. Add the reference component files in the `component/` subdirectory
 3. Create a `prompt/` directory with a `prompt.md` file containing the generation prompt
-4. Add an `evalConfig.json` file specifying required MCP tools
+4. Add an `evalConfig.json` file specifying type of evaluation and mcp tools list if doing lwc-generation evaluation. review-refactor evaluation is hard-coded to call offline-guidance and offline analysis tools, no need specify mcp tool list.
 
 ### Extending the Evaluator
 
