@@ -35,7 +35,23 @@ export class MobileWebMcpClient {
   }
 
   async connect() {
-    await this.initializeMobileWebMcpClient();
+    console.log('🔄 Starting MCP server...');
+    this.serverProcess = spawn('npm', ['run', 'mobile-web:server:start'], {
+      cwd: path.resolve(__dirname, '../../../../..'),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: true,
+    });
+
+    // Add process event handlers for debugging
+    this.serverProcess.on('error', error => {
+      console.error('❌ Server process error:', error);
+    });
+
+    this.serverProcess.on('exit', (code, signal) => {
+      console.log(`🔄 Server process exited with code: ${code}, signal: ${signal}`);
+    });
+
+    await this.connectToMcpServer();
   }
 
   async disconnect() {
@@ -67,26 +83,6 @@ export class MobileWebMcpClient {
 
   async callTool(toolName: string, params: Record<string, unknown>) {
     return this.client.callTool({ name: toolName, arguments: params });
-  }
-
-  private async initializeMobileWebMcpClient(): Promise<void> {
-    console.log('🔄 Starting MCP server...');
-    this.serverProcess = spawn('npm', ['run', 'mobile-web:server:start'], {
-      cwd: path.resolve(__dirname, '../../../../..'),
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: true,
-    });
-
-    // Add process event handlers for debugging
-    this.serverProcess.on('error', error => {
-      console.error('❌ Server process error:', error);
-    });
-
-    this.serverProcess.on('exit', (code, signal) => {
-      console.log(`🔄 Server process exited with code: ${code}, signal: ${signal}`);
-    });
-
-    await this.connectToMcpServer();
   }
 
   /**

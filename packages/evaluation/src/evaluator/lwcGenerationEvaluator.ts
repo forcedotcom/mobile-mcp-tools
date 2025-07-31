@@ -66,7 +66,7 @@ export class LwcGenerationEvaluator extends BaseEvaluator {
     return await this.evaluatorAgent.evaluate(evaluationUnit.component, resultLwc);
   }
 
-  private async getMcpGroundings(evaluationUnit: EvaluationUnit): Promise<string | undefined> {
+  private async getMcpGroundings(evaluationUnit: EvaluationUnit): Promise<string> {
     const groundings = [];
     if (evaluationUnit.config.mcpTools) {
       for (const tool of evaluationUnit.config.mcpTools) {
