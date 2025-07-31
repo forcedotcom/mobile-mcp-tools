@@ -62,8 +62,12 @@ describe('Evaluator', () => {
       destroy: vi.fn().mockResolvedValue(undefined),
     } as unknown as LwcReviewRefactorEvaluator;
     // Mock the static create methods
-    (vi.mocked(LwcGenerationEvaluator.create) as unknown as vi.Mock).mockResolvedValue(mockGenerationEvaluator);
-    (vi.mocked(LwcReviewRefactorEvaluator) as unknown as vi.Mock).mockImplementation(() => mockReviewRefactorEvaluator);
+    (vi.mocked(LwcGenerationEvaluator.create) as unknown as vi.Mock).mockResolvedValue(
+      mockGenerationEvaluator
+    );
+    (vi.mocked(LwcReviewRefactorEvaluator) as unknown as vi.Mock).mockImplementation(
+      () => mockReviewRefactorEvaluator
+    );
     (vi.mocked(MobileWebMcpClient) as unknown as vi.Mock).mockImplementation(() => mockMcpClient);
   });
 
