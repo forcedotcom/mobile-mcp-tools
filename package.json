@@ -14,9 +14,11 @@
     "test:coverage": "nx run-many --target=test:coverage",
     "test:watch": "nx run-many --target=test:watch",
     "test:all": "nx run-many --target=test",
-    "build:all": "nx run-many --target=build && chmod +x packages/mobile-web/dist/index.js",
+    "build:all": "nx run-many --target=build && chmod +x packages/mobile-web/dist/index.js || true && chmod +x packages/mobile-native-mcp-server/dist/index.js || true",
     "mobile-web:server:start": "npm run build:all && npx -y @salesforce/mobile-web-mcp-server",
+    "mobile-native:server:start": "npm run build:all && npx -y @salesforce/mobile-native-mcp-server",
     "inspect": "npm run build:all && npx @modelcontextprotocol/inspector node ./packages/mobile-web/dist/index.js",
+    "inspect:native": "npm run build:all && npx @modelcontextprotocol/inspector node ./packages/mobile-native-mcp-server/dist/index.js",
     "evaluate": "nx run @salesforce/mobile-mcp-tools-evaluation:evaluate --",
     "evaluate:all": "nx run @salesforce/mobile-mcp-tools-evaluation:evaluate --",
     "evaluate:component": "nx run @salesforce/mobile-mcp-tools-evaluation:evaluate:component --",
@@ -53,5 +55,8 @@
   },
   "nx": {
     "extends": "@nx/workspace/presets/npm.json"
+  },
+  "dependencies": {
+    "@salesforce/lwc-dev-mobile-core": "^4.0.0-alpha.12"
   }
 }

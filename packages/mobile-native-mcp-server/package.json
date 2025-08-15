@@ -1,0 +1,47 @@
+{
+  "name": "@salesforce/mobile-native-mcp-server",
+  "version": "0.0.1-alpha.1",
+  "type": "module",
+  "files": [
+    "dist",
+    "resources",
+    "README.md"
+  ],
+  "description": "Salesforce Mobile Native MCP Server",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "sfdc-mobile-native-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc ",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "lint": "eslint --config ../../eslint.config.mjs \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.2",
+    "@salesforce/core": "^8.15.0",
+    "dedent": "^1.5.3",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/inspector": "^0.16.1",
+    "@types/node": "^24.0.7",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tar": "^7.4.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.3"
+  }
+}
