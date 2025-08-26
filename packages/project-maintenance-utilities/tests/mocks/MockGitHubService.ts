@@ -6,6 +6,7 @@ interface MockReleaseData {
   name: string;
   body: string;
   prerelease: boolean;
+  draft?: boolean;
   assets: Array<{
     id: number;
     name: string;
@@ -152,7 +153,7 @@ export class MockGitHubService implements GitHubServiceProvider {
     owner: string,
     repo: string,
     releaseId: number,
-    updateData: { prerelease?: boolean }
+    updateData: { prerelease?: boolean; draft?: boolean; name?: string; body?: string }
   ): Promise<void> {
     const operationKey = `updateRelease:${owner}/${repo}:${releaseId}`;
     if (this.shouldThrowOnOperation.has(operationKey)) {
@@ -168,6 +169,15 @@ export class MockGitHubService implements GitHubServiceProvider {
     // Update release
     if (updateData.prerelease !== undefined) {
       release.prerelease = updateData.prerelease;
+    }
+    if (updateData.draft !== undefined) {
+      release.draft = updateData.draft;
+    }
+    if (updateData.name !== undefined) {
+      release.name = updateData.name;
+    }
+    if (updateData.body !== undefined) {
+      release.body = updateData.body;
     }
   }
 
