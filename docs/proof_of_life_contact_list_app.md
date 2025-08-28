@@ -282,7 +282,7 @@ First, analyze the user request to identify key features:
 1. `sfmobile-native-template-discovery` tool uses `sfdx-mobilesdk-plugin` CLI commands
 2. Executes platform-specific commands: `sf mobilesdk ios|android listtemplates --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json` for comprehensive template information
 3. Parses structured JSON output including descriptions, use cases, features arrays, complexity ratings, and list of customization points
-4. Optionally uses platform-specific commands: `sf mobilesdk ios|android listtemplate --template=<TemplateName> --doc --json` for detailed template investigation
+4. Optionally uses platform-specific commands: `sf mobilesdk ios|android describetemplate --template=<TemplateName> --doc --json` for detailed template investigation
 5. Returns template selection guidance to LLM with rich metadata and extensible architecture for future template repositories
 
 **Integration with CLI Tools**:
@@ -316,7 +316,7 @@ sf mobilesdk ios|android listtemplates --templatesource=<ServerRoot>/resources/S
 **Detailed Template Investigation**:
 
 ```bash
-sf mobilesdk ios|android listtemplate --template=<TemplateName> --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json
+sf mobilesdk ios|android describetemplate --template=<TemplateName> --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json
 ```
 
 - **Customization Points**: Comprehensive modification guidance with file-level instructions

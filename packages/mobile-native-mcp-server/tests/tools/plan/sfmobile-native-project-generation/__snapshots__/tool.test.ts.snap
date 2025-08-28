@@ -1,0 +1,1099 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SfmobileNativeProjectGenerationTool > should extract URL scheme from callback URI for Android 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: Android
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk android createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new Android project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for Android development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For Android:**
+\`\`\`bash
+# Locate the bootconfig.xml file
+find . -name "bootconfig.xml" -type f
+\`\`\`
+
+**Expected Location**: Usually in \`app/src/main/res/values/bootconfig.xml\` or similar path.
+
+### Update Android OAuth Configuration
+
+Edit the \`bootconfig.xml\` file:
+
+\`\`\`xml
+<string name="remoteAccessConsumerKey">3MVG9test123</string>
+<string name="oauthRedirectURI">customscheme://oauth/callback</string>
+\`\`\`
+
+### Update Android Manifest
+
+Edit the \`AndroidManifest.xml\` file to add the intent filter:
+
+\`\`\`xml
+<activity android:name="com.salesforce.androidsdk.auth.LoginActivity">
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="customscheme" />
+</intent-filter>
+</activity>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "customscheme" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should extract URL scheme from callback URI for iOS 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: iOS
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk ios createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new iOS project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for iOS development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For iOS:**
+
+**Expected Location**: \`TestApp/TestApp/Resources/bootconfig.plist\`
+
+### Update iOS OAuth Configuration
+
+Edit the \`bootconfig.plist\` file:
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>remoteAccessConsumerKey</key>
+<string>3MVG9test123</string>
+<key>oauthRedirectURI</key>
+<string>customscheme://oauth/callback</string>
+<key>oauthScopes</key>
+<array>
+  <string>web</string>
+  <string>api</string>
+</array>
+<key>shouldAuthenticate</key>
+<true/>
+</dict>
+</plist>
+\`\`\`
+
+### Update iOS URL Scheme
+
+Edit the \`Info.plist\` file to add the custom URL scheme:
+
+\`\`\`xml
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+  <key>CFBundleURLName</key>
+  <string>com.salesforce.oauth</string>
+  <key>CFBundleURLSchemes</key>
+  <array>
+      <string>customscheme</string>
+  </array>
+</dict>
+</array>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "customscheme" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should generate guidance for Android platform 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: MobileSyncExplorerKotlin
+    - **Project Name**: TestAndroidApp
+    - **Platform**: Android
+    - **Package Name**: com.test.androidapp
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk android createwithtemplate --templatesource="./templates" --template="MobileSyncExplorerKotlin" --appname="TestAndroidApp" --packagename="com.test.androidapp" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new Android project directory named "TestAndroidApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestAndroidApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for Android development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For Android:**
+\`\`\`bash
+# Locate the bootconfig.xml file
+find . -name "bootconfig.xml" -type f
+\`\`\`
+
+**Expected Location**: Usually in \`app/src/main/res/values/bootconfig.xml\` or similar path.
+
+### Update Android OAuth Configuration
+
+Edit the \`bootconfig.xml\` file:
+
+\`\`\`xml
+<string name="remoteAccessConsumerKey">3MVG9android123</string>
+<string name="oauthRedirectURI">androidapp://oauth/callback</string>
+\`\`\`
+
+### Update Android Manifest
+
+Edit the \`AndroidManifest.xml\` file to add the intent filter:
+
+\`\`\`xml
+<activity android:name="com.salesforce.androidsdk.auth.LoginActivity">
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="androidapp" />
+</intent-filter>
+</activity>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9andro" .
+grep -r "androidapp" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "MobileSyncExplorerKotlin"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should generate guidance for iOS platform 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: MobileSyncExplorerSwift
+    - **Project Name**: TestApp
+    - **Platform**: iOS
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: https://test.salesforce.com
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk ios createwithtemplate --templatesource="./templates" --template="MobileSyncExplorerSwift" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new iOS project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for iOS development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For iOS:**
+
+**Expected Location**: \`TestApp/TestApp/Resources/bootconfig.plist\`
+
+### Update iOS OAuth Configuration
+
+Edit the \`bootconfig.plist\` file:
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>remoteAccessConsumerKey</key>
+<string>3MVG9test123</string>
+<key>oauthRedirectURI</key>
+<string>testapp://oauth/callback</string>
+<key>oauthScopes</key>
+<array>
+  <string>web</string>
+  <string>api</string>
+</array>
+<key>shouldAuthenticate</key>
+<true/>
+</dict>
+</plist>
+\`\`\`
+
+### Update iOS URL Scheme
+
+Edit the \`Info.plist\` file to add the custom URL scheme:
+
+\`\`\`xml
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+  <key>CFBundleURLName</key>
+  <string>com.salesforce.oauth</string>
+  <key>CFBundleURLSchemes</key>
+  <array>
+      <string>testapp</string>
+  </array>
+</dict>
+</array>
+\`\`\`### Update iOS Login Host
+
+Edit the \`TestApp/TestApp/Info.plist\` file to add the custom login host:
+
+\`\`\`xml
+<key>SFDCOAuthLoginHost</key>
+<string>https://test.salesforce.com</string>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "testapp" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "MobileSyncExplorerSwift"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should handle Android platform with loginHost 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: Android
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: https://custom.salesforce.com
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk android createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new Android project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for Android development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For Android:**
+\`\`\`bash
+# Locate the bootconfig.xml file
+find . -name "bootconfig.xml" -type f
+\`\`\`
+
+**Expected Location**: Usually in \`app/src/main/res/values/bootconfig.xml\` or similar path.
+
+### Update Android OAuth Configuration
+
+Edit the \`bootconfig.xml\` file:
+
+\`\`\`xml
+<string name="remoteAccessConsumerKey">3MVG9test123</string>
+<string name="oauthRedirectURI">testapp://oauth/callback</string>
+<string name="oauthLoginDomain">https://custom.salesforce.com</string>
+\`\`\`
+
+### Update Android Manifest
+
+Edit the \`AndroidManifest.xml\` file to add the intent filter:
+
+\`\`\`xml
+<activity android:name="com.salesforce.androidsdk.auth.LoginActivity">
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="testapp" />
+</intent-filter>
+</activity>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "testapp" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should handle missing callback URI with fallback scheme for Android 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: Android
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk android createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new Android project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for Android development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For Android:**
+\`\`\`bash
+# Locate the bootconfig.xml file
+find . -name "bootconfig.xml" -type f
+\`\`\`
+
+**Expected Location**: Usually in \`app/src/main/res/values/bootconfig.xml\` or similar path.
+
+### Update Android OAuth Configuration
+
+Edit the \`bootconfig.xml\` file:
+
+\`\`\`xml
+<string name="remoteAccessConsumerKey">3MVG9test123</string>
+<string name="oauthRedirectURI">undefined</string>
+\`\`\`
+
+### Update Android Manifest
+
+Edit the \`AndroidManifest.xml\` file to add the intent filter:
+
+\`\`\`xml
+<activity android:name="com.salesforce.androidsdk.auth.LoginActivity">
+<intent-filter>
+  <action android:name="android.intent.action.VIEW" />
+  <category android:name="android.intent.category.DEFAULT" />
+  <category android:name="android.intent.category.BROWSABLE" />
+  <data android:scheme="myapp" />
+</intent-filter>
+</activity>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "CALLBACK" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should handle missing callback URI with fallback scheme for iOS 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: iOS
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk ios createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new iOS project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for iOS development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For iOS:**
+
+**Expected Location**: \`TestApp/TestApp/Resources/bootconfig.plist\`
+
+### Update iOS OAuth Configuration
+
+Edit the \`bootconfig.plist\` file:
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>remoteAccessConsumerKey</key>
+<string>3MVG9test123</string>
+<key>oauthRedirectURI</key>
+<string>undefined</string>
+<key>oauthScopes</key>
+<array>
+  <string>web</string>
+  <string>api</string>
+</array>
+<key>shouldAuthenticate</key>
+<true/>
+</dict>
+</plist>
+\`\`\`
+
+### Update iOS URL Scheme
+
+Edit the \`Info.plist\` file to add the custom URL scheme:
+
+\`\`\`xml
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+  <key>CFBundleURLName</key>
+  <string>com.salesforce.oauth</string>
+  <key>CFBundleURLSchemes</key>
+  <array>
+      <string>myapp</string>
+  </array>
+</dict>
+</array>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "CALLBACK" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should handle missing client ID and callback URI in verification commands 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: iOS
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk ios createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new iOS project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for iOS development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For iOS:**
+
+**Expected Location**: \`TestApp/TestApp/Resources/bootconfig.plist\`
+
+### Update iOS OAuth Configuration
+
+Edit the \`bootconfig.plist\` file:
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>remoteAccessConsumerKey</key>
+<string>undefined</string>
+<key>oauthRedirectURI</key>
+<string>undefined</string>
+<key>oauthScopes</key>
+<array>
+  <string>web</string>
+  <string>api</string>
+</array>
+<key>shouldAuthenticate</key>
+<true/>
+</dict>
+</plist>
+\`\`\`
+
+### Update iOS URL Scheme
+
+Edit the \`Info.plist\` file to add the custom URL scheme:
+
+\`\`\`xml
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+  <key>CFBundleURLName</key>
+  <string>com.salesforce.oauth</string>
+  <key>CFBundleURLSchemes</key>
+  <array>
+      <string>myapp</string>
+  </array>
+</dict>
+</array>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "CLIENT_ID" .
+grep -r "CALLBACK" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should handle optional loginHost parameter 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: iOS
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk ios createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new iOS project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for iOS development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For iOS:**
+
+**Expected Location**: \`TestApp/TestApp/Resources/bootconfig.plist\`
+
+### Update iOS OAuth Configuration
+
+Edit the \`bootconfig.plist\` file:
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>remoteAccessConsumerKey</key>
+<string>3MVG9test123</string>
+<key>oauthRedirectURI</key>
+<string>testapp://oauth/callback</string>
+<key>oauthScopes</key>
+<array>
+  <string>web</string>
+  <string>api</string>
+</array>
+<key>shouldAuthenticate</key>
+<true/>
+</dict>
+</plist>
+\`\`\`
+
+### Update iOS URL Scheme
+
+Edit the \`Info.plist\` file to add the custom URL scheme:
+
+\`\`\`xml
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+  <key>CFBundleURLName</key>
+  <string>com.salesforce.oauth</string>
+  <key>CFBundleURLSchemes</key>
+  <array>
+      <string>testapp</string>
+  </array>
+</dict>
+</array>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "testapp" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;
+
+exports[`SfmobileNativeProjectGenerationTool > should include build validation integration 1`] = `
+"# Mobile App Project Generation Guide
+
+    You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+
+    ## Project Configuration
+    - **Template**: TestTemplate
+    - **Project Name**: TestApp
+    - **Platform**: iOS
+    - **Package Name**: com.test.app
+    - **Organization**: Test Org
+    - **Login Host**: Default (production)
+
+    ## Step 1: Execute Platform-Specific CLI Command
+
+Generate the project using the Salesforce Mobile SDK CLI:
+
+\`\`\`bash
+sf mobilesdk ios createwithtemplate --templatesource="./templates" --template="TestTemplate" --appname="TestApp" --packagename="com.test.app" --organization="Test Org"
+\`\`\`
+
+**Expected Outcome**: A new iOS project directory named "TestApp" will be created with the template structure.
+
+NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
+
+    ## Step 2: Verify Project Structure
+
+Navigate to the project directory and verify the basic structure:
+
+\`\`\`bash
+cd "TestApp"
+ls -la
+\`\`\`
+
+**Expected Structure**: You should see platform-specific files and directories appropriate for iOS development.
+
+    ## Step 3: Configure OAuth Settings
+
+### Locate OAuth Configuration Files
+
+Find and modify the OAuth configuration files in your generated project:
+
+**For iOS:**
+
+**Expected Location**: \`TestApp/TestApp/Resources/bootconfig.plist\`
+
+### Update iOS OAuth Configuration
+
+Edit the \`bootconfig.plist\` file:
+
+\`\`\`xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>remoteAccessConsumerKey</key>
+<string>3MVG9test123</string>
+<key>oauthRedirectURI</key>
+<string>testapp://oauth/callback</string>
+<key>oauthScopes</key>
+<array>
+  <string>web</string>
+  <string>api</string>
+</array>
+<key>shouldAuthenticate</key>
+<true/>
+</dict>
+</plist>
+\`\`\`
+
+### Update iOS URL Scheme
+
+Edit the \`Info.plist\` file to add the custom URL scheme:
+
+\`\`\`xml
+<key>CFBundleURLTypes</key>
+<array>
+<dict>
+  <key>CFBundleURLName</key>
+  <string>com.salesforce.oauth</string>
+  <key>CFBundleURLSchemes</key>
+  <array>
+      <string>testapp</string>
+  </array>
+</dict>
+</array>
+\`\`\`
+
+### Verify OAuth Configuration
+
+After updating the configuration files, verify the changes:
+
+\`\`\`bash
+# Check that the files contain your credentials
+grep -r "3MVG9test1" .
+grep -r "testapp" .
+\`\`\`
+
+**Expected Outcome**: Your OAuth credentials should be found in the configuration files.
+
+    ## Success Criteria
+
+    ✅ Project generated successfully from template "TestTemplate"
+    ✅ Project structure verified
+    ✅ OAuth configuration completed with provided credentials
+    ✅ Ready for build validation using the sfmobile-native-build-validation tool
+
+    Once the project is successfully generated and OAuth is configured, proceed to the next stage:
+
+    **Use the sfmobile-native-build-validation tool** to validate that the project builds successfully and is ready for development. 
+    
+    VERY IMPORTANT:If this tool is not available, DO NOT proceed to the next stage. Instead report back to the user with next steps."
+`;

@@ -1589,7 +1589,7 @@ The `sfmobile-native-environment-validation` tool specified above represents the
 - CLI commands for comprehensive template discovery (`sf mobilesdk ios listtemplates --doc --json`)
 - Structured JSON parsing instructions for template metadata analysis
 - Template matching logic based on features, complexity, and use cases
-- Optional detailed template investigation commands (`sf mobilesdk ios listtemplate --doc --json`)
+- Optional detailed template investigation commands (`sf mobilesdk ios describetemplate --doc --json`)
 - Customization point analysis for template adaptation requirements
 - Next steps for project generation with selected template
 
@@ -1657,10 +1657,10 @@ Parse the JSON output from the `listtemplates` command to match user requirement
 
 ## Step 4: Detailed Template Investigation (Optional)
 
-For additional template details, use the new `listtemplate` command:
+For additional template details, use the `describetemplate` command:
 
 ```bash
-sf mobilesdk ios listtemplate --template=iOSNativeSwiftTemplate --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json
+sf mobilesdk ios describetemplate --template=iOSNativeSwiftTemplate --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json
 ```
 
 **Template Details:**

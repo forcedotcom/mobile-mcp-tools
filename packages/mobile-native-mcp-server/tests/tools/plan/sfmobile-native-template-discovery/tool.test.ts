@@ -105,4 +105,25 @@ describe('SfmobileNativeTemplateDiscoveryTool', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tool as any).generateTemplateDiscoveryGuidance = originalMethod;
   });
+
+  it('should handle non-Error exception in error handling', async () => {
+    // Mock the generateTemplateDiscoveryGuidance to throw a non-Error object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const originalMethod = (tool as any).generateTemplateDiscoveryGuidance;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (tool as any).generateTemplateDiscoveryGuidance = () => {
+      throw 'String error'; // Non-Error object
+    };
+
+    const input = { platform: 'iOS' as const };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (tool as any).handleRequest(input);
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('Error: Unknown error occurred');
+
+    // Restore original method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (tool as any).generateTemplateDiscoveryGuidance = originalMethod;
+  });
 });
