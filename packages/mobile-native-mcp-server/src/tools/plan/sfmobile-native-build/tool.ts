@@ -111,7 +111,7 @@ export class SfmobileNativeBuildTool implements Tool {
       java -version
       \`\`\`
 
-      Secondly, verify the Android SDK is installed correctly.The SDK Build-Tool version must match the version of the MSDK Android App. ONLY run this command to verify the Android SDK is installed:
+      Secondly, confirm that the Android SDK is installed correctly.The SDK Build-Tools version must match the version required by the MSDK Android App. Use the following command only to verify the Android SDK installation:
 
       \`\`\`bash
       echo $ANDROID_HOME
@@ -141,7 +141,7 @@ export class SfmobileNativeBuildTool implements Tool {
   private msdkAppBuildExecutionAndroid(projectPath: string) {
     return dedent`  
       ## Step 2: Android Build Execution
-      Navigate to the ${projectPath} and use the following command to build the MSDK Android App:
+      Navigate to the ${projectPath} directory and use the following command to build the MSDK Android App:
 
       \`\`\`bash
       ./gradlew build
