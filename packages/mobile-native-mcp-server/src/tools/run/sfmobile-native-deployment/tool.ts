@@ -16,7 +16,7 @@ const DeploymentInputSchema = z.object({
   platform: z.enum(['iOS', 'Android']).describe('Target mobile platform'),
   projectPath: z.string().describe('Path to the mobile project directory'),
   buildType: z.enum(['debug', 'release']).default('debug').describe('Build type for deployment'),
-  targetDevice: z.string().optional().describe('Target device identifier (optional)')
+  targetDevice: z.string().optional().describe('Target device identifier (optional)'),
 });
 
 type DeploymentInput = z.infer<typeof DeploymentInputSchema>;
@@ -84,7 +84,7 @@ export class SfmobileNativeDeploymentTool implements Tool {
       ${this.generateDeploymentStep(3, input)}
     `;
   }
-  
+
   private generatePrerequisitesStep(stepNumber: number, input: DeploymentInput): string {
     return dedent`
       ## Step ${stepNumber}: Prerequisites Verification
@@ -118,18 +118,19 @@ export class SfmobileNativeDeploymentTool implements Tool {
   }
 
   private generateSimulatorReadyStep(step: number, input: DeploymentInput): string {
-    const content = input.platform === 'iOS' ? 
-    dedent`
+    const content =
+      input.platform === 'iOS'
+        ? dedent`
       simulator
       \`\`\`bash
       xcrun simctl list
       \`\`\`
-    ` : 
-    dedent`
+    `
+        : dedent`
       emulator
       \`\`\`bash
     `;
-    
+
     return dedent`
       ## Step ${step}: ${input.platform === 'iOS' ? 'Simulator' : 'Emulator'} must be ready
 
@@ -189,7 +190,7 @@ export class SfmobileNativeDeploymentTool implements Tool {
   private generateDeploymentCommand(input: DeploymentInput): string {
     if (input.platform === 'iOS') {
       // TODO: Get the correct simulator id
-      return `xcrun simctl install booted /Users/ben.zhang/Library/Developer/Xcode/DerivedData/AppIosLogin-btyawyknzhtxhoadgzyjflvmphpv/Build/Products/Debug-iphonesimulator/AppIosLogin.app`
+      return `xcrun simctl install booted /Users/ben.zhang/Library/Developer/Xcode/DerivedData/AppIosLogin-btyawyknzhtxhoadgzyjflvmphpv/Build/Products/Debug-iphonesimulator/AppIosLogin.app`;
     } else {
       // TODO: tweak command for windows
       return `./gradlew install${input.buildType === 'debug' ? 'Debug' : 'Release'}`;
