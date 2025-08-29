@@ -48,7 +48,12 @@ export class SfmobileNativeBuildTool implements Tool {
 
   private generateBuildGuidance(input: BuildInput) {
     return dedent`
-      # Salesforce Mobile App Build Guidance for ${input.platform}
+     You are a tech-adept agent acting on behalf of a user who is not familiar with the technical details of MSDK development. 
+     Carry out the steps in the following guideline for them, and share the key outcomes they need to know.
+
+     # Salesforce Mobile App Build Guidance for ${input.platform}
+      
+
 
       You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
 
@@ -82,13 +87,13 @@ export class SfmobileNativeBuildTool implements Tool {
       xcodebuild -showBuildSettings | grep -A 1 'IPHONEOS_DEPLOYMENT_TARGET'
       \`\`\`
 
-      Third, confirm that a list of simulators is available as build destinations. The simulator must be iOS 17.0 or greater. Run this command only for verification purposes:
+      Third, confirm that a list of simulators is available as build destinations, with at least one running iOS 17.0 or greater. Run this command only for verification purposes:
 
       \`\`\`bash
       sf force lightning local device list -p ios
       \`\`\`
 
-      If the list of simulators is not available, run this command to install the simulators. The simulator must be iOS 17.0 or greater:
+      If no iOS 17.0 or greater simulator is present, run this command to install the simulators:
 
       \`\`\`bash
        sf force lightning local device create -p ios -n device-name -d device-model
@@ -119,15 +124,16 @@ export class SfmobileNativeBuildTool implements Tool {
   private msdkAppBuildExecutionIOS(projectPath: string) {
     return dedent`  
       ## Step 2: iOS Build Execution
-      Navigate to the ${projectPath} and use the following command to build the MSDK iOS App:
+      Navigate to the ${projectPath} directory and run the following command to build the MSDK iOS App:
 
       \`\`\`bash
-      xcodebuild -workspace msdk-app.xcworkspace -scheme msdk-app -destination simulator-destination clean build
+      xcodebuild -workspace <your-workspace>.xcworkspace -scheme <your-scheme> -destination <simulator-destination> clean build
       \`\`\`
 
-      Ensure the correct workspace and scheme are selected and destination points to a valid simulator ID.
+      Replace <your-workspace>.xcworkspace and <your-scheme> with the actual workspace and scheme names of your project. Ensure that <simulator-destination>  points to a valid simulator running iOS 17.0 or greater.
 
-      If **BUILD SUCCEEDED** is shown as the output, the build is successful. If there are build error indicators like **error:** or **Undefined symbol**, please fix them and retry the build. Refer to the step 1 to fix the setup issues.
+      If the output includes **BUILD SUCCEEDED**, the build completed successfully. If you see errors such as **error:** or **Undefined symbol**, resolve them and try again. Refer back to Step 1 for guidance on fixing setup issues.
+      
       
     `;
   }
