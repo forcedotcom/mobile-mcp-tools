@@ -15,6 +15,7 @@ import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
 import { SfmobileNativeTemplateDiscoveryTool } from './tools/plan/sfmobile-native-template-discovery/tool.js';
 import { SfmobileNativeBuildTool } from './tools/plan/sfmobile-native-build/tool.js';
+import { SfmobileNativeDeploymentTool } from './tools/run/sfmobile-native-deployment/tool.js';
 
 const server = new McpServer({
   name: 'sfdc-mobile-native-mcp-server',
@@ -30,7 +31,7 @@ const annotations: ToolAnnotations = {
 };
 
 // Tools will be added here when implemented
-const tools = [new SfmobileNativeTemplateDiscoveryTool(), new SfmobileNativeBuildTool()];
+const tools = [new SfmobileNativeTemplateDiscoveryTool(), new SfmobileNativeBuildTool(), new SfmobileNativeDeploymentTool()];
 
 // Register all tools
 tools.forEach(tool => tool.register(server, annotations));
