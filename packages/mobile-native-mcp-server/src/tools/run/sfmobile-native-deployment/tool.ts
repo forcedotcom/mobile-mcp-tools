@@ -73,145 +73,108 @@ export class SfmobileNativeDeploymentTool implements Tool {
 
   private generateDeploymentGuidance(input: DeploymentInput): string {
     return dedent`
+      You are a technology-adept agent working on behalf of a user who has less familiarity with the technical details of application deployment than you do, and needs your assistance to deploy the app to the target device.
+      Please execute the instructions of the following plan on behalf of the user, providing them information on the outcomes that they may need to know.
+
       # Mobile Native App Deployment Guidance for ${input.platform}
+
+      First make sure \`sfmobile-native-build\` mcp tool is executed successfully. If not, run the \`sfmobile-native-build\` tool first.
 
       You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
 
-      ${this.generatePrerequisitesStep(1, input)}
+      ${this.generateTargetDeviceReadyStep(1, input)}
 
-      ${this.generateSimulatorReadyStep(2, input)}
+      ${this.generateDeploymentStep(2, input)}
 
-      ${this.generateDeploymentStep(3, input)}
+      ${this.generateNextStep(input)}
+      `;
+  }
+
+  private generateNextStep(input: DeploymentInput): string {
+    return dedent`
+      ## Next Steps
+
+      Once the app is deployed successfully, you can launch the app on the target device by running the following command:
+      ${this.generateLaunchCommand(input)}
+    `;
+  }
+  
+  private generateLaunchCommand(input: DeploymentInput): string {
+      return input.platform === 'iOS' ? 
+        dedent`
+          \`\`\`bash
+          xcrun simctl launch ${input.targetDevice} <app-bundle-id>
+          \`\`\`
+          Replace <app-bundle-id> with the bundle id of the app.
+        `:
+        dedent`
+          \`\`\`bash
+          adb shell am start -n <app-package-name>/<app-activity-name>
+          \`\`\`
+        `;
+  }
+
+  private generateTargetDeviceReadyStep(stepNumber: number, input: DeploymentInput): string {
+    return dedent`
+      ## Step ${stepNumber}: ${input.platform === 'iOS' ? 'iOS Simulator' : 'Android Emulator'} must be ready
+      
+      ${input.platform === 'iOS' ? 
+        this.generateTargetDeviceReadyStepIOS(input): 
+        this.generateTargetDeviceReadyStepAdndroid(input)
+      }
     `;
   }
 
-  private generatePrerequisitesStep(stepNumber: number, input: DeploymentInput): string {
+  private generateTargetDeviceReadyStepIOS(input: DeploymentInput): string {
     return dedent`
-      ## Step ${stepNumber}: Prerequisites Verification
-
-      Before deployment, verify the following prerequisites:
-
-      **1. Salesforce CLI Mobile Extension:**
-      First verify the Salesforce CLI Mobile plugin is available and meets version requirments. ONLY run this command to verify the plugin is installed:
-      
-      \`\`\`bash
-      sf plugins inspect @salesforce/lwc-dev-mobile --json
-      \`\`\`
-      
-      ***Version Requirements:*** The plugin must be version 3.0.0-alpha.1 or greater.
-      
-      If the plugin is not installed, install it:
-      
-      \`\`\`bash
-      sf plugins install @salesforce/lwc-dev-mobile
-      \`\`\`
-      
-      If the plugin is installed but the version is less than 3.0.0-alpha.1, upgrade it:
+      Navigate to the ${input.projectPath} directory and run the following command to check if the simulator is running:
 
       \`\`\`bash
-      sf plugins update @salesforce/lwc-dev-mobile
+      xcrun simctl list devices | grep "${input.targetDevice}"
       \`\`\`
-      
-      **2. Platform-Specific Requirements:**
-      ${input.platform === 'iOS' ? this.getIOSPrerequisites() : this.getAndroidPrerequisites()}
+
+      If (Shutdown) is shown as the output, the simulator is not running. Start it by running the following command:
+
+      \`\`\`bash
+      xcrun simctl boot ${input.targetDevice}
+      \`\`\`
     `;
   }
 
-  private generateSimulatorReadyStep(step: number, input: DeploymentInput): string {
-    const content =
-      input.platform === 'iOS'
-        ? dedent`
-      simulator
-      \`\`\`bash
-      xcrun simctl list
-      \`\`\`
-    `
-        : dedent`
-      emulator
-      \`\`\`bash
-    `;
-
+  private generateTargetDeviceReadyStepAdndroid(input: DeploymentInput): string {
+    //TODO: implement android emulator ready step
     return dedent`
-      ## Step ${step}: ${input.platform === 'iOS' ? 'Simulator' : 'Emulator'} must be ready
+      Navigate to the ${input.projectPath} directory and run the following command to check if the simulator is running:
 
-      Before deployment, verify the ${input.platform === 'iOS' ? 'simulator' : 'emulator'} is ready to run the app.
-
-      ${content}
-    `;
-  }
-
-  private getIOSPrerequisites(): string {
-    return dedent`
-      - **Xcode**: Must be installed and up-to-date
-      - **iOS Simulator**: Available for testing
-      - **Provisioning Profile**: Configured for your app
-      - **Bundle Identifier**: Matches your provisioning profile
-    `;
-  }
-
-  private getAndroidPrerequisites(): string {
-    return dedent`
-      - **Android Studio**: Must be installed with latest SDK
-      - **Android SDK**: Platform tools and build tools installed
-      - **Java Development Kit (JDK)**: Version 11 or higher
-      - **Android Virtual Device (AVD)**: Available for testing
-      - **Keystore**: Configured for release builds
     `;
   }
 
   private generateDeploymentStep(stepNumber: number, input: DeploymentInput): string {
-    const platformLower = input.platform.toLowerCase();
-    const deviceParam = input.targetDevice ? ` --target=${input.targetDevice}` : '';
 
     return dedent`
-      ## Step ${stepNumber}: Deploy to Device/Simulator
+      ## Step ${stepNumber}: Deploy application to ${input.platform === 'iOS' ? 'iOS Simulator' : 'Android Emulator'}
 
-      Deploy the built application using:
+      Deploy the application to the target device using:
 
       \`\`\`bash
       ${this.generateDeploymentCommand(input)}
       \`\`\`
-
-      **Deployment Parameters:**
-      - **Project Path**: ${input.projectPath}
-      - **Build Type**: ${input.buildType}
-      ${input.targetDevice ? `- **Target Device**: ${input.targetDevice}` : '- **Target**: Default simulator/device'}
-
-      **Platform-Specific Notes:**
-      ${input.platform === 'iOS' ? this.getIOSDeploymentNotes() : this.getAndroidDeploymentNotes()}
-
-      **Expected Behavior:**
-      - Application should launch on the target device/simulator
-      - Check for any deployment errors in the output
-      - Verify the app starts successfully
     `;
   }
 
   private generateDeploymentCommand(input: DeploymentInput): string {
     if (input.platform === 'iOS') {
       // TODO: Get the correct simulator id
-      return `xcrun simctl install booted /Users/ben.zhang/Library/Developer/Xcode/DerivedData/AppIosLogin-btyawyknzhtxhoadgzyjflvmphpv/Build/Products/Debug-iphonesimulator/AppIosLogin.app`;
+      return dedent`
+        \`\`\`bash
+        xcrun simctl install ${input.targetDevice} <your-app>.app
+        \`\`\`
+
+        Replace <your-app>.app with app name built in \`sfmobile-native-build\` tool call.
+      `;
     } else {
       // TODO: tweak command for windows
       return `./gradlew install${input.buildType === 'debug' ? 'Debug' : 'Release'}`;
     }
-  }
-
-  private getIOSDeploymentNotes(): string {
-    return dedent`
-      - **Simulator**: Will launch in iOS Simulator if no device specified
-      - **Device**: Must be connected via USB and trusted
-      - **Code Signing**: Ensure proper provisioning profile is selected
-      - **Bundle ID**: Must match your provisioning profile
-    `;
-  }
-
-  private getAndroidDeploymentNotes(): string {
-    return dedent`
-      - **Emulator**: Will launch in Android Emulator if no device specified
-      - **Device**: Must have USB debugging enabled and be authorized
-      - **APK Installation**: App will be installed and launched automatically
-      - **Permissions**: Grant necessary permissions when prompted
-    `;
   }
 }
