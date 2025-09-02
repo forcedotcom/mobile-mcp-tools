@@ -33,15 +33,15 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.2",
+    "@modelcontextprotocol/sdk": "^1.17.4",
     "zod": "^3.25.67"
   },
   "devDependencies": {
-    "@modelcontextprotocol/inspector": "^0.16.1",
+    "@modelcontextprotocol/inspector": "^0.16.5",
     "@types/node": "^24.0.7",
     "@vitest/coverage-v8": "^3.2.4",
-    "tsx": "^4.19.2",
-    "typescript": "^5.8.3",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.3"
   }
 }
