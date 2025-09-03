@@ -184,7 +184,7 @@ describe('SfmobileNativeDeploymentTool', () => {
 
     it('should handle invalid platform gracefully', async () => {
       const input = {
-        platform: 'InvalidPlatform' as any,
+        platform: 'InvalidPlatform',
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
       };
