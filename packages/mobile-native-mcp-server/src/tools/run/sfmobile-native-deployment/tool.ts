@@ -97,7 +97,7 @@ export class SfmobileNativeDeploymentTool implements Tool {
       ${
         input.platform === 'iOS'
           ? this.generateTargetDeviceReadyStepIOS(input)
-          : this.generateTargetDeviceReadyStepAdndroid(input)
+          : this.generateTargetDeviceReadyStepAndroid(input)
       }
     `;
   }
@@ -118,7 +118,7 @@ export class SfmobileNativeDeploymentTool implements Tool {
     `;
   }
 
-  private generateTargetDeviceReadyStepAdndroid(input: DeploymentInput): string {
+  private generateTargetDeviceReadyStepAndroid(input: DeploymentInput): string {
     return dedent`
       Navigate to the ${input.projectPath} directory and run the following commands to make sure 
       an emulator with an API level equal to or higher than the app's minimum SDK version is active.
