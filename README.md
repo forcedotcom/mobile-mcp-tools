@@ -41,6 +41,7 @@ MCP server providing comprehensive tooling support for Salesforce Mobile Native 
 
 - **Template Discovery**: Tools for discovering and selecting appropriate native mobile app templates for iOS and Android platforms
 - **Project Planning**: Guidance for template selection based on platform requirements and feature keywords
+- **App Deployment**: Comprehensive deployment guidance for iOS and Android apps including build, deployment, and verification steps
 - **SDK Integration**: Integration with Salesforce Mobile SDK plugin for native app development
 
 **Installation**: `npx -y @salesforce/mobile-native-mcp-server`
