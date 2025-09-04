@@ -261,6 +261,55 @@ While maintaining broad compatibility, our product focus prioritizes optimal exp
 
 ---
 
+# MCP Provider Integration
+
+In addition to standalone server functionality, the `@salesforce/mobile-web-mcp-server` package now provides a `MobileWebMcpProvider` for integration with other MCP packages and services.
+
+## MobileWebMcpProvider
+
+The `MobileWebMcpProvider` class extends the `McpProvider` interface and exposes mobile-offline tools for consumption by other MCP packages.
+
+### Usage
+
+```typescript
+import { MobileWebMcpProvider } from '@salesforce/mobile-web-mcp-server/provider';
+
+const provider = new MobileWebMcpProvider();
+const tools = await provider.provideTools(services);
+// Register tools with your MCP server
+```
+
+### Exposed Tools
+
+The provider currently exposes the following mobile-offline tools:
+
+- **`sf-mobile-web-offline-analysis`** - Analyzes LWC components for mobile-specific issues and provides detailed recommendations
+- **`sf-mobile-web-offline-guidance`** - Provides structured review instructions to detect and remediate Mobile Offline code violations
+
+### Integration Benefits
+
+- **Modular Integration** - Other MCP packages can selectively consume mobile-web capabilities
+- **Consistent Interface** - Follows established MCP provider patterns for seamless integration
+- **Telemetry Support** - Integrates with MCP provider telemetry services for usage tracking
+- **Future Extensibility** - Architecture supports adding more tool suites (e.g., native-capabilities) as needed
+
+## Dual Mode Support
+
+The package supports both usage patterns:
+
+### Server Mode (Existing)
+```bash
+npx -y @salesforce/mobile-web-mcp-server
+```
+
+### Provider Mode (New)
+```typescript
+import { MobileWebMcpProvider } from '@salesforce/mobile-web-mcp-server/provider';
+// Integrate with other MCP packages
+```
+
+---
+
 # Future Expansion
 
 The `@salesforce/mobile-web-mcp-server` is designed to accommodate future tool suites as mobile web development needs evolve while maintaining broad MCP ecosystem compatibility:
@@ -271,3 +320,4 @@ The `@salesforce/mobile-web-mcp-server` is designed to accommodate future tool s
 * **Cross-Platform Support** - Foundation supports expansion beyond Salesforce-specific scenarios
 * **MCP Host Evolution** - Continuous adaptation to support new MCP hosts and protocol updates
 * **Integration Scenarios** - Support for complex multi-tool workflows combining multiple suites across various MCP environments
+* **Provider Expansion** - Provider interface can be extended to expose additional tool suites (native-capabilities, future domains)

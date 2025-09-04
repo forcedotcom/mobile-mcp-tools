@@ -42,6 +42,9 @@ export {
 
 export { LwcCodeType } from './schemas/lwcSchema.js';
 
+// Export provider for integration with other MCP packages
+export { MobileWebMcpProvider } from './provider.js';
+
 const server = new McpServer({
   name: 'sfdc-mobile-web-mcp-server',
   version,
