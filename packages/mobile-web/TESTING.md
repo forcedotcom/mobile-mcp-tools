@@ -2,6 +2,8 @@
 
 This document provides comprehensive testing instructions for all tools in the `@salesforce/mobile-web-mcp-server` package. Each tool should be tested with the provided prompts to ensure proper functionality and output quality.
 
+> **Note**: This is a temporary ad hoc testing plan. Testing is evolving as we look at Eval-based test automation in future efforts.
+
 ## Scoring Criteria
 
 Each test prompt should be evaluated using the following scoring system:
