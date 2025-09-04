@@ -30,12 +30,11 @@ Generate a Lightning Web Component named 'mobileAppReview' that implements mobil
 
 **Test 1.2 - Platform-Specific Guidance**
 ```
-Generate a Lightning Web Component named 'crossPlatformAppReview' that implements mobile app review prompts that work differently on iOS and Android mobile platforms.
+Generate a Lightning Web Component named 'crossPlatformAppReview' that implements mobile app review prompts.
 ```
 **Expected Output**:
 - Platform-specific API differences
 - Conditional implementation strategies
-- Testing recommendations for both platforms
 
 ### 2. AR Space Capture Tool (`sfmobile-web-ar-space-capture`)
 
@@ -54,12 +53,10 @@ Generate a Lightning Web Component named 'arSpaceCapture' that implements mobile
 
 **Test 2.2 - Performance Optimization**
 ```
-Generate a Lightning Web Component named 'optimizedArCapture' that implements mobile AR space capture with performance optimizations for mobile web environments.
+Generate a Lightning Web Component named 'optimizedArCapture' that implements mobile AR space capture .
 ```
 **Expected Output**:
-- Performance optimization strategies
-- Memory management recommendations
-- Battery usage considerations
+- Nimbus AR space capture implementation
 
 ### 3. Barcode Scanner Tool (`sfmobile-web-barcode-scanner`)
 
@@ -103,7 +100,7 @@ Generate a Lightning Web Component named 'biometricAuth' that implements mobile 
 
 **Test 4.2 - Security Best Practices**
 ```
-Generate a Lightning Web Component named 'secureBiometricAuth' that implements biometric authentication with mobile security best practices. Include custom permission request titles and bodies, support for PIN_CODE policy, and proper handling of biometric readiness checks before attempting authentication.
+Generate a Lightning Web Component named 'secureBiometricAuth' that implements biometric authentication with mobile security best practices.
 ```
 **Expected Output**:
 - Implements BiometricsServiceOptions with permissionRequestBody and permissionRequestTitle
@@ -119,7 +116,7 @@ Generate a Lightning Web Component named 'secureBiometricAuth' that implements b
 
 **Test 5.1 - Calendar Integration**
 ```
-Generate a Lightning Web Component named 'mobileCalendarIntegration' that integrates mobile device calendar functionality to read and create calendar events. Handle permission denials, calendar not found errors, and service not enabled scenarios. Include support for recurring events, alarms, and attendees.
+Generate a Lightning Web Component named 'mobileCalendarIntegration' that integrates mobile device calendar functionality to read and create calendar events.
 ```
 **Expected Output**:
 - Uses proper Nimbus APIs from calendar service (getCalendarService, getCalendars, getEvents, addEvent)
@@ -129,7 +126,7 @@ Generate a Lightning Web Component named 'mobileCalendarIntegration' that integr
 
 **Test 5.2 - Event Synchronization**
 ```
-Generate a Lightning Web Component named 'calendarEventSync' that synchronizes events between the LWC and mobile device calendar while handling conflicts. Support updating and removing recurring events with proper span handling (ThisEvent vs ThisAndFollowingEvents).
+Generate a Lightning Web Component named 'calendarEventSync' that synchronizes events between the LWC and mobile device calendar while handling conflicts. Support updating and removing recurring events.
 ```
 **Expected Output**:
 - Implements updateEvent and removeEvent with Span options
@@ -145,7 +142,7 @@ Generate a Lightning Web Component named 'calendarEventSync' that synchronizes e
 
 **Test 6.1 - Contact Access Implementation**
 ```
-Generate a Lightning Web Component named 'mobileContactAccess' that implements mobile contact access functionality to read and search mobile device contacts. Handle all permission scenarios including user dismissal, permission denial, disabled permissions, and restricted access. Include proper Android permission rationale messaging.
+Generate a Lightning Web Component named 'mobileContactAccess' that implements mobile contact access functionality to read and search mobile device contacts. Handle all permission scenarios including user dismissal, permission denial, disabled permissions, and restricted access.
 ```
 **Expected Output**:
 - Uses proper Nimbus APIs from contacts service (getContactsService, getContacts)
@@ -202,15 +199,6 @@ Generate a Lightning Web Component named 'mobileGeofencing' that implements mobi
 - Location monitoring implementation
 - Event handling for enter/exit triggers
 
-**Test 8.2 - Battery Optimization**
-```
-Generate a Lightning Web Component named 'batteryOptimizedGeofencing' that implements mobile geofencing while minimizing battery drain on mobile devices.
-```
-**Expected Output**:
-- Power-efficient monitoring strategies
-- Background processing considerations
-- Location accuracy vs. battery trade-offs
-
 ### 9. Location Tool (`sfmobile-web-location`)
 
 **Purpose**: Provides guidance for accessing device location services.
@@ -227,16 +215,6 @@ Generate a Lightning Web Component named 'mobileLocationServices' that implement
 - Implements LocationServiceOptions with enableHighAccuracy and permissionRationaleText
 - Processes complete LocationResult with Coordinates including accuracy, altitude, speed, and heading data
 
-**Test 9.2 - Location History and Tracking**
-```
-Generate a Lightning Web Component named 'locationHistoryTracker' that implements mobile location history tracking with configurable update intervals and accuracy requirements. Include proper subscription management with startWatchingPosition and stopWatchingPosition, handling callback failures gracefully.
-```
-**Expected Output**:
-- Implements location subscription management with watchId tracking
-- Handles callback-based LocationServiceFailure scenarios in startWatchingPosition
-- Manages high accuracy vs battery life trade-offs with enableHighAccuracy option
-- Provides proper cleanup with stopWatchingPosition to prevent memory leaks
-
 ### 10. NFC Tool (`sfmobile-web-nfc`)
 
 **Purpose**: Provides implementation guidance for NFC functionality.
@@ -250,16 +228,7 @@ Generate a Lightning Web Component named 'mobileNfcReader' that implements mobil
 **Expected Output**:
 - Uses proper Nimbus APIs from NFC service
 - Tag reading and writing implementation
-- P2P communication examples
 
-**Test 10.2 - NFC Payment Integration**
-```
-Generate a Lightning Web Component named 'nfcPaymentProcessor' that integrates mobile NFC-based payment functionality while ensuring security and compliance.
-```
-**Expected Output**:
-- Secure NFC payment implementation
-- Compliance requirements
-- Security best practices
 
 ### 11. Payments Tool (`sfmobile-web-payments`)
 
@@ -275,15 +244,6 @@ Generate a Lightning Web Component named 'mobilePaymentProcessor' that implement
 - Uses proper Nimbus APIs from payments service
 - Payment flow implementation
 - Security and PCI compliance guidance
-
-**Test 11.2 - Multiple Payment Methods**
-```
-Generate a Lightning Web Component named 'multiPaymentMethodProcessor' that supports multiple mobile payment methods including Apple Pay, Google Pay, and traditional card payments.
-```
-**Expected Output**:
-- Multi-payment method integration
-- Platform-specific implementations
-- Fallback mechanisms
 
 ## Mobile Offline Tools
 
