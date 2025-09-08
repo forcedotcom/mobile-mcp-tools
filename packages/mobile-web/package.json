@@ -1,6 +1,6 @@
 {
   "name": "@salesforce/mobile-web-mcp-server",
-  "version": "0.0.1-alpha.1",
+  "version": "1.0.0",
   "type": "module",
   "files": [
     "dist",
