@@ -100,8 +100,7 @@ export class MobileOfflineAnalysisMcpTool extends McpTool<InputArgsShape, Output
       });
 
       // Call the wrapped tool's analyzeCode method directly
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const analysisResults = await (this.wrappedTool as any).analyzeCode(input);
+      const analysisResults = await this.wrappedTool.analyzeCode(input);
 
       return {
         content: [

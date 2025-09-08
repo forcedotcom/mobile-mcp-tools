@@ -90,7 +90,7 @@ export class MobileOfflineGuidanceMcpTool extends McpTool<InputArgsShape, Output
    * @param input Empty input object (no input required)
    * @returns Promise resolving to the review instructions
    */
-  public async exec(input: InputArgs): Promise<CallToolResult> {
+  public async exec(_input: InputArgs): Promise<CallToolResult> {
     try {
       // Send telemetry event for tool usage
       this.telemetryService.sendEvent('mobileWebOfflineGuidance', {
@@ -98,8 +98,7 @@ export class MobileOfflineGuidanceMcpTool extends McpTool<InputArgsShape, Output
       });
 
       // Call the wrapped tool's getExpertReviewInstructions method directly
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reviewInstructions = (this.wrappedTool as any).getExpertReviewInstructions();
+      const reviewInstructions = this.wrappedTool.getExpertReviewInstructions();
 
       return {
         content: [

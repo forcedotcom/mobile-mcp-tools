@@ -99,7 +99,7 @@ export class OfflineAnalysisTool implements Tool {
     );
   }
 
-  private async analyzeCode(code: LwcCodeType): Promise<ExpertsCodeAnalysisIssuesType> {
+  public async analyzeCode(code: LwcCodeType): Promise<ExpertsCodeAnalysisIssuesType> {
     const jsCode = code.js.map(js => js.content).join('\n');
     const { messages } = this.linter.verifyAndFix(jsCode, LINTER_CONFIG, {
       fix: true,

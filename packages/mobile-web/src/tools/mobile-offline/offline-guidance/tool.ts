@@ -68,7 +68,7 @@ export class OfflineGuidanceTool implements Tool {
     );
   }
 
-  private getExpertReviewInstructions(): ExpertsReviewInstructionsType {
+  public getExpertReviewInstructions(): ExpertsReviewInstructionsType {
     const reviewInstructions: ExpertReviewInstructionsType[] = [
       this.getConditionalRenderingExpert(),
       this.getGraphqlWireExpert(),

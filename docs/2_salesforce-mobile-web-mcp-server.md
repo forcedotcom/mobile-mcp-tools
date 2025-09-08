@@ -144,6 +144,9 @@ The project follows a standard Node.js/TypeScript project structure:
 ```
 mobile-web/
 ├── src/           # Source code for the MCP server implementation
+│   ├── tools/     # Core tool implementations for server mode
+│   ├── provider-tools/  # MCP provider tool adapters for integration mode
+│   └── provider.ts      # MobileWebMcpProvider implementation
 ├── dist/          # Compiled JavaScript output
 ├── scripts/       # Project utilities and maintenance scripts
 ├── resources/     # TypeScript declaration files and tool suite resources
@@ -263,11 +266,19 @@ While maintaining broad compatibility, our product focus prioritizes optimal exp
 
 # MCP Provider Integration
 
-In addition to standalone server functionality, the `@salesforce/mobile-web-mcp-server` package now provides a `MobileWebMcpProvider` for integration with other MCP packages and services.
+In addition to standalone server functionality, the `@salesforce/mobile-web-mcp-server` package now provides a `MobileWebMcpProvider` for integration with other MCP packages and services. This provider architecture enables modular consumption of mobile-web capabilities within larger MCP ecosystems.
 
 ## MobileWebMcpProvider
 
-The `MobileWebMcpProvider` class extends the `McpProvider` interface and exposes mobile-offline tools for consumption by other MCP packages.
+The `MobileWebMcpProvider` class extends the `McpProvider` interface from `@salesforce/mcp-provider-api` and exposes mobile-offline tools for consumption by other MCP packages. Each tool is wrapped in an MCP-compatible adapter that maintains the original functionality while providing standardized interfaces.
+
+### Provider Architecture
+
+The provider uses a wrapper pattern to adapt existing tools:
+
+- **Provider Class** (`MobileWebMcpProvider`) - Main provider interface implementing `McpProvider`
+- **Tool Adapters** (`MobileOffline*McpTool`) - Individual tool wrappers implementing `McpTool<InputArgsShape, OutputArgsShape>`
+- **Original Tools** - Core functionality preserved from existing tool implementations
 
 ### Usage
 
@@ -284,29 +295,109 @@ const tools = await provider.provideTools(services);
 The provider currently exposes the following mobile-offline tools:
 
 - **`sf-mobile-web-offline-analysis`** - Analyzes LWC components for mobile-specific issues and provides detailed recommendations
+  - **Input Schema**: LWC component bundle (HTML, JS, CSS, metadata)
+  - **Output Schema**: Structured analysis results with violation details and remediation guidance
+  - **Telemetry**: Tracks component name, namespace, and tool usage
+
 - **`sf-mobile-web-offline-guidance`** - Provides structured review instructions to detect and remediate Mobile Offline code violations
+  - **Input Schema**: No input required (empty object)
+  - **Output Schema**: Comprehensive expert review instructions and violation patterns
+  - **Telemetry**: Tracks tool usage and access patterns
+
+### Tool Configuration Features
+
+Each provider tool includes comprehensive configuration:
+
+- **Schema Definitions** - Strongly-typed input/output schemas using Zod validation
+- **MCP Annotations** - Standard MCP tool annotations for proper host integration:
+  - `readOnlyHint: true` - Tools analyze without modifying input
+  - `destructiveHint: false` - No destructive operations performed
+  - `idempotentHint: true` - Consistent results for same input
+  - `openWorldHint: false` - No external dependencies required
+- **Release State** - Currently marked as `NON_GA` for pre-release functionality
+- **Toolset Classification** - Categorized under `Toolset.OTHER` for specialized mobile capabilities
 
 ### Integration Benefits
 
 - **Modular Integration** - Other MCP packages can selectively consume mobile-web capabilities
 - **Consistent Interface** - Follows established MCP provider patterns for seamless integration
-- **Telemetry Support** - Integrates with MCP provider telemetry services for usage tracking
+- **Telemetry Support** - Integrates with MCP provider telemetry services for comprehensive usage tracking
+- **Error Handling** - Robust error handling with structured error responses
 - **Future Extensibility** - Architecture supports adding more tool suites (e.g., native-capabilities) as needed
 
 ## Dual Mode Support
 
-The package supports both usage patterns:
+The package supports both usage patterns, enabling flexible deployment across different MCP integration scenarios:
 
-### Server Mode (Existing)
+### Server Mode (Standalone)
+
+For direct MCP client integration, the server can be launched independently:
+
 ```bash
+# Direct execution
 npx -y @salesforce/mobile-web-mcp-server
+
+# With specific version
+npx -y @salesforce/mobile-web-mcp-server@latest
 ```
 
-### Provider Mode (New)
+**Use Cases:**
+- Direct integration with MCP hosts (A4D, Claude Desktop, etc.)
+- Standalone development environments
+- Testing and evaluation scenarios
+
+### Provider Mode (Integration)
+
+For integration within larger MCP ecosystems, use the provider interface:
+
 ```typescript
 import { MobileWebMcpProvider } from '@salesforce/mobile-web-mcp-server/provider';
-// Integrate with other MCP packages
+import { Services } from '@salesforce/mcp-provider-api';
+
+// Initialize provider with services
+const provider = new MobileWebMcpProvider();
+const tools = await provider.provideTools(services);
+
+// Register tools with your MCP server
+for (const tool of tools) {
+  mcpServer.addTool(tool);
+}
 ```
+
+**Advanced Integration Example:**
+
+```typescript
+import { MobileWebMcpProvider } from '@salesforce/mobile-web-mcp-server/provider';
+import { TelemetryService, Services } from '@salesforce/mcp-provider-api';
+
+// Custom services implementation
+const customServices: Services = {
+  getTelemetryService(): TelemetryService {
+    return {
+      sendEvent: (eventName: string, properties?: Record<string, any>) => {
+        console.log(`Telemetry: ${eventName}`, properties);
+      }
+    };
+  }
+};
+
+// Provider initialization
+const provider = new MobileWebMcpProvider();
+const tools = await provider.provideTools(customServices);
+
+// Tool inspection and selective registration
+tools.forEach(tool => {
+  console.log(`Registering tool: ${tool.getName()}`);
+  console.log(`Release state: ${tool.getReleaseState()}`);
+  console.log(`Toolsets: ${tool.getToolsets().join(', ')}`);
+});
+```
+
+**Use Cases:**
+- Integration with Salesforce DX MCP servers
+- Custom MCP host implementations
+- Multi-provider MCP ecosystems
+- Enterprise MCP service architectures
 
 ---
 
@@ -314,10 +405,33 @@ import { MobileWebMcpProvider } from '@salesforce/mobile-web-mcp-server/provider
 
 The `@salesforce/mobile-web-mcp-server` is designed to accommodate future tool suites as mobile web development needs evolve while maintaining broad MCP ecosystem compatibility:
 
-* **Tool Suite Extensibility** - New functional domains can be added as separate tool suites
+## Tool Suite Extensibility
+
+* **New Functional Domains** - Additional tool suites can be added as separate modules following established patterns
+* **Provider Architecture Scaling** - New tool suites can be seamlessly integrated into the provider interface
+* **Selective Tool Exposure** - Provider consumers can choose which tool suites to include based on their needs
+
+## API and Integration Evolution
+
 * **API Evolution** - Declaration management can adapt to new API sources and formats
+* **Enhanced Provider Interface** - Provider can be extended to support resources, prompts, and additional MCP features
+* **Multi-Provider Ecosystems** - Architecture supports composition with other MCP providers for comprehensive tooling
+
+## Development and Community
+
 * **Community Contributions** - Open architecture supports external contributions to tool suites
 * **Cross-Platform Support** - Foundation supports expansion beyond Salesforce-specific scenarios
+* **Documentation Integration** - Provider tools can include embedded documentation and examples
+
+## MCP Ecosystem Compatibility
+
 * **MCP Host Evolution** - Continuous adaptation to support new MCP hosts and protocol updates
 * **Integration Scenarios** - Support for complex multi-tool workflows combining multiple suites across various MCP environments
-* **Provider Expansion** - Provider interface can be extended to expose additional tool suites (native-capabilities, future domains)
+* **Telemetry and Analytics** - Enhanced telemetry capabilities for usage tracking and optimization
+
+## Planned Expansions
+
+* **Native Capabilities Provider Integration** - Extend provider to expose native-capabilities tools for device integration scenarios
+* **Enhanced Analysis Tools** - Additional static analysis capabilities for performance, accessibility, and security
+* **Custom Tool Registration** - Support for runtime tool registration and dynamic provider configuration
+* **Multi-Language Support** - Potential expansion beyond TypeScript/JavaScript for broader ecosystem compatibility
