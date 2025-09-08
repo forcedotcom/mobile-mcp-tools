@@ -8,6 +8,12 @@ import z from 'zod';
 
 export const EmptySchema = z.object({});
 
+export const TextOutputSchema = z
+  .object({
+    content: z.string().describe('The tool response content'),
+  })
+  .describe('Tool response with content');
+
 const LwcFileSchema = z.object({
   path: z.string().describe('path to component file relative to LWC component bundle root'),
   content: z.string().describe('content of the file'),

@@ -270,14 +270,14 @@ In addition to standalone server functionality, the `@salesforce/mobile-web-mcp-
 
 ## MobileWebMcpProvider
 
-The `MobileWebMcpProvider` class extends the `McpProvider` interface from `@salesforce/mcp-provider-api` and exposes mobile-offline tools for consumption by other MCP packages. Each tool is wrapped in an MCP-compatible adapter that maintains the original functionality while providing standardized interfaces.
+The `MobileWebMcpProvider` class extends the `McpProvider` interface from `@salesforce/mcp-provider-api` and exposes both mobile-offline and native-capabilities tools for consumption by other MCP packages. Each tool is wrapped in an MCP-compatible adapter that maintains the original functionality while providing standardized interfaces.
 
 ### Provider Architecture
 
 The provider uses a wrapper pattern to adapt existing tools:
 
 - **Provider Class** (`MobileWebMcpProvider`) - Main provider interface implementing `McpProvider`
-- **Tool Adapters** (`MobileOffline*McpTool`) - Individual tool wrappers implementing `McpTool<InputArgsShape, OutputArgsShape>`
+- **Tool Adapters** (`*McpTool`) - Individual tool wrappers implementing `McpTool<InputArgsShape, OutputArgsShape>` for both mobile-offline and native-capabilities tools
 - **Original Tools** - Core functionality preserved from existing tool implementations
 
 ### Usage
@@ -292,7 +292,9 @@ const tools = await provider.provideTools(services);
 
 ### Exposed Tools
 
-The provider currently exposes the following mobile-offline tools:
+The provider currently exposes **13 total tools** across two functional domains:
+
+#### Mobile Offline Tools
 
 - **`sf-mobile-web-offline-analysis`** - Analyzes LWC components for mobile-specific issues and provides detailed recommendations
   - **Input Schema**: LWC component bundle (HTML, JS, CSS, metadata)
@@ -303,6 +305,27 @@ The provider currently exposes the following mobile-offline tools:
   - **Input Schema**: No input required (empty object)
   - **Output Schema**: Comprehensive expert review instructions and violation patterns
   - **Telemetry**: Tracks tool usage and access patterns
+
+#### Native Capabilities Tools
+
+The provider exposes all native capabilities tools for mobile device integration:
+
+- **`sfmobile-web-app-review`** - App Review Service API documentation and guidance
+- **`sfmobile-web-ar-space-capture`** - AR Space Capture API documentation and guidance
+- **`sfmobile-web-barcode-scanner`** - Barcode Scanner API documentation and guidance
+- **`sfmobile-web-biometrics`** - Biometrics Service API documentation and guidance
+- **`sfmobile-web-calendar`** - Calendar Service API documentation and guidance
+- **`sfmobile-web-contacts`** - Contacts Service API documentation and guidance
+- **`sfmobile-web-document-scanner`** - Document Scanner API documentation and guidance
+- **`sfmobile-web-geofencing`** - Geofencing Service API documentation and guidance
+- **`sfmobile-web-location`** - Location Service API documentation and guidance
+- **`sfmobile-web-nfc`** - NFC Service API documentation and guidance
+- **`sfmobile-web-payments`** - Payments Service API documentation and guidance
+
+Each native capabilities tool:
+- **Input Schema**: No input required (empty object)
+- **Output Schema**: TypeScript API documentation and implementation guidance
+- **Telemetry**: Tracks tool usage and service name
 
 ### Tool Configuration Features
 
@@ -323,7 +346,7 @@ Each provider tool includes comprehensive configuration:
 - **Consistent Interface** - Follows established MCP provider patterns for seamless integration
 - **Telemetry Support** - Integrates with MCP provider telemetry services for comprehensive usage tracking
 - **Error Handling** - Robust error handling with structured error responses
-- **Future Extensibility** - Architecture supports adding more tool suites (e.g., native-capabilities) as needed
+- **Comprehensive Coverage** - Includes both mobile-offline analysis tools and native-capabilities documentation tools
 
 ## Dual Mode Support
 
@@ -348,20 +371,17 @@ npx -y @salesforce/mobile-web-mcp-server@latest
 
 ### Provider Mode (Integration)
 
-For integration within larger MCP ecosystems, use the provider interface:
+For integration within DX CLI MCP ecosystems, use the provider interface:
 
 ```typescript
 import { MobileWebMcpProvider } from '@salesforce/mobile-web-mcp-server/provider';
-import { Services } from '@salesforce/mcp-provider-api';
+import { McpProvider } from '@salesforce/mcp-provider-api';
 
-// Initialize provider with services
-const provider = new MobileWebMcpProvider();
-const tools = await provider.provideTools(services);
+export const MCP_PROVIDER_REGISTRY: McpProvider[] = [
+  // Add new instances here
+  new MobileWebMcpProvider(),
+];
 
-// Register tools with your MCP server
-for (const tool of tools) {
-  mcpServer.addTool(tool);
-}
 ```
 
 **Advanced Integration Example:**
@@ -431,7 +451,7 @@ The `@salesforce/mobile-web-mcp-server` is designed to accommodate future tool s
 
 ## Planned Expansions
 
-* **Native Capabilities Provider Integration** - Extend provider to expose native-capabilities tools for device integration scenarios
 * **Enhanced Analysis Tools** - Additional static analysis capabilities for performance, accessibility, and security
 * **Custom Tool Registration** - Support for runtime tool registration and dynamic provider configuration
 * **Multi-Language Support** - Potential expansion beyond TypeScript/JavaScript for broader ecosystem compatibility
+* **Advanced Native Capabilities** - Additional mobile device capabilities as they become available in the platform

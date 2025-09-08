@@ -71,7 +71,7 @@ ${typeDefinitions}
 \`\`\``;
   }
 
-  protected async handleRequest() {
+  public async handleRequest() {
     try {
       const typeDefinitions = await this.readTypeDefinitionFile();
       const baseCapability = await this.readBaseCapability();
