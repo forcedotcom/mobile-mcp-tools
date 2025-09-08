@@ -8,6 +8,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MobileOfflineGuidanceMcpTool } from '../../src/provider-tools/mobile-offline-guidance-mcp-tool.js';
 import { TelemetryService, ReleaseState, Toolset } from '@salesforce/mcp-provider-api';
+import {
+  ExpertsReviewInstructionsType,
+  ExpertReviewInstructionsType,
+} from '../../src/schemas/analysisSchema.js';
 
 describe('MobileOfflineGuidanceMcpTool', () => {
   let mockTelemetryService: TelemetryService;
@@ -59,7 +63,7 @@ describe('MobileOfflineGuidanceMcpTool', () => {
     expect(result.structuredContent).toBeDefined();
 
     // Verify the structure contains review instructions
-    const structuredContent = result.structuredContent as any;
+    const structuredContent = result.structuredContent as ExpertsReviewInstructionsType;
     expect(structuredContent.reviewInstructions).toBeDefined();
     expect(Array.isArray(structuredContent.reviewInstructions)).toBe(true);
     expect(structuredContent.orchestrationInstructions).toBeDefined();
@@ -67,10 +71,11 @@ describe('MobileOfflineGuidanceMcpTool', () => {
 
   it('should provide guidance for conditional rendering expert', async () => {
     const result = await tool.exec({});
-    const structuredContent = result.structuredContent as any;
+    const structuredContent = result.structuredContent as ExpertsReviewInstructionsType;
 
     const conditionalRenderingExpert = structuredContent.reviewInstructions.find(
-      (expert: any) => expert.expertReviewerName === 'Conditional Rendering Compatibility Expert'
+      (expert: ExpertReviewInstructionsType) =>
+        expert.expertReviewerName === 'Conditional Rendering Compatibility Expert'
     );
 
     expect(conditionalRenderingExpert).toBeDefined();
@@ -80,10 +85,11 @@ describe('MobileOfflineGuidanceMcpTool', () => {
 
   it('should provide guidance for GraphQL wire expert', async () => {
     const result = await tool.exec({});
-    const structuredContent = result.structuredContent as any;
+    const structuredContent = result.structuredContent as ExpertsReviewInstructionsType;
 
     const graphqlExpert = structuredContent.reviewInstructions.find(
-      (expert: any) => expert.expertReviewerName === 'GraphQL Wire Configuration Expert'
+      (expert: ExpertReviewInstructionsType) =>
+        expert.expertReviewerName === 'GraphQL Wire Configuration Expert'
     );
 
     expect(graphqlExpert).toBeDefined();

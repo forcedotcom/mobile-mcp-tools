@@ -71,13 +71,10 @@ describe('ContactsMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebContacts',
-        {
-          toolId: 'sfmobile-web-contacts',
-          serviceName: 'Contacts',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebContacts', {
+        toolId: 'sfmobile-web-contacts',
+        serviceName: 'Contacts',
+      });
     });
 
     it('should handle errors gracefully', async () => {

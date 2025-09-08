@@ -34,15 +34,15 @@ describe('MobileWebMcpProvider', () => {
 
     // Should provide 13 total tools: 2 mobile-offline + 11 native-capabilities
     expect(tools).toHaveLength(13);
-    
+
     // Check mobile-offline tools
     expect(tools[0].getName()).toBe('sf-mobile-web-offline-analysis');
     expect(tools[1].getName()).toBe('sf-mobile-web-offline-guidance');
-    
+
     // Check native-capabilities tools
     const nativeCapabilityTools = tools.slice(2);
     expect(nativeCapabilityTools).toHaveLength(11);
-    
+
     // Verify all native capability tool names start with 'sfmobile-web-'
     nativeCapabilityTools.forEach(tool => {
       expect(tool.getName()).toMatch(/^sfmobile-web-/);

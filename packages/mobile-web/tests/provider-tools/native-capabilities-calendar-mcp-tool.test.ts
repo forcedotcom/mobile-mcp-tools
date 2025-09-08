@@ -71,13 +71,10 @@ describe('CalendarMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebCalendar',
-        {
-          toolId: 'sfmobile-web-calendar',
-          serviceName: 'Calendar',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebCalendar', {
+        toolId: 'sfmobile-web-calendar',
+        serviceName: 'Calendar',
+      });
     });
 
     it('should handle errors gracefully', async () => {

@@ -71,13 +71,10 @@ describe('GeofencingMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebGeofencing',
-        {
-          toolId: 'sfmobile-web-geofencing',
-          serviceName: 'Geofencing',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebGeofencing', {
+        toolId: 'sfmobile-web-geofencing',
+        serviceName: 'Geofencing',
+      });
     });
 
     it('should handle errors gracefully', async () => {

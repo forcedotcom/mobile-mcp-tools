@@ -71,13 +71,10 @@ describe('LocationMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebLocation',
-        {
-          toolId: 'sfmobile-web-location',
-          serviceName: 'Location',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebLocation', {
+        toolId: 'sfmobile-web-location',
+        serviceName: 'Location',
+      });
     });
 
     it('should handle errors gracefully', async () => {

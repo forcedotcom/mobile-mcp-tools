@@ -71,13 +71,10 @@ describe('BiometricsMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebBiometrics',
-        {
-          toolId: 'sfmobile-web-biometrics',
-          serviceName: 'Biometrics',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebBiometrics', {
+        toolId: 'sfmobile-web-biometrics',
+        serviceName: 'Biometrics',
+      });
     });
 
     it('should handle errors gracefully', async () => {

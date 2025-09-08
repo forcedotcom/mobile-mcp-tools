@@ -71,13 +71,10 @@ describe('BarcodeScannerMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebBarcodeScanner',
-        {
-          toolId: 'sfmobile-web-barcode-scanner',
-          serviceName: 'Barcode Scanner',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebBarcodeScanner', {
+        toolId: 'sfmobile-web-barcode-scanner',
+        serviceName: 'Barcode Scanner',
+      });
     });
 
     it('should handle errors gracefully', async () => {

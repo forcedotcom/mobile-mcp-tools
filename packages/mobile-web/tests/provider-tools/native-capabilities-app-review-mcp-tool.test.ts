@@ -71,13 +71,10 @@ describe('AppReviewMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebAppReview',
-        {
-          toolId: 'sfmobile-web-app-review',
-          serviceName: 'App Review',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebAppReview', {
+        toolId: 'sfmobile-web-app-review',
+        serviceName: 'App Review',
+      });
     });
 
     it('should handle errors gracefully', async () => {

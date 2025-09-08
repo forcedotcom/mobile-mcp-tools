@@ -71,13 +71,10 @@ describe('NfcMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebNFC',
-        {
-          toolId: 'sfmobile-web-nfc',
-          serviceName: 'NFC',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebNFC', {
+        toolId: 'sfmobile-web-nfc',
+        serviceName: 'NFC',
+      });
     });
 
     it('should handle errors gracefully', async () => {

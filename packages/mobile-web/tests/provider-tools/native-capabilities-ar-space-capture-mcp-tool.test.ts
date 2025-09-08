@@ -71,13 +71,10 @@ describe('ARSpaceCaptureMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebARSpaceCapture',
-        {
-          toolId: 'sfmobile-web-ar-space-capture',
-          serviceName: 'AR Space Capture',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebARSpaceCapture', {
+        toolId: 'sfmobile-web-ar-space-capture',
+        serviceName: 'AR Space Capture',
+      });
     });
 
     it('should handle errors gracefully', async () => {

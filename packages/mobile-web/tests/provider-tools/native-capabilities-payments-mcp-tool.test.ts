@@ -71,13 +71,10 @@ describe('PaymentsMcpTool', () => {
       const input = {};
       await tool.exec(input);
 
-      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith(
-        'mobileWebPayments',
-        {
-          toolId: 'sfmobile-web-payments',
-          serviceName: 'Payments',
-        }
-      );
+      expect(mockTelemetryService.sendEvent).toHaveBeenCalledWith('mobileWebPayments', {
+        toolId: 'sfmobile-web-payments',
+        serviceName: 'Payments',
+      });
     });
 
     it('should handle errors gracefully', async () => {
