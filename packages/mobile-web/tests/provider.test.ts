@@ -28,19 +28,32 @@ describe('MobileWebMcpProvider', () => {
     expect(provider.getName()).toBe('MobileWebMcpProvider');
   });
 
-  it('should provide mobile-offline tools', async () => {
+  it('should provide mobile-offline and native-capabilities tools', async () => {
     const provider = new MobileWebMcpProvider();
     const tools = await provider.provideTools(mockServices);
 
-    expect(tools).toHaveLength(2);
+    // Should provide 13 total tools: 2 mobile-offline + 11 native-capabilities
+    expect(tools).toHaveLength(13);
+    
+    // Check mobile-offline tools
     expect(tools[0].getName()).toBe('sf-mobile-web-offline-analysis');
     expect(tools[1].getName()).toBe('sf-mobile-web-offline-guidance');
+    
+    // Check native-capabilities tools
+    const nativeCapabilityTools = tools.slice(2);
+    expect(nativeCapabilityTools).toHaveLength(11);
+    
+    // Verify all native capability tool names start with 'sfmobile-web-'
+    nativeCapabilityTools.forEach(tool => {
+      expect(tool.getName()).toMatch(/^sfmobile-web-/);
+    });
   });
 
   it('should pass telemetry service to tools', async () => {
     const provider = new MobileWebMcpProvider();
     await provider.provideTools(mockServices);
 
-    expect(mockServices.getTelemetryService).toHaveBeenCalledTimes(2);
+    // Should call getTelemetryService once (extracted to variable) for all 13 tools
+    expect(mockServices.getTelemetryService).toHaveBeenCalledTimes(1);
   });
 });
