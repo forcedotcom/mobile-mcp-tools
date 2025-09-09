@@ -39,14 +39,27 @@ describe('MobileWebMcpProvider', () => {
     expect(tools[0].getName()).toBe('sf-mobile-web-offline-analysis');
     expect(tools[1].getName()).toBe('sf-mobile-web-offline-guidance');
 
-    // Check native-capabilities tools
+    // Check native-capabilities tools (now using NativeCapabilitiesGuidanceMcpTool)
     const nativeCapabilityTools = tools.slice(2);
     expect(nativeCapabilityTools).toHaveLength(11);
 
-    // Verify all native capability tool names start with 'sfmobile-web-'
-    nativeCapabilityTools.forEach(tool => {
-      expect(tool.getName()).toMatch(/^sfmobile-web-/);
-    });
+    // Verify native capability tool names (they now use the service names from underlying tools)
+    const expectedToolNames = [
+      'App Review Service',
+      'AR Space Capture', 
+      'Barcode Scanner',
+      'Biometrics Service',
+      'Calendar Service',
+      'Contacts Service',
+      'Document Scanner',
+      'Geofencing Service',
+      'Location Service',
+      'NFC Service',
+      'Payments Service'
+    ];
+    
+    const actualToolNames = nativeCapabilityTools.map(tool => tool.getName());
+    expect(actualToolNames).toEqual(expect.arrayContaining(expectedToolNames));
   });
 
   it('should pass telemetry service to tools', async () => {

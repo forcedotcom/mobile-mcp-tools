@@ -8,17 +8,18 @@
 import { McpProvider, McpTool, Services } from '@salesforce/mcp-provider-api';
 import { MobileOfflineAnalysisMcpTool } from './provider-tools/mobile-offline-analysis-mcp-tool.js';
 import { MobileOfflineGuidanceMcpTool } from './provider-tools/mobile-offline-guidance-mcp-tool.js';
-import { AppReviewMcpTool } from './provider-tools/native-capabilities-app-review-mcp-tool.js';
-import { ARSpaceCaptureMcpTool } from './provider-tools/native-capabilities-ar-space-capture-mcp-tool.js';
-import { BarcodeScannerMcpTool } from './provider-tools/native-capabilities-barcode-scanner-mcp-tool.js';
-import { BiometricsMcpTool } from './provider-tools/native-capabilities-biometrics-mcp-tool.js';
-import { CalendarMcpTool } from './provider-tools/native-capabilities-calendar-mcp-tool.js';
-import { ContactsMcpTool } from './provider-tools/native-capabilities-contacts-mcp-tool.js';
-import { DocumentScannerMcpTool } from './provider-tools/native-capabilities-document-scanner-mcp-tool.js';
-import { GeofencingMcpTool } from './provider-tools/native-capabilities-geofencing-mcp-tool.js';
-import { LocationMcpTool } from './provider-tools/native-capabilities-location-mcp-tool.js';
-import { NfcMcpTool } from './provider-tools/native-capabilities-nfc-mcp-tool.js';
-import { PaymentsMcpTool } from './provider-tools/native-capabilities-payments-mcp-tool.js';
+import { NativeCapabilitiesGuidanceMcpTool } from './provider-tools/native-capabilities-guidance-mcp-tool.js';
+import { AppReviewTool } from './tools/native-capabilities/appReview/tool.js';
+import { ArSpaceCaptureTool } from './tools/native-capabilities/arSpaceCapture/tool.js';
+import { BarcodeScannerTool } from './tools/native-capabilities/barcodeScanner/tool.js';
+import { BiometricsTool } from './tools/native-capabilities/biometrics/tool.js';
+import { CalendarTool } from './tools/native-capabilities/calendar/tool.js';
+import { ContactsTool } from './tools/native-capabilities/contacts/tool.js';
+import { DocumentScannerTool } from './tools/native-capabilities/documentScanner/tool.js';
+import { GeofencingTool } from './tools/native-capabilities/geofencing/tool.js';
+import { LocationTool } from './tools/native-capabilities/location/tool.js';
+import { NfcTool } from './tools/native-capabilities/nfc/tool.js';
+import { PaymentsTool } from './tools/native-capabilities/payments/tool.js';
 
 /**
  * MobileWebMcpProvider exposes mobile web tools for integration with other MCP packages.
@@ -47,17 +48,17 @@ export class MobileWebMcpProvider extends McpProvider {
       new MobileOfflineGuidanceMcpTool(telemetryService),
 
       // Native capabilities tools
-      new AppReviewMcpTool(telemetryService),
-      new ARSpaceCaptureMcpTool(telemetryService),
-      new BarcodeScannerMcpTool(telemetryService),
-      new BiometricsMcpTool(telemetryService),
-      new CalendarMcpTool(telemetryService),
-      new ContactsMcpTool(telemetryService),
-      new DocumentScannerMcpTool(telemetryService),
-      new GeofencingMcpTool(telemetryService),
-      new LocationMcpTool(telemetryService),
-      new NfcMcpTool(telemetryService),
-      new PaymentsMcpTool(telemetryService),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new AppReviewTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new ArSpaceCaptureTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new BarcodeScannerTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new BiometricsTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new CalendarTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new ContactsTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new DocumentScannerTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new GeofencingTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new LocationTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new NfcTool()),
+      new NativeCapabilitiesGuidanceMcpTool(telemetryService, new PaymentsTool()),
     ]);
   }
 }
