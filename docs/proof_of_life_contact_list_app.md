@@ -18,7 +18,7 @@
 
 **User Journey**: From utterance _"I want an iOS mobile app that will show me a list of all of my Salesforce Contacts"_ to a running mobile app displaying Contacts in a simulator/emulator.
 
-**Technical Validation**: Demonstrates instruction-first MCP tools successfully guiding an LLM through the complete Plan → Design/Iterate → Run workflow.
+**Technical Validation**: Demonstrates instruction-first MCP tools successfully guiding an LLM through the Plan → Run workflow with orchestration.
 
 ---
 
@@ -47,84 +47,121 @@
 
 1. **User utterance**: _"I want an iOS mobile app that will show me a list of all of my Salesforce Contacts."_
 
-2. **LLM calls Workflow Orchestration Guide** → receives complete roadmap for Contact list app workflow
+2. **LLM calls Orchestrator** → `sfmobile-native-project-manager` manages workflow execution
 
-3. **Phase 1: Plan** (Template Discovery → Project Generation → Build Validation)
-   - LLM guided through template discovery and selection
-   - LLM guided through project creation with Connected App configuration
-   - LLM guided through build verification
+3. **Workflow Execution**: Orchestrator manages state transitions and tool invocations
+   - **Plan Phase** → Template Discovery → Project Generation → Build Validation
+   - **Run Phase** → Deployment to simulator/emulator
+   - **Note**: Steel thread scope focuses on Contact list app generation and deployment
 
-4. **Phase 2: Design/Iterate** (Code Analysis → Feature Modification)
-   - LLM guided through exploring template structure
-   - LLM guided through adapting record list for Contacts
-
-5. **Phase 3: Run** (Deployment)
-   - LLM guided through deploying to iOS simulator
+4. **Human-in-the-Loop Pattern**: Each workflow node uses `interrupt()` to invoke instruction-first MCP tools
+   - Workflow pauses to initiate tool invocation, providing tool inputs via interrupt
+   - MCP tool provides comprehensive LLM guidance
+   - LLM executes tasks and returns results to orchestrator
+   - Workflow resumes with next node based on results
 
 ---
 
 ## MCP Server Tool Specifications
 
-### Primary Orchestration Tool
+### Orchestration Tool
 
-#### `sfmobile-native-workflow-guide`
+#### `sfmobile-native-project-manager`
 
-**Purpose**: Provides high-level workflow roadmap and tool sequence guidance
+**Purpose**: LangGraph-based workflow orchestrator that manages the complete mobile app generation process through human-in-the-loop pattern and instruction-first MCP tools
 
 **Input Schema**:
 
 ```typescript
 {
-  userRequest: string; // "I want an iOS mobile app that will show me a list of all of my Salesforce Contacts"
-  platform: 'iOS' | 'Android'; // Platform specified by user request
+  userInput: string; // "I want an iOS mobile app..." (initial) or tool output (resumption)
+  workflowStateData?: {
+    thread_id: string; // Workflow session identifier for continuation (auto-generated if not provided)
+  };
 }
 ```
 
-**Output**: Instruction-first workflow guidance including:
+**Workflow Architecture**: Implements StateGraph with the following nodes (matching actual steel thread tool scope):
 
-- Complete phase breakdown (Plan → Design/Iterate → Run)
-- Specific tool call sequence for Contact list use case
-- Success criteria and checkpoints for each phase
-- Expected file paths and CLI commands the LLM will use
+1. **analyzeUserRequest** → Extracts platform and feature requirements from user input
+2. **discoverTemplates** → `interrupt()` → `sfmobile-native-template-discovery` tool
+3. **generateProject** → `interrupt()` → `sfmobile-native-project-generation` tool
+4. **validateBuild** → `interrupt()` → `sfmobile-native-build` tool
+5. **deployApp** → `interrupt()` → `sfmobile-native-deployment` tool
 
-**Example Output**:
+**Output**: Natural language orchestration instructions embedding tool invocation data and workflow state:
 
-```markdown
-# iOS Mobile App Development Workflow
-
-## Step 1: Analyze User Request
-
-First, analyze the user request to identify key features:
-
-- Look for record types mentioned (Contacts, Accounts, Leads, etc.)
-- Identify UI patterns (list, form, dashboard, etc.)
-- Note any specific functionality (search, offline, etc.)
-
-## Step 2: Follow Three-Phase Workflow
-
-### Phase 1: Plan
-
-1. **Template Discovery**: Call `sfmobile-native-template-discovery` with specified platform
-   - Use identified features to filter templates by tags
-   - Match user requirements to template capabilities
-2. **Project Generation**: Call `sfmobile-native-project-generation` with selected template
-3. **Build Validation**: Call `sfmobile-native-build-validation` to verify base project
-   → **Checkpoint**: Working skeletal app that builds successfully
-
-### Phase 2: Design/Iterate
-
-4. **Code Analysis**: Call `sfmobile-native-code-analysis` to understand template structure
-5. **Feature Modification**: Call `sfmobile-native-feature-modification` to adapt for user's specific record type
-6. **Iterative Testing**: Build and validate changes incrementally
-   → **Checkpoint**: App displays user's requested data/functionality
-
-### Phase 3: Run
-
-7. **Deployment**: Call `sfmobile-native-deployment` to launch on simulator/emulator
-   → **Final Checkpoint**: User can interact with functioning app
-
-**Next Step**: Begin by analyzing the user request, then start with `sfmobile-native-template-discovery`
+```typescript
+{
+  orchestrationInstructionsPrompt: string; // Natural language prompt with embedded tool invocation instructions and workflow state
+  isComplete: boolean; // Whether workflow has finished
+}
 ```
+
+**Execution Pattern**:
+
+- Each `interrupt()` surfaces tool invocation metadata to orchestrator
+- Orchestrator creates natural language prompt embedding tool invocation instructions
+- Orchestrator returns orchestration prompt to MCP client
+- LLM receives orchestration prompt with specific tool name, input schema, and input values
+- LLM invokes specified instruction-first tool and executes guidance
+- LLM re-invokes orchestrator with tool results
+- Workflow resumes from checkpoint with `new Command({ resume: results })`
+
+**Example Orchestration Prompt**:
+
+````markdown
+# Your Role
+
+You are participating in a workflow orchestration process. The current (`sfmobile-native-project-manager`) MCP server tool is the orchestrator, and is sending you instructions on what to do next. These instructions describe the next participating MCP server tool to invoke, along with its input schema and input values.
+
+# Your Task
+
+- Invoke the following MCP server tool:
+
+**MCP Server Tool Name**: sfmobile-native-template-discovery
+**MCP Server Tool Input Schema**:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": ["iOS", "Android"]
+    }
+  },
+  "required": ["platform"]
+}
+```
+
+**MCP Server Tool Input Values**:
+
+```json
+{
+  "platform": "iOS"
+}
+```
+
+## Additional Input: `workflowStateData`
+
+`workflowStateData` is an additional input parameter that is specified in the input schema above, and should be passed
+to the next MCP server tool invocation, with the following object value:
+
+```json
+{
+  "thread_id": "mobile-1699123456-a7b2c9"
+}
+```
+
+This represents opaque workflow state data that should be round-tripped back to the `sfmobile-native-project-manager`
+MCP server tool orchestrator at the completion of the next MCP server tool invocation, without modification. These
+instructions will be further specified by the next MCP server tool invocation.
+
+- The MCP server tool you invoke will respond with its output, along with further instructions for continuing the workflow.
+````
+
+**Steel Thread Workflow State**: Uses subset of main `WorkflowState` interface from design document, including `userInput`, `platform`, `selectedTemplate`, `projectPath`, `connectedAppConfig`, `lastBuildStatus`, and `deploymentStatus` properties as needed for one-shot demonstration workflow.
 
 ---
 
@@ -139,6 +176,9 @@ First, analyze the user request to identify key features:
 ```typescript
 {
   platform: "iOS" | "Android";
+  workflowStateData?: {
+    thread_id: string; // Workflow session identifier for continuation
+  };
 }
 ```
 
@@ -166,6 +206,9 @@ First, analyze the user request to identify key features:
   platform: "iOS" | "Android"; // Platform for project generation
   connectedAppClientId?: string;
   connectedAppCallbackUri?: string;
+  workflowStateData?: {
+    thread_id: string; // Workflow session identifier for continuation
+  };
 }
 ```
 
@@ -176,7 +219,7 @@ First, analyze the user request to identify key features:
 - File modification instructions for OAuth setup
 - Next steps for build validation
 
-#### `sfmobile-native-build-validation`
+#### `sfmobile-native-build`
 
 **Purpose**: Guides LLM through initial build verification
 
@@ -186,6 +229,9 @@ First, analyze the user request to identify key features:
 {
   projectPath: string; // Path to generated project
   platform: 'iOS' | 'Android'; // Platform for build validation
+  workflowStateData?: {
+    thread_id: string; // Workflow session identifier for continuation
+  };
 }
 ```
 
@@ -194,59 +240,11 @@ First, analyze the user request to identify key features:
 - Platform-specific build commands: `xcodebuild` for iOS projects, `./gradlew build` for Android projects (iOS example shown, Android follows same pattern)
 - Build output interpretation guidance for platform-specific tools
 - Common build error troubleshooting steps
-- Success criteria for proceeding to Design/Iterate phase
+- Success criteria for proceeding to deployment
 
 ---
 
-### Phase 2: Design/Iterate Tools
-
-#### `sfmobile-native-code-analysis`
-
-**Purpose**: Guides LLM through understanding template project structure
-
-**Input Schema**:
-
-```typescript
-{
-  projectPath: string;
-  platform: 'iOS' | 'Android'; // Platform for code analysis
-  targetFeature: string; // "record-list"
-}
-```
-
-**Output**: Instruction-first guidance including:
-
-- Platform-specific file exploration patterns (iOS/Android project structures)
-- Key files to examine for record list implementation
-- Platform-specific code reading strategies (Swift/iOS, Kotlin/Java/Android)
-- Understanding existing data model and service patterns
-
-#### `sfmobile-native-feature-modification`
-
-**Purpose**: Guides LLM through adapting template for Contact records
-
-**Input Schema**:
-
-```typescript
-{
-  projectPath: string;
-  platform: 'iOS' | 'Android'; // Platform for feature modification
-  currentRecordType: string; // "Account" (from template)
-  targetRecordType: string; // "Contact"
-}
-```
-
-**Output**: Instruction-first guidance including:
-
-- Specific files to modify for Contact integration
-- SOQL query modifications needed
-- Data model updates for Contact fields
-- UI component updates for Contact-specific display
-- Iterative build validation after each change
-
----
-
-### Phase 3: Run Tools
+### Run Phase Tools
 
 #### `sfmobile-native-deployment`
 
@@ -259,6 +257,9 @@ First, analyze the user request to identify key features:
   projectPath: string;
   platform: "iOS" | "Android"; // Platform for deployment
   targetDevice?: string; // "iPhone 15" for iOS, "Pixel_7_API_33" for Android
+  workflowStateData?: {
+    thread_id: string; // Workflow session identifier for continuation
+  };
 }
 ```
 
@@ -377,7 +378,7 @@ Tools guide the LLM through:
 
 ### Phase 1: MCP Server Foundation
 
-1. **Workflow Orchestration Guide tool** with Contact list workflow template
+1. **Orchestrator**: `sfmobile-native-project-manager` with LangGraph StateGraph and SQLite checkpointing (workflow state persisted in `./.magen/workflow-state.db` and comprehensive logging to `./.magen/workflow_logs.json` within the well-known project artifacts directory)
 2. **Template Discovery tool** with CLI-based metadata access and analysis
 3. **Project Generation tool** with Connected App configuration guidance
 4. **Build Validation tool** with platform-specific build orchestration
@@ -407,9 +408,9 @@ Tools guide the LLM through:
 
 ### Technical Metrics
 
-- **Time to Working App**: < 10 minutes from utterance to simulator/emulator
-- **Build Success Rate**: 100% for happy path workflow
-- **Template Adaptation Accuracy**: Contact list displays actual Salesforce Contact records
+- **Time to Working App**: < 10 minutes from utterance to Contact list app in simulator/emulator
+- **Build Success Rate**: 100% for happy path workflow (Contact list app builds successfully)
+- **Deployment Success**: Generated Contact list app successfully runs in simulator/emulator
 
 ### Workflow Metrics
 
@@ -421,7 +422,7 @@ Tools guide the LLM through:
 
 - **Minimal User Intervention**: Only Connected App credentials required from user
 - **Clear Progress Indicators**: User understands workflow progress at each checkpoint
-- **Functional End Result**: User can interact with Contact list in working mobile app
+- **Functional End Result**: User can interact with Contact list mobile app in simulator/emulator
 
 ---
 
@@ -478,7 +479,8 @@ Tools guide the LLM through:
 
 **Potential Implementation Approaches**:
 
-- **File-System Workflow Status**: Maintain quasi-ephemeral documented workflow status on the file system that each tool refers to for status validation and updates with execution results. Benefits: Avoids polluting input/output schemas, provides persistent state across tool calls, enables debugging and workflow introspection.
+- **File-System Workflow Status**: Maintain quasi-ephemeral documented workflow status in the `./.magen/` well-known project artifacts directory that each tool refers to for status validation and updates with execution results. Benefits: Avoids polluting input/output schemas, provides persistent state across tool calls, enables debugging and workflow introspection, and leverages the established project artifact management structure.
+- **Comprehensive Workflow Logging**: All workflow orchestration and MCP tool interactions logged to `./.magen/workflow_logs.json` with structured JSON entries for debugging, audit trails, and workflow analysis. Benefits: Persistent debugging across sessions, detailed error tracking, workflow performance analysis, and comprehensive audit capabilities for production troubleshooting.
 - **Data Structure State Passing**: Represent orchestration status as a data structure passed from tool input to output. Benefits: Explicit state management, no file system dependencies. Concerns: Schema pollution, complexity in tool interfaces.
 - **Hybrid Approach**: Combination of file-system state with selective data structure passing for critical workflow checkpoints.
 
