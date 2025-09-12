@@ -14,6 +14,7 @@ import { UtilsXcodeAddFilesTool } from './tools/utils/utils-xcode-add-files/tool
 import { SfmobileNativeDeploymentTool } from './tools/run/sfmobile-native-deployment/tool.js';
 import { SfmobileNativeBuildTool } from './tools/plan/sfmobile-native-build/tool.js';
 import { SfmobileNativeProjectGenerationTool } from './tools/plan/sfmobile-native-project-generation/tool.js';
+import { MobileNativeOrchestrator } from './workflow/orchestrator.js';
 
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
@@ -24,7 +25,7 @@ const server = new McpServer({
   version,
 });
 
-// Define annotations for read-only tools
+// Define annotations for different tool types
 const readOnlyAnnotations: ToolAnnotations = {
   readOnlyHint: true,
   destructiveHint: false,
@@ -32,17 +33,30 @@ const readOnlyAnnotations: ToolAnnotations = {
   openWorldHint: false,
 };
 
-// Tools will be added here when implemented
-const tools = [
-  new SfmobileNativeTemplateDiscoveryTool(),
-  new SfmobileNativeProjectGenerationTool(),
-  new SfmobileNativeBuildTool(),
-  new SfmobileNativeDeploymentTool(),
-  new UtilsXcodeAddFilesTool(),
-];
+const orchestratorAnnotations: ToolAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
+};
 
-// Register all tools with appropriate annotations
-tools.forEach(tool => tool.register(server, readOnlyAnnotations));
+// Initialize tools
+const orchestrator = new MobileNativeOrchestrator(server);
+const templateDiscoveryTool = new SfmobileNativeTemplateDiscoveryTool(server);
+const projectGenerationTool = new SfmobileNativeProjectGenerationTool(server);
+const buildTool = new SfmobileNativeBuildTool(server);
+const deploymentTool = new SfmobileNativeDeploymentTool(server);
+const xcodeAddFilesTool = new UtilsXcodeAddFilesTool(server);
+
+// Register orchestrator with specific annotations
+orchestrator.register(orchestratorAnnotations);
+
+// Register all other tools with read-only annotations
+templateDiscoveryTool.register(readOnlyAnnotations);
+projectGenerationTool.register(readOnlyAnnotations);
+buildTool.register(readOnlyAnnotations);
+deploymentTool.register(readOnlyAnnotations);
+xcodeAddFilesTool.register(readOnlyAnnotations);
 
 export default server;
 

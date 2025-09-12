@@ -6,59 +6,29 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import dedent from 'dedent';
-import { Tool } from '../../tool.js';
+import { AbstractTool } from '../../base/abstractTool.js';
 import { MOBILE_SDK_TEMPLATES_PATH } from '../../../constants.js';
+import { Logger } from '../../../logging/index.js';
+import { PROJECT_GENERATION_TOOL } from '../../../registry/toolRegistry.js';
+import { type ProjectGenerationInput } from '../../../schemas/toolSchemas.js';
 
-// Input schema for the project generation tool
-const ProjectGenerationInputSchema = z.object({
-  selectedTemplate: z.string().describe('The template ID selected from template discovery'),
-  projectName: z.string().describe('Name for the mobile app project'),
-  platform: z.enum(['iOS', 'Android']).describe('Target mobile platform'),
-  packageName: z.string().describe('Package name for the mobile app (e.g., com.company.appname)'),
-  organization: z.string().describe('Organization name for the mobile app project'),
-  connectedAppClientId: z.string().describe('Connected App Client ID for OAuth configuration'),
-  connectedAppCallbackUri: z
-    .string()
-    .describe('Connected App Callback URI for OAuth configuration'),
-  loginHost: z
-    .string()
-    .optional()
-    .describe('Optional Salesforce login host URL (e.g., https://test.salesforce.com for sandbox)'),
-});
+// Use the centralized schema directly
+const ProjectGenerationInputSchema = PROJECT_GENERATION_TOOL.inputSchema;
 
-type ProjectGenerationInput = z.infer<typeof ProjectGenerationInputSchema>;
-
-export class SfmobileNativeProjectGenerationTool implements Tool {
-  public readonly name = 'Salesforce Mobile Native Project Generation';
-  public readonly title = 'Salesforce Mobile Native Project Generation Guide';
-  public readonly toolId = 'sfmobile-native-project-generation';
-  public readonly description =
-    'Provides LLM instructions for generating a mobile app project from a selected template with OAuth configuration';
+export class SfmobileNativeProjectGenerationTool extends AbstractTool {
+  public readonly toolId = PROJECT_GENERATION_TOOL.toolId;
+  public readonly name = PROJECT_GENERATION_TOOL.name;
+  public readonly title = PROJECT_GENERATION_TOOL.title;
+  public readonly description = PROJECT_GENERATION_TOOL.description;
   public readonly inputSchema = ProjectGenerationInputSchema;
+  public readonly outputSchema = undefined; // No specific output schema defined
 
-  public register(server: McpServer, annotations: ToolAnnotations): void {
-    const enhancedAnnotations = {
-      ...annotations,
-      title: this.title,
-      readOnlyHint: false, // Project generation modifies file system
-      destructiveHint: false, // Creates new projects but doesn't destroy existing files
-      idempotentHint: false, // Project creation modifies file system state
-      openWorldHint: true, // Interacts with CLI tools and file system
-    };
-
-    server.tool(
-      this.toolId,
-      this.description,
-      this.inputSchema.shape,
-      enhancedAnnotations,
-      this.handleRequest.bind(this)
-    );
+  constructor(server: McpServer, logger?: Logger) {
+    super(server, 'ProjectGenerationTool', logger);
   }
 
-  private async handleRequest(input: ProjectGenerationInput) {
+  protected async handleRequest(input: ProjectGenerationInput) {
     try {
       const guidance = this.generateProjectGenerationGuidance(input);
 

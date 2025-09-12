@@ -12,7 +12,10 @@ describe('SfmobileNativeDeploymentTool', () => {
   let tool: SfmobileNativeDeploymentTool;
 
   beforeEach(() => {
-    tool = new SfmobileNativeDeploymentTool();
+    const mockServer = {
+      registerTool: vi.fn(),
+    };
+    tool = new SfmobileNativeDeploymentTool(mockServer as any);
   });
 
   it('should have correct tool properties', () => {
@@ -36,7 +39,7 @@ describe('SfmobileNativeDeploymentTool', () => {
 
   it('should register with MCP server', () => {
     const mockServer = {
-      tool: vi.fn(),
+      registerTool: vi.fn(),
     };
     const mockAnnotations = {
       readOnlyHint: true,
@@ -44,18 +47,15 @@ describe('SfmobileNativeDeploymentTool', () => {
       idempotentHint: true,
       openWorldHint: false,
     };
+    const deploymentTool = new SfmobileNativeDeploymentTool(mockServer as any);
 
-    tool.register(
-      mockServer as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer,
-      mockAnnotations
-    );
+    deploymentTool.register(mockAnnotations);
 
-    expect(mockServer.tool).toHaveBeenCalledWith(
+    expect(mockServer.registerTool).toHaveBeenCalledWith(
       'sfmobile-native-deployment',
-      'Guides LLM through deploying Salesforce mobile native apps to devices or simulators',
-      expect.any(Object),
       expect.objectContaining({
-        ...mockAnnotations,
+        description: 'Guides LLM through deploying Salesforce mobile native apps to devices or simulators',
+        inputSchema: expect.any(Object),
         title: 'Salesforce Mobile Native Deployment Guide',
       }),
       expect.any(Function)

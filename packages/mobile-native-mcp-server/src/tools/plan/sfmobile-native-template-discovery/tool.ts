@@ -6,51 +6,52 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { Tool } from '../../tool.js';
+import { AbstractTool } from '../../base/abstractTool.js';
 import { MOBILE_SDK_TEMPLATES_PATH } from '../../../constants.js';
+import { WORKFLOW_TOOL_BASE_INPUT_SCHEMA } from '../../../workflow/schemas.js';
+import { Logger } from '../../../logging/index.js';
+import { TEMPLATE_DISCOVERY_TOOL } from '../../../registry/toolRegistry.js';
+import { type TemplateDiscoveryInput } from '../../../schemas/toolSchemas.js';
 import dedent from 'dedent';
 
-// Input schema for the template discovery tool
-const TemplateDiscoveryInputSchema = z.object({
-  platform: z.enum(['iOS', 'Android']).describe('Target mobile platform'),
-});
+// Extend the centralized schema with workflow support
+const TemplateDiscoveryInputSchema = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend(
+  TEMPLATE_DISCOVERY_TOOL.inputSchema.shape
+);
 
-type TemplateDiscoveryInput = z.infer<typeof TemplateDiscoveryInputSchema>;
+type ExtendedTemplateDiscoveryInput = z.infer<typeof TemplateDiscoveryInputSchema>;
 
-export class SfmobileNativeTemplateDiscoveryTool implements Tool {
-  public readonly name = 'Salesforce Mobile Native Template Discovery';
-  public readonly title = 'Salesforce Mobile Native Template Discovery Guide';
-  public readonly toolId = 'sfmobile-native-template-discovery';
-  public readonly description =
-    'Guides LLM through template discovery and selection for Salesforce mobile app development';
+export class SfmobileNativeTemplateDiscoveryTool extends AbstractTool {
+  public readonly toolId = TEMPLATE_DISCOVERY_TOOL.toolId;
+  public readonly name = TEMPLATE_DISCOVERY_TOOL.name;
+  public readonly title = TEMPLATE_DISCOVERY_TOOL.title;
+  public readonly description = TEMPLATE_DISCOVERY_TOOL.description;
   public readonly inputSchema = TemplateDiscoveryInputSchema;
+  public readonly outputSchema = undefined; // No specific output schema defined
 
-  public register(server: McpServer, annotations: ToolAnnotations): void {
-    const enhancedAnnotations = {
-      ...annotations,
-      title: this.title,
-    };
-
-    server.tool(
-      this.toolId,
-      this.description,
-      this.inputSchema.shape,
-      enhancedAnnotations,
-      this.handleRequest.bind(this)
-    );
+  constructor(server: McpServer, logger?: Logger) {
+    super(server, 'TemplateDiscoveryTool', logger);
   }
 
-  private async handleRequest(input: TemplateDiscoveryInput) {
+  protected async handleRequest(input: ExtendedTemplateDiscoveryInput) {
     try {
       const guidance = this.generateTemplateDiscoveryGuidance(input);
+
+      // Add workflow round-tripping instructions if this is part of a workflow
+      const finalOutput = input.workflowStateData
+        ? this.addPostInvocationInstructions(
+            guidance,
+            'the complete template discovery results and selected template information',
+            input.workflowStateData
+          )
+        : guidance;
 
       return {
         content: [
           {
             type: 'text' as const,
-            text: guidance,
+            text: finalOutput,
           },
         ],
       };

@@ -18,7 +18,10 @@ describe('UtilsXcodeAddFilesTool', () => {
   let tool: UtilsXcodeAddFilesTool;
 
   beforeEach(() => {
-    tool = new UtilsXcodeAddFilesTool();
+    const mockServer = {
+      registerTool: vi.fn(),
+    };
+    tool = new UtilsXcodeAddFilesTool(mockServer as any);
     vi.clearAllMocks();
   });
 
@@ -50,7 +53,7 @@ describe('UtilsXcodeAddFilesTool', () => {
   describe('Tool Registration', () => {
     it('should register with MCP server', () => {
       const mockServer = {
-        tool: vi.fn(),
+        registerTool: vi.fn(),
       };
       const mockAnnotations = {
         readOnlyHint: false,
@@ -58,18 +61,15 @@ describe('UtilsXcodeAddFilesTool', () => {
         idempotentHint: false,
         openWorldHint: false,
       };
+      const xcodeTool = new UtilsXcodeAddFilesTool(mockServer as any);
 
-      tool.register(
-        mockServer as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer,
-        mockAnnotations
-      );
+      xcodeTool.register(mockAnnotations);
 
-      expect(mockServer.tool).toHaveBeenCalledWith(
+      expect(mockServer.registerTool).toHaveBeenCalledWith(
         'utils-xcode-add-files',
-        'Generates a Ruby command using the xcodeproj gem to add files to Xcode projects',
-        expect.any(Object),
         expect.objectContaining({
-          ...mockAnnotations,
+          description: 'Generates a Ruby command using the xcodeproj gem to add files to Xcode projects',
+          inputSchema: expect.any(Object),
           title: 'Xcode Project File Addition Utility',
         }),
         expect.any(Function)

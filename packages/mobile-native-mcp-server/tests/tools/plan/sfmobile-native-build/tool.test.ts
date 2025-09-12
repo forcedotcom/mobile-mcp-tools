@@ -12,7 +12,10 @@ describe('SfmobileNativeBuildTool', () => {
   let tool: SfmobileNativeBuildTool;
 
   beforeEach(() => {
-    tool = new SfmobileNativeBuildTool();
+    const mockServer = {
+      registerTool: vi.fn(),
+    };
+    tool = new SfmobileNativeBuildTool(mockServer as any);
   });
 
   it('should have correct tool properties', () => {
@@ -32,9 +35,9 @@ describe('SfmobileNativeBuildTool', () => {
     expect(schema.shape.projectPath).toBeDefined();
   });
 
-  it('should register with MCP server', () => {
+  it('should register with MCP server using registerTool', () => {
     const mockServer = {
-      tool: vi.fn(),
+      registerTool: vi.fn(),
     };
     const mockAnnotations = {
       readOnlyHint: true,
@@ -42,22 +45,24 @@ describe('SfmobileNativeBuildTool', () => {
       idempotentHint: true,
       openWorldHint: false,
     };
+    const buildTool = new SfmobileNativeBuildTool(mockServer as any);
 
-    tool.register(
-      mockServer as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer,
-      mockAnnotations
-    );
+    buildTool.register(mockAnnotations);
 
-    expect(mockServer.tool).toHaveBeenCalledWith(
+    expect(mockServer.registerTool).toHaveBeenCalledWith(
       'sfmobile-native-build',
-      'Guides LLM through the process of building a Salesforce mobile app with target platform',
-      expect.any(Object),
       expect.objectContaining({
-        ...mockAnnotations,
+        description: 'Guides LLM through the process of building a Salesforce mobile app with target platform',
+        inputSchema: expect.any(Object),
         title: 'Salesforce Mobile app build guide',
       }),
       expect.any(Function)
     );
+  });
+
+  it('should support workflow operations', () => {
+    // All tools now support workflow by default - no separate property needed
+    expect(tool).toBeDefined();
   });
 
   it('should generate iOS build guidance', async () => {

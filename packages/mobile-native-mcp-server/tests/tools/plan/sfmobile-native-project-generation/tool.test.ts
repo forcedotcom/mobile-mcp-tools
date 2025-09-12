@@ -17,7 +17,10 @@ describe('SfmobileNativeProjectGenerationTool', () => {
   let tool: SfmobileNativeProjectGenerationTool;
 
   beforeEach(() => {
-    tool = new SfmobileNativeProjectGenerationTool();
+    const mockServer = {
+      registerTool: vi.fn(),
+    };
+    tool = new SfmobileNativeProjectGenerationTool(mockServer as any);
   });
 
   it('should have correct tool properties', () => {
@@ -45,7 +48,7 @@ describe('SfmobileNativeProjectGenerationTool', () => {
 
   it('should register with MCP server with correct annotations', () => {
     const mockServer = {
-      tool: vi.fn(),
+      registerTool: vi.fn(),
     };
     const mockAnnotations = {
       readOnlyHint: true,
@@ -53,22 +56,16 @@ describe('SfmobileNativeProjectGenerationTool', () => {
       idempotentHint: true,
       openWorldHint: false,
     };
+    const projectTool = new SfmobileNativeProjectGenerationTool(mockServer as any);
 
-    tool.register(
-      mockServer as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer,
-      mockAnnotations
-    );
+    projectTool.register(mockAnnotations);
 
-    expect(mockServer.tool).toHaveBeenCalledWith(
+    expect(mockServer.registerTool).toHaveBeenCalledWith(
       'sfmobile-native-project-generation',
-      'Provides LLM instructions for generating a mobile app project from a selected template with OAuth configuration',
-      expect.any(Object),
       expect.objectContaining({
+        description: 'Provides LLM instructions for generating a mobile app project from a selected template with OAuth configuration',
+        inputSchema: expect.any(Object),
         title: 'Salesforce Mobile Native Project Generation Guide',
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: false,
-        openWorldHint: true,
       }),
       expect.any(Function)
     );

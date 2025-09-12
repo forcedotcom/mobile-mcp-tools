@@ -1,46 +1,46 @@
-import { Tool } from '../../tool.js';
 import { z } from 'zod';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import dedent from 'dedent';
-import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+import { AbstractTool } from '../../base/abstractTool.js';
+import { WORKFLOW_TOOL_BASE_INPUT_SCHEMA } from '../../../workflow/schemas.js';
+import { Logger } from '../../../logging/index.js';
+import { BUILD_TOOL } from '../../../registry/toolRegistry.js';
+import { BUILD_OUTPUT_SCHEMA, type BuildInput } from '../../../schemas/toolSchemas.js';
 
-const BuildInputSchema = z.object({
-  platform: z.enum(['iOS', 'Android']).describe('Target mobile platform'),
-  projectPath: z.string().describe('Path to the project'),
-});
+// Extend the centralized schema with workflow support
+const BuildInputSchema = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend(BUILD_TOOL.inputSchema.shape);
 
-type BuildInput = z.infer<typeof BuildInputSchema>;
+type ExtendedBuildInput = z.infer<typeof BuildInputSchema>;
 
-export class SfmobileNativeBuildTool implements Tool {
-  readonly name = 'Salesforce Mobile App Build Tool';
-  readonly title = 'Salesforce Mobile app build guide';
-  readonly description =
-    'Guides LLM through the process of building a Salesforce mobile app with target platform';
-  public readonly toolId = 'sfmobile-native-build';
-  readonly inputSchema = BuildInputSchema;
-  readonly outputSchema = z.object({});
+export class SfmobileNativeBuildTool extends AbstractTool {
+  public readonly toolId = BUILD_TOOL.toolId;
+  public readonly name = BUILD_TOOL.name;
+  public readonly title = BUILD_TOOL.title;
+  public readonly description = BUILD_TOOL.description;
+  public readonly inputSchema = BuildInputSchema;
+  public readonly outputSchema = BUILD_OUTPUT_SCHEMA;
 
-  public register(server: McpServer, annotations: ToolAnnotations): void {
-    server.tool(
-      this.toolId,
-      this.description,
-      this.inputSchema.shape,
-      {
-        ...annotations,
-        title: this.title,
-      },
-      this.handleRequest.bind(this)
-    );
+  constructor(server: McpServer, logger?: Logger) {
+    super(server, 'BuildTool', logger);
   }
 
-  private async handleRequest(input: BuildInput) {
+  protected async handleRequest(input: ExtendedBuildInput) {
     const guidance = this.generateBuildGuidance(input);
+
+    // Add workflow round-tripping instructions if this is part of a workflow
+    const finalOutput = input.workflowStateData
+      ? this.addPostInvocationInstructions(
+          guidance,
+          'the complete build validation results and any build issues that were resolved',
+          input.workflowStateData
+        )
+      : guidance;
 
     return {
       content: [
         {
           type: 'text' as const,
-          text: guidance,
+          text: finalOutput,
         },
       ],
     };

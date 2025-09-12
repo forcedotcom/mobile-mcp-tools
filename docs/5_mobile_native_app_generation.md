@@ -161,9 +161,9 @@ sequenceDiagram
     PlanPhase->>PlanPhase: Environment setup
     PlanPhase->>PlanPhase: Template selection
     PlanPhase->>PlanPhase: Connected app inputs
-    PlanPhase->>PlanPhase: Create skeletal project
+    PlanPhase->>PlanPhase: Create mobile app project
     PlanPhase->>RunPhase: Deploy & validate login
-    RunPhase->>User: CHECKPOINT: Functioning skeletal app
+    RunPhase->>User: CHECKPOINT: Functioning mobile app
     User->>DesignPhase: Feature requirements + feedback
 
     loop Design/Iterate Cycle
@@ -181,7 +181,7 @@ sequenceDiagram
 
 #### Checkpoint: Post-Plan Phase
 
-By the end of the Plan phase, a functioning skeletal mobile app project must be in place. This checkpoint validates:
+By the end of the Plan phase, a functioning mobile app project must be in place. This checkpoint validates:
 
 1. **Build Validation**: Ensure project builds successfully
 2. **Runtime Validation**: Launch app in virtual device using Run phase tools
@@ -201,7 +201,7 @@ By the end of each Design/Iterate phase, the user validates implemented features
 
 ### Phase 1: Plan
 
-**Objective**: Establish environment and create functioning skeletal mobile app project.
+**Objective**: Establish environment and create functioning mobile app project.
 
 #### Environment Setup
 
@@ -345,6 +345,776 @@ Build capabilities are embedded throughout the Design/Iterate phase rather than 
 
 ---
 
+# Deterministic Workflow Orchestration
+
+## Workflow Design Philosophy
+
+The Mobile Native App Generation MCP server implements a **deterministic workflow orchestration** approach that cleanly separates orchestration logic from agentic task execution. This design ensures scalable complexity management across both deterministic workflow control and agentic task execution while guaranteeing reliable execution of the specification-driven development (SDD) process.
+
+### Core Orchestration Principles
+
+1. **Deterministic Workflow Control**: The workflow graph, state transitions, and execution order are deterministically controlled via LangGraph.js, ensuring predictable and reliable orchestration
+2. **Agentic Task Execution**: All creative and adaptive work is performed by instruction-first MCP tools that guide LLMs through complex development tasks
+3. **Clean Separation of Concerns**: Workflow orchestration and task execution operate independently, enabling deep complexity in both domains without cross-contamination
+4. **Specification-Driven Development**: The workflow implements a structured SDD process from requirements gathering through environment validation, planning, execution, preview, feedback, and iterative refinement
+
+## LangGraph.js Workflow Engine
+
+### Primary Orchestrator Tool: `sfmobile-native-project-manager`
+
+**Core Function**: The primary interface tool responsible for managing LangGraph-based orchestration across a complex graph of specialized MCP server tools. This tool serves as the face of the native app generation project, being the first tool users invoke and recurring throughout the workflow.
+
+### StateGraph Architecture
+
+The workflow engine leverages [LangGraph.js StateGraph](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.StateGraph.html) to implement a graph-based workflow with nodes and edges:
+
+```typescript
+interface WorkflowState {
+  // Project Context
+  projectId: string;
+  projectPath?: string;
+  platform: 'iOS' | 'Android';
+
+  // User Intent and Requirements
+  userInput: string; // Current user input (original request or tool output)
+  userRequirements: string[];
+  currentPhase: 'environment' | 'plan' | 'design-iterate' | 'run';
+
+  // Environment and Template Context
+  environmentValidated: boolean;
+  selectedTemplate?: string;
+  templateMetadata?: object;
+  connectedAppConfig?: {
+    clientId: string;
+    callbackUri: string;
+  };
+
+  // Design/Iterate State
+  taskList: WorkflowTask[];
+  currentTaskIndex: number;
+  changelogEntries: ChangelogEntry[];
+  iterationCount: number;
+
+  // Runtime State
+  lastBuildStatus: 'success' | 'failed' | 'unknown';
+  deploymentStatus: 'deployed' | 'failed' | 'not-deployed';
+  userFeedback?: string;
+
+  // Error Context
+  errorState?: WorkflowError;
+}
+
+interface WorkflowToolMetadata<T extends z.ZodRawShape> {
+  name: string;
+  title: string;
+  description: string;
+  inputSchema: z.ZodObject<T>;
+}
+
+interface MCPToolInvocationData<T extends z.ZodRawShape> {
+  llmMetadata: WorkflowToolMetadata<T>;
+  input: Record<string, any>;
+  isComplete: boolean;
+}
+
+interface WorkflowTask {
+  id: string;
+  description: string;
+  complexity: 'simple' | 'moderate' | 'complex';
+  status: 'pending' | 'in-progress' | 'completed' | 'failed';
+  dependencies: string[];
+  affectedComponents: string[];
+}
+```
+
+### Workflow State Management
+
+The `WorkflowState` interface serves as the central data coordination mechanism for the entire mobile app generation process, fulfilling two critical functions:
+
+#### 1. Workflow Continuation Data
+
+The state captures essential values that drive workflow progression and determine inputs for downstream nodes:
+
+- **Platform and Requirements**: `platform`, `userRequirements`, and `userInput` guide template selection and project generation decisions
+- **Execution Context**: `currentPhase`, `currentTaskIndex`, and `taskList` control workflow routing and task sequencing
+- **Validation Status**: `environmentValidated`, `lastBuildStatus`, and `deploymentStatus` determine conditional workflow paths
+- **Error Recovery**: `errorState` enables intelligent error handling and recovery workflows
+
+#### 2. Persistent Project Configuration
+
+The state also serves as a comprehensive capture mechanism for long-term project persistence:
+
+- **Project Identity**: `projectId` and `projectPath` establish the project foundation for multi-session workflows
+- **Template Context**: `selectedTemplate` and `templateMetadata` preserve template selection rationale for future customizations
+- **Authentication Configuration**: `connectedAppConfig` maintains OAuth settings essential for Salesforce platform integration
+- **Development History**: `changelogEntries` and `iterationCount` provide complete project evolution tracking
+
+#### State Evolution Pattern
+
+Each workflow node follows a consistent pattern for state management:
+
+```typescript
+// Nodes receive current state and return partial state updates
+function workflowNode(state: WorkflowState): Partial<WorkflowState> {
+  // Use existing state values to determine node behavior
+  if (state.environmentValidated) {
+    return state; // Skip if preconditions already met
+  }
+
+  // Gather new information via MCP tool interruption
+  const toolResult = interrupt(toolInvocationData);
+
+  // Return state updates that influence downstream workflow
+  return {
+    environmentValidated: true,
+    // Merge tool results into persistent state
+    ...extractPersistentConfiguration(toolResult),
+  };
+}
+```
+
+This dual-purpose design ensures that workflow state both **drives intelligent decision-making** during execution and **preserves complete project context** for resumption across development sessions, tool failures, and iterative refinement cycles.
+
+### Human-in-the-Loop Integration
+
+Every agentic action in the workflow implements [LangGraph Human-in-the-Loop](https://langchain-ai.github.io/langgraphjs/concepts/human_in_the_loop/) patterns:
+
+#### Workflow Interruption Pattern
+
+1. **Node Interruption**: Workflow nodes representing agentic actions call `interrupt()` to pause execution
+2. **Tool Invocation Data**: The interrupting node provides structured `ToolInvocation` data containing:
+   - Target MCP tool name
+   - Required input parameters and schema
+   - Tool description for context
+3. **MCP Host Handoff**: The `sfmobile-native-project-manager` creates natural language orchestration prompt embedding tool invocation data and returns instructions to the MCP client/host.
+4. **Agentic Execution**: MCP host invokes the specified tool, which provides instruction-first guidance to the LLM
+5. **Workflow Resumption**: Each MCP tool appends post-processing instructions to its response, guiding the LLM to re-invoke `sfmobile-native-project-manager` with the tool's outputs.
+6. **State Restoration**: Orchestrator rehydrates serialized workflow state, passes the inputs back to the originally interrupting node, and resumes execution
+
+#### Example Node Implementation
+
+```typescript
+// Example: Environment validation node
+const validateEnvironmentNode = (state: WorkflowState): Partial<WorkflowState> => {
+  if (state.environmentValidated) {
+    return state; // Skip if already validated
+  }
+
+  // Create MCP tool invocation data with rich metadata
+  const interruptData: MCPToolInvocationData<
+    typeof ENVIRONMENT_VALIDATION_TOOL_METADATA.inputSchema.shape
+  > = {
+    llmMetadata: ENVIRONMENT_VALIDATION_TOOL_METADATA,
+    input: {
+      platform: state.platform,
+      targetMobilePlatform: state.platform,
+    },
+    isComplete: false,
+  };
+
+  // Interrupt workflow - LangGraph will surface this data to MCP client
+  const validationResult = interrupt(interruptData);
+
+  return {
+    environmentValidated: true,
+    // Store validation results in state for downstream nodes
+    ...validationResult,
+  };
+};
+
+// Tool metadata definition
+const ENVIRONMENT_VALIDATION_INPUT_SCHEMA = z.object({
+  platform: z.string().describe('Development platform (macOS, Windows, Linux)'),
+  targetMobilePlatform: z.string().describe('Target mobile platform (iOS, Android)'),
+});
+
+const ENVIRONMENT_VALIDATION_TOOL_METADATA: WorkflowToolMetadata<
+  typeof ENVIRONMENT_VALIDATION_INPUT_SCHEMA.shape
+> = {
+  name: 'sfmobile-native-environment-validation',
+  title: 'Environment Validation',
+  description: 'Validates development environment setup for mobile app development',
+  inputSchema: ENVIRONMENT_VALIDATION_INPUT_SCHEMA,
+};
+```
+
+## Workflow State Persistence
+
+### Project Artifact Management
+
+**Well-Known Directory Structure**: The `.magen/` directory serves as a well-known location for storing project artifacts and state information:
+
+- **Purpose**: Centralized storage for workflow state, tool artifacts, logging data, and other persistent project data
+- **Scope**: Project-specific (relative to current working directory where tools are invoked)
+- **Future Extensibility**: Designed to accommodate additional artifacts such as configuration files, cached metadata, and tool-specific state
+- **Convention**: Hidden directory (dot-prefixed) to avoid workspace clutter while remaining accessible for debugging
+
+**Logging Architecture**: All workflow orchestration and MCP tool interactions are logged to `.magen/workflow_logs.json` for comprehensive debugging and audit capabilities:
+
+- **Structured Logging**: JSON-formatted log entries with structured metadata for workflow sessions, tool invocations, and error tracking
+- **Persistent Debugging**: Log files preserved across sessions for comprehensive workflow analysis and troubleshooting
+- **Component Identification**: All log entries include component names and workflow session identifiers for precise debugging
+- **Production Focus**: Workflow logging emphasizes production debugging needs while maintaining development-friendly structured output
+
+### Checkpointing Strategy
+
+The workflow uses [LangGraph persistence](https://langchain-ai.github.io/langgraphjs/concepts/persistence/) to maintain state across tool invocations and workflow session boundaries.
+
+#### SQLite-Based Checkpointing
+
+**Implementation**: Uses [`SqliteSaver`](https://langchain-ai.github.io/langgraphjs/reference/classes/checkpoint_sqlite.SqliteSaver.html) checkpointer for robust local state persistence:
+
+```typescript
+import path from 'path';
+import { SqliteSaver } from '@langchain/langgraph/checkpoint/sqlite';
+
+const checkpointer = new SqliteSaver({
+  // SQLite database will be created automatically via better-sqlite3
+  // No external SQLite installation required
+  connectionString: path.join(process.cwd(), '.magen', 'workflow-state.db'),
+});
+
+const workflow = workflowGraph.compile({
+  checkpointer,
+});
+```
+
+**Storage Location**: Workflow state persisted in `./.magen/workflow-state.db` relative to current working directory, ensuring:
+
+- Long-lived reference data remains accessible across sessions
+- Project-specific workflow history and replay capabilities
+- Integration with LangGraph debugging and introspection tools
+
+#### Workflow State Round-Tripping and Persistence
+
+The MCP server maintains workflow continuity across stateless tool invocations through session ID round-tripping and server-side persistence:
+
+```typescript
+interface WorkflowStateData {
+  thread_id: string; // Unique session identifier (e.g. "abc-123-unique-value")
+}
+
+// Orchestrator execution with round-tripped workflow state
+const executeWorkflow = async (userInput: string, workflowStateData?: WorkflowStateData) => {
+  // Generate new thread_id if none provided (new workflow)
+  const threadId = workflowStateData?.thread_id || generateUniqueThreadId();
+  const config = { configurable: { thread_id: threadId } };
+
+  // Initialize SQLite checkpointer for server-side persistence
+  // Database stored in the user's development workspace (where MCP tools were launched)
+  const checkpointer = new SqliteSaver({
+    connectionString: path.join(process.cwd(), '.magen', 'workflow-state.db'),
+  });
+
+  // Compile workflow with persistent state
+  const compiledWorkflow = workflow.compile({ checkpointer });
+
+  // Check for interrupted workflow state
+  const graphState = await compiledWorkflow.getState(config);
+  const interruptedTask = graphState.tasks.find(task => task.interrupts.length > 0);
+
+  let result;
+  if (interruptedTask) {
+    // Resume interrupted workflow with user input
+    result = await compiledWorkflow.invoke(new Command({ resume: userInput }), config);
+  } else {
+    // Start new workflow session
+    result = await compiledWorkflow.invoke(
+      {
+        userInput,
+        projectId: threadId,
+        platform: extractPlatform(userInput) || 'iOS',
+      },
+      config
+    );
+  }
+
+  // Extract interrupt data for next tool invocation
+  const interruptData: MCPToolInvocationData<any> | undefined =
+    '__interrupt__' in result ? result.__interrupt__[0].value : undefined;
+
+  if (!interruptData) {
+    throw new Error('Workflow completed without expected interrupt');
+  }
+
+  // Create orchestration prompt with embedded workflow state
+  const orchestrationPrompt = interruptData.isComplete
+    ? 'Workflow completed successfully.'
+    : createOrchestrationPrompt(interruptData, { thread_id: threadId });
+
+  return {
+    orchestrationInstructionsPrompt: orchestrationPrompt,
+    isComplete: interruptData.isComplete,
+    // Round-trip workflow state for continuation
+    workflowStateData: { thread_id: threadId },
+  };
+};
+
+// Unique thread ID generation
+const generateUniqueThreadId = (): string => {
+  return `mobile-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+};
+```
+
+### Workflow State Round-Tripping Pattern
+
+Following the stateless service pattern (similar to web cookies), workflow state flows through the MCP tool ecosystem:
+
+**1. Initial Request (No State)**:
+
+```typescript
+// User starts new workflow - no workflowStateData provided
+const result = await orchestrator.execute({
+  userInput: 'I want an iOS Contact list app',
+  // workflowStateData: undefined (new session)
+});
+// Returns: { workflowStateData: { thread_id: "mobile-1699123456-a7b2c9" } }
+```
+
+**2. Tool Invocation (State Embedded)**:
+
+```typescript
+// Orchestrator embeds workflow state in tool invocation instructions
+const toolInstructions = `
+Invoke sfmobile-native-template-discovery with:
+- workflowStateData: {"thread_id": "mobile-1699123456-a7b2c9"}
+`;
+```
+
+**3. Tool Response (State Round-Tripped)**:
+
+```typescript
+// Each tool receives and passes through workflow state
+class TemplateDiscoveryTool {
+  async execute(input: { platform: string; workflowStateData?: WorkflowStateData }) {
+    // Tool provides its guidance + round-trip instructions
+    return this.addPostInvocationInstructions(
+      toolGuidance,
+      'template selection results',
+      input.workflowStateData // Pass through unchanged
+    );
+  }
+}
+```
+
+**4. Workflow Resumption (State Continued)**:
+
+```typescript
+// LLM re-invokes orchestrator with preserved state
+const resumeResult = await orchestrator.execute({
+  userInput: 'Selected template: iOSNativeSwiftTemplate',
+  workflowStateData: { thread_id: 'mobile-1699123456-a7b2c9' }, // Same session
+});
+```
+
+### Key Benefits
+
+**1. Stateless Service Pattern**: Standard approach used in web services - lightweight session ID with server-side persistence
+
+**2. Performance Optimized**: Only passes minimal session identifier, not large serialized state data
+
+**3. Seamless Continuity**: Workflow resumes exactly where it left off using SQLite-persisted state
+
+**4. Simple Implementation**: No complex session management logic - just round-trip the thread_id
+
+```typescript
+// Natural language orchestration prompt creation with workflow state
+const createOrchestrationPrompt = (
+  interruptData: MCPToolInvocationData<any>,
+  workflowStateData: WorkflowStateData
+): string => {
+  return `
+# Your Role
+
+You are participating in a workflow orchestration process. The current (\`sfmobile-native-project-manager\`) MCP server tool is the orchestrator, and is sending you instructions on what to do next. These instructions describe the next participating MCP server tool to invoke, along with its input schema and input values.
+
+# Your Task
+
+- Invoke the following MCP server tool:
+
+**MCP Server Tool Name**: ${interruptData.llmMetadata?.name}
+**MCP Server Tool Input Schema**:
+\`\`\`json
+${JSON.stringify(zodToJsonSchema(interruptData.llmMetadata?.inputSchema))}
+\`\`\`
+**MCP Server Tool Input Values**:
+\`\`\`json
+${JSON.stringify(interruptData.input)}
+\`\`\`
+
+## Additional Input: \`workflowStateData\`
+
+\`workflowStateData\` is an additional input parameter that is specified in the input schema above, and should be passed to the next
+MCP server tool invocation, with the following object value:
+
+${JSON.stringify(workflowStateData)}
+
+This represents opaque workflow state data that should be round-tripped back to the \`sfmobile-native-project-manager\` MCP server tool orchestrator
+at the completion of the next MCP server tool invocation, without modification. These instructions will be further specified by the
+next MCP server tool invocation.
+
+- The MCP server tool you invoke will respond with its output, along with further instructions for continuing the workflow.
+`;
+};
+```
+
+### Workflow State Management
+
+#### Thread-Based Project Tracking
+
+- **Thread ID**: Each project maintains a unique thread identifier for state isolation
+- **Checkpoint Isolation**: Multiple projects can run concurrent workflows without state interference
+- **State Recovery**: Workflows can be resumed from any checkpoint, enabling:
+  - Recovery from tool failures
+  - Multi-session development workflows
+  - Debugging and workflow replay
+  - Branching and experimentation
+
+#### Persistent Context Preservation
+
+The checkpointing system maintains:
+
+- **Complete Workflow State**: All variables, task lists, and execution context
+- **Tool Output History**: Results from previous agentic tool executions
+- **User Interaction History**: Feedback, approvals, and refinement requests
+- **Error Recovery Context**: Failed operations and recovery strategies
+- **Template and Configuration Context**: Selected templates, Connected App settings, and environment state
+
+## Workflow Graph Structure
+
+### Primary Workflow Nodes
+
+The StateGraph implements the three-phase architecture through deterministic node progression:
+
+```typescript
+const WorkflowStateAnnotation = Annotation.Root({
+  projectId: Annotation<string>,
+  userInput: Annotation<string>,
+  platform: Annotation<'iOS' | 'Android'>,
+  environmentValidated: Annotation<boolean>,
+  selectedTemplate: Annotation<string>,
+  taskList: Annotation<WorkflowTask[]>,
+  // ... other state properties
+});
+
+const workflowGraph = new StateGraph(WorkflowStateAnnotation)
+  // Entry point and initialization
+  .addNode('initializeProject', initializeProjectNode)
+  .addNode('analyzeUserRequest', analyzeUserRequestNode)
+
+  // Phase 1: Plan
+  .addNode('validateEnvironment', validateEnvironmentNode)
+  .addNode('discoverTemplates', discoverTemplatesNode)
+  .addNode('gatherConnectedAppConfig', gatherConnectedAppConfigNode)
+  .addNode('generateProject', generateProjectNode)
+  .addNode('validateInitialBuild', validateInitialBuildNode)
+  .addNode('deployGeneratedApp', deployGeneratedAppNode)
+  .addNode('planPhaseCheckpoint', planPhaseCheckpointNode)
+
+  // Phase 2: Design/Iterate
+  .addNode('planTasks', planTasksNode)
+  .addNode('executeTask', executeTaskNode)
+  .addNode('validateTaskBuild', validateTaskBuildNode)
+  .addNode('deployTaskChanges', deployTaskChangesNode)
+  .addNode('gatherTaskFeedback', gatherTaskFeedbackNode)
+  .addNode('processTaskFeedback', processTaskFeedbackNode)
+  .addNode('iterationCheckpoint', iterationCheckpointNode)
+
+  // Phase 3: Run (Integrated)
+  .addNode('deployToDevice', deployToDeviceNode)
+  .addNode('validateDeployment', validateDeploymentNode)
+  .addNode('collectUserFeedback', collectUserFeedbackNode)
+
+  // Workflow control and error handling
+  .addNode('handleError', handleErrorNode)
+  .addNode('completeWorkflow', completeWorkflowNode);
+
+// Example node implementations following the interrupt pattern
+function validateEnvironmentNode(state: WorkflowState): Partial<WorkflowState> {
+  if (state.environmentValidated) {
+    return state;
+  }
+
+  const interruptData: MCPToolInvocationData<
+    typeof ENVIRONMENT_VALIDATION_TOOL_METADATA.inputSchema.shape
+  > = {
+    llmMetadata: ENVIRONMENT_VALIDATION_TOOL_METADATA,
+    input: {
+      platform: state.platform,
+      targetMobilePlatform: state.platform,
+    },
+    isComplete: false,
+  };
+
+  const validationResult = interrupt(interruptData);
+  return {
+    environmentValidated: true,
+    ...validationResult,
+  };
+}
+
+function discoverTemplatesNode(state: WorkflowState): Partial<WorkflowState> {
+  const interruptData: MCPToolInvocationData<
+    typeof TEMPLATE_DISCOVERY_TOOL_METADATA.inputSchema.shape
+  > = {
+    llmMetadata: TEMPLATE_DISCOVERY_TOOL_METADATA,
+    input: {
+      platform: state.platform,
+      userRequirements: state.userRequirements,
+    },
+    isComplete: false,
+  };
+
+  const templateResult = interrupt(interruptData);
+  return {
+    selectedTemplate: templateResult.selectedTemplate,
+    templateMetadata: templateResult.metadata,
+  };
+}
+```
+
+### Conditional Edge Logic
+
+The workflow implements intelligent routing based on state conditions:
+
+```typescript
+// Dynamic routing based on workflow state
+workflowGraph.addConditionalEdges(
+  'processTaskFeedback',
+  (state: WorkflowState) => {
+    if (state.userFeedback?.includes('make changes')) {
+      return 'planTasks'; // Add new tasks based on feedback
+    } else if (state.userFeedback?.includes('keep going')) {
+      return 'executeTask'; // Continue with next task
+    } else if (state.userFeedback?.includes('stop here')) {
+      return 'iterationCheckpoint'; // Complete current iteration
+    } else if (state.currentTaskIndex < state.taskList.length - 1) {
+      return 'executeTask'; // Continue with remaining tasks
+    } else {
+      return 'iterationCheckpoint'; // All tasks completed
+    }
+  },
+  {
+    planTasks: 'planTasks',
+    executeTask: 'executeTask',
+    iterationCheckpoint: 'iterationCheckpoint',
+  }
+);
+
+// Error handling routing
+workflowGraph.addConditionalEdges(
+  'validateTaskBuild',
+  (state: WorkflowState) => {
+    return state.lastBuildStatus === 'failed' ? 'handleError' : 'deployTaskChanges';
+  },
+  {
+    handleError: 'handleError',
+    deployTaskChanges: 'deployTaskChanges',
+  }
+);
+```
+
+### Workflow Entry and Termination
+
+```typescript
+// Workflow initialization
+workflowGraph.addEdge(START, 'initializeProject');
+
+// Normal completion paths
+workflowGraph.addEdge('completeWorkflow', END);
+
+// Error termination paths
+workflowGraph.addConditionalEdges(
+  'handleError',
+  (state: WorkflowState) => {
+    return state.errorState?.recoverable ? 'planTasks' : 'completeWorkflow';
+  },
+  {
+    planTasks: 'planTasks',
+    completeWorkflow: 'completeWorkflow',
+  }
+);
+```
+
+## Integration with Instruction-First MCP Tools
+
+### Tool Coordination Pattern
+
+The workflow orchestrator maintains clean separation between deterministic control flow and agentic task execution:
+
+#### Orchestrator Responsibilities (Deterministic)
+
+- **State Management**: Maintain workflow state, task lists, and execution context
+- **Flow Control**: Determine next workflow steps based on current state and conditions
+- **Tool Selection**: Choose appropriate MCP tools for specific agentic tasks
+- **Context Preservation**: Maintain continuity across tool invocations and user sessions
+- **Error Recovery**: Handle failures and route to appropriate recovery workflows
+
+#### MCP Tool Responsibilities (Agentic)
+
+- **Instruction-First Guidance**: Provide comprehensive instructions for LLM task execution
+- **CLI Integration**: Guide LLMs through complex CLI tool usage and output interpretation
+- **Documentation Access**: Surface relevant documentation and implementation patterns
+- **Error Diagnosis**: Provide troubleshooting guidance and self-healing capabilities
+- **Output Validation**: Ensure task completion meets quality and functional requirements
+
+### Post-Processing Instructions Template
+
+Each MCP tool includes standardized post-processing instructions that guide the LLM back to the orchestrator:
+
+```typescript
+// Common template used by all workflow MCP tools
+export const POST_INVOCATION_INSTRUCTIONS_TEMPLATE = `
+# Post-Tool-Invocation Instructions
+
+After this prompt has been processed, you MUST initiate the following actions to proceed with the in-progress workflow:
+
+- Invoke the \`sfmobile-native-project-manager\` tool, with the following input schema:
+
+\`\`\`json
+${JSON.stringify(zodToJsonSchema(ORCHESTRATOR_INPUT_SCHEMA))}
+\`\`\`
+
+- The value for the \`userInput\` parameter should be {toolOutputDescription}
+- The value for the \`workflowStateData\` parameter should be {workflowStateData}
+`;
+
+// Example: Environment validation tool implementation
+class EnvironmentValidationTool {
+  private addPostInvocationInstructions(
+    prompt: string,
+    toolOutputDescription: string,
+    workflowStateData: any
+  ): string {
+    return `${prompt}\n\n${POST_INVOCATION_INSTRUCTIONS_TEMPLATE.replace(
+      '{toolOutputDescription}',
+      toolOutputDescription
+    ).replace('{workflowStateData}', JSON.stringify(workflowStateData))}`;
+  }
+
+  public async execute(input: EnvironmentValidationInput) {
+    const validationPrompt = `
+# Environment Validation Workflow
+
+## Your Task
+Validate the development environment for ${input.platform} development targeting ${input.targetMobilePlatform}.
+
+[... detailed validation instructions ...]
+    `;
+
+    const finalPrompt = this.addPostInvocationInstructions(
+      validationPrompt,
+      'the environment validation results (success/failure status and any installation guidance)',
+      input.workflowStateData
+    );
+
+    return {
+      content: [{ type: 'text', text: finalPrompt }],
+      structuredContent: { promptForLLM: finalPrompt },
+    };
+  }
+}
+```
+
+### MCP Tool Output Schema
+
+```typescript
+// Standard output schema for all workflow MCP tools
+const MCP_TOOL_OUTPUT_SCHEMA = z.object({
+  promptForLLM: z
+    .string()
+    .describe('Complete prompt with instructions and post-processing guidance'),
+});
+
+// Common workflow state schema for round-tripping session identity
+const WORKFLOW_STATE_DATA_SCHEMA = z.object({
+  thread_id: z.string().describe('Unique workflow session identifier for state persistence'),
+});
+
+// Orchestrator input schema for workflow resumption
+const ORCHESTRATOR_INPUT_SCHEMA = z.object({
+  userInput: z
+    .string()
+    .describe('User input (initial request or output from previously executed MCP tool)'),
+  workflowStateData: WORKFLOW_STATE_DATA_SCHEMA.optional().describe(
+    'Workflow session state for continuation (auto-generated if not provided)'
+  ),
+});
+```
+
+## Workflow Execution Model
+
+### Session Management
+
+#### Single-Session Execution
+
+- **Atomic Phases**: Plan phase typically executes in single session from initiation to functional mobile app
+- **State Persistence**: Each tool invocation persists complete state via checkpointing
+- **Interruption Recovery**: Workflow can resume from any interruption point
+
+#### Multi-Session Execution
+
+- **Long-Running Development**: Design/Iterate phase spans multiple development sessions
+- **Context Restoration**: Full project context restored from persistent state
+- **Incremental Progress**: Each session builds upon previous work with complete history
+
+### Error Handling and Recovery
+
+#### Graceful Error Recovery
+
+```typescript
+const handleErrorNode = async (state: WorkflowState): Promise<Partial<WorkflowState>> => {
+  const errorContext = state.errorState;
+
+  if (errorContext?.type === 'build-failure') {
+    // Generate error recovery tasks
+    return {
+      ...state,
+      currentNode: 'handleError',
+      nextToolInvocation: {
+        toolName: 'sfmobile-native-build-diagnostics',
+        inputs: {
+          projectPath: state.projectPath,
+          buildError: errorContext.details,
+          platform: state.platform,
+        },
+        postProcessingInstructions: `
+Analyze build failure and generate recovery tasks.
+Re-invoke sfmobile-native-project-manager with:
+- recoveryTasks: array of specific fix tasks
+- errorResolution: description of resolution strategy
+- continueWorkflow: true to resume task execution
+        `,
+      },
+    };
+  }
+
+  // Handle other error types...
+};
+```
+
+#### Rollback and State Recovery
+
+- **Checkpoint Rollback**: Ability to revert to previous successful state
+- **Task Rollback**: Individual task failures can rollback to pre-task state
+- **User-Initiated Recovery**: Users can manually restart from specific workflow points
+
+### Performance and Scalability
+
+#### Efficient State Management
+
+- **Selective Persistence**: Only essential state data persisted to minimize overhead
+- **Lazy Loading**: Complex state objects loaded on-demand during workflow execution
+- **State Compression**: Large outputs compressed before persistence
+
+#### Concurrent Workflow Support
+
+- **Thread Isolation**: Multiple projects maintain separate workflow threads
+- **Resource Management**: Shared resources (documentation, templates) cached across workflows
+- **Cleanup Automation**: Completed workflows automatically archived or purged based on retention policies
+
+---
+
 # System Flow
 
 The following sequence diagram illustrates the comprehensive workflow including checkpoints and iterative cycles:
@@ -375,15 +1145,15 @@ sequenceDiagram
     PlanTools-->>MCPClient: Client ID + Callback URI
 
     Note over MCPClient,RunTools: Post-Plan Checkpoint
-    MCPClient->>PlanTools: Create skeletal project
+    MCPClient->>PlanTools: Create mobile app project
     PlanTools->>CLI: sfdx-mobilesdk-plugin create project
-    CLI-->>PlanTools: Working skeletal app
+    CLI-->>PlanTools: Working mobile app
     MCPClient->>RunTools: Deploy and validate login
     RunTools->>CLI: Deploy to virtual device
     CLI-->>RunTools: Deployment status
     RunTools-->>MCPClient: Login validation results
-    MCPClient-->>MCPHost: Functioning skeletal app ready
-    MCPHost-->>User: CHECKPOINT: Review skeletal app + provide feedback
+    MCPClient-->>MCPHost: Functioning mobile app ready
+    MCPHost-->>User: CHECKPOINT: Review mobile app + provide feedback
 
     User->>MCPHost: Feature requirements + feedback
 
@@ -480,8 +1250,8 @@ npx -y @salesforce/mobile-native-mcp-server
 
 ## Integration Approach
 
-- **Multi-Tool Orchestration**: Complex workflows spanning multiple MCP tools with built-in coordination
-- **State Management**: Maintains workflow context across tool calls while remaining stateless at the protocol level
+- **Deterministic Orchestration**: LangGraph-based workflow orchestration with human-in-the-loop integration for agentic task execution
+- **State Persistence**: SQLite-based checkpointing maintains workflow context across tool invocations and session boundaries
 - **Error Handling**: Graceful degradation with comprehensive guidance when issues arise
 
 ---
@@ -491,9 +1261,18 @@ npx -y @salesforce/mobile-native-mcp-server
 ## Server Metadata
 
 **Name:** `sfdc-mobile-native-mcp-server`  
-**Description:** The `sfdc-mobile-native-mcp-server` MCP server provides a comprehensive collection of tools that enable prompt-to-app development for Salesforce Platform-based native mobile applications. The server orchestrates a three-phase workflow (Plan, Design/Iterate, Run) leveraging existing Mobile SDK tooling, templates, and documentation to transform natural language intent into production-ready native mobile applications.
+**Description:** The `sfdc-mobile-native-mcp-server` MCP server provides a comprehensive collection of tools that enable prompt-to-app development for Salesforce Platform-based native mobile applications. The server implements deterministic workflow orchestration via LangGraph.js with instruction-first MCP tools, managing a three-phase specification-driven development workflow (Plan, Design/Iterate, Run) that leverages existing Mobile SDK tooling, templates, and documentation to transform natural language intent into production-ready native mobile applications.
 
 ## Tool Categories and Annotations
+
+### Workflow Orchestration Tools
+
+| Annotation        | Value   | Notes                                                                |
+| :---------------- | :------ | :------------------------------------------------------------------- |
+| `readOnlyHint`    | `false` | Manages workflow state and coordinates other MCP tools               |
+| `destructiveHint` | `false` | Orchestrates but does not directly perform destructive operations    |
+| `idempotentHint`  | `false` | Workflow progression creates new states and project modifications    |
+| `openWorldHint`   | `true`  | Coordinates with multiple tools, file system, and external resources |
 
 ### Planning Tools
 
@@ -542,11 +1321,18 @@ Following the monorepo pattern established in `mobile-mcp-tools`:
 ```
 mobile-native/
 ├── src/           # MCP server implementation
-│   ├── tools/     # Phase-specific tool implementations
+│   ├── tools/     # MCP tool implementations
+│   │   ├── orchestration/  # Workflow orchestration and project management
+│   │   │   └── sfmobile-native-project-manager.ts
 │   │   ├── plan/      # Environment validation, template discovery, project creation
-│   │   ├── design-iterate/ # Task planning, feature implementation, changelog management, iteration orchestration
+│   │   ├── design-iterate/ # Task planning, feature implementation, changelog management
 │   │   └── run/       # Deployment, validation, live feedback
-│   ├── schemas/   # Zod schemas for tool inputs/outputs
+│   ├── workflow/  # LangGraph.js workflow engine
+│   │   ├── graph.ts       # StateGraph definition and node implementations
+│   │   ├── state.ts       # Workflow state schema and interfaces
+│   │   ├── nodes/         # Individual workflow node implementations
+│   │   └── checkpointing.ts # SQLite-based state persistence
+│   ├── schemas/   # Zod schemas for tool inputs/outputs and workflow state
 │   └── utils/     # Shared utilities and CLI integrations
 ├── resources/     # Template repository and documentation
 │   ├── SalesforceMobileSDK-Templates/  # Git submodule: Official Salesforce Mobile SDK Templates
@@ -554,7 +1340,7 @@ mobile-native/
 │   └── api-docs/      # Mobile SDK API documentation excerpts
 ├── scripts/       # Project utilities and maintenance
 ├── tests/         # Comprehensive testing suite
-└── package.json   # Project configuration and dependencies
+└── package.json   # Project configuration and dependencies (includes @langchain/langgraph)
 ```
 
 ## Generated Mobile App Project Structure (includes changelog system)
@@ -567,6 +1353,20 @@ mobile-app-project/
 │   └── ...
 ├── [platform-specific files] # iOS/Android project structure
 └── [standard mobile project files]
+```
+
+## Development Workspace Structure (workflow state persistence)
+
+```
+development-workspace/          # User's Cursor project/workspace directory
+├── .magen/
+│   ├── workflow-state.db      # SQLite database for workflow state persistence (created at runtime)
+│   └── workflow_logs.json     # Structured JSON logs for workflow orchestration and MCP tool interactions
+├── mobile-app-project/        # Generated native mobile app projects
+│   ├── ContactListApp/
+│   ├── AnotherMobileApp/
+│   └── ...
+└── [other workspace files]
 ```
 
 ## Sample Changelog Structure
@@ -1163,14 +1963,6 @@ _Priority_: Critical for preventing API hallucination and ensuring generated cod
 - **Configuration Substitution**: Automated parameter replacement in Gradle configuration and AndroidManifest.xml files
 - **Dependency Setup**: Configures Gradle dependencies from template specifications
 - **Ready-to-Build Output**: Generates Android Studio-compatible projects ready for immediate compilation
-
-## Workflow Orchestration
-
-### State Management Between Phases
-
-- **Design Document Persistence**: Maintain design specifications across Design/Iterate phase tool calls
-- **Template Context**: Preserve template metadata and extension guidance throughout implementation
-- **Error Context**: Maintain error state and recovery guidance across workflow phases
 
 ### User Interaction Patterns
 

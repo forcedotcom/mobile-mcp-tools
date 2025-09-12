@@ -6,45 +6,28 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import dedent from 'dedent';
-import { Tool } from '../../tool.js';
+import { AbstractTool } from '../../base/abstractTool.js';
+import { Logger } from '../../../logging/index.js';
+import { DEPLOYMENT_TOOL } from '../../../registry/toolRegistry.js';
+import { type DeploymentInput } from '../../../schemas/toolSchemas.js';
 
-// Input schema for the deployment tool
-const DeploymentInputSchema = z.object({
-  platform: z.enum(['iOS', 'Android']).describe('Target mobile platform'),
-  projectPath: z.string().describe('Path to the mobile project directory'),
-  buildType: z.enum(['debug', 'release']).default('debug').describe('Build type for deployment'),
-  targetDevice: z.string().optional().describe('Target device identifier (optional)'),
-});
+// Use the centralized schema directly
+const DeploymentInputSchema = DEPLOYMENT_TOOL.inputSchema;
 
-type DeploymentInput = z.infer<typeof DeploymentInputSchema>;
-
-export class SfmobileNativeDeploymentTool implements Tool {
-  public readonly name = 'Salesforce Mobile Native Deployment';
-  public readonly title = 'Salesforce Mobile Native Deployment Guide';
-  public readonly toolId = 'sfmobile-native-deployment';
-  public readonly description =
-    'Guides LLM through deploying Salesforce mobile native apps to devices or simulators';
+export class SfmobileNativeDeploymentTool extends AbstractTool {
+  public readonly toolId = DEPLOYMENT_TOOL.toolId;
+  public readonly name = DEPLOYMENT_TOOL.name;
+  public readonly title = DEPLOYMENT_TOOL.title;
+  public readonly description = DEPLOYMENT_TOOL.description;
   public readonly inputSchema = DeploymentInputSchema;
+  public readonly outputSchema = undefined; // No specific output schema defined
 
-  public register(server: McpServer, annotations: ToolAnnotations): void {
-    const enhancedAnnotations = {
-      ...annotations,
-      title: this.title,
-    };
-
-    server.tool(
-      this.toolId,
-      this.description,
-      this.inputSchema.shape,
-      enhancedAnnotations,
-      this.handleRequest.bind(this)
-    );
+  constructor(server: McpServer, logger?: Logger) {
+    super(server, 'DeploymentTool', logger);
   }
 
-  private async handleRequest(input: DeploymentInput) {
+  protected async handleRequest(input: DeploymentInput) {
     try {
       // Parse the input to ensure defaults are applied
       const parsedInput = this.inputSchema.parse(input);

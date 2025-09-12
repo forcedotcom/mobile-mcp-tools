@@ -6,38 +6,21 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
-import { Tool } from '../../tool.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import dedent from 'dedent';
+import { AbstractTool } from '../../base/abstractTool.js';
+import { Logger } from '../../../logging/index.js';
+import { XCODE_ADD_FILES_TOOL } from '../../../registry/toolRegistry.js';
+import {
+  XCODE_ADD_FILES_OUTPUT_SCHEMA,
+  type XcodeAddFilesInput,
+  type XcodeAddFilesOutput,
+} from '../../../schemas/toolSchemas.js';
 
-// Input schema for the Xcode file addition tool
-const XcodeAddFilesInputSchema = z.object({
-  projectPath: z.string().describe('Absolute path to the Xcode project directory'),
-  xcodeProjectPath: z.string().describe('Path to the .xcodeproj file (e.g., "MyApp.xcodeproj")'),
-  newFilePaths: z
-    .array(z.string())
-    .describe('Array of newly created file paths relative to project root'),
-  targetName: z
-    .string()
-    .optional()
-    .describe('Optional: specific target to add files to (defaults to main app target)'),
-});
-
-type XcodeAddFilesInput = z.infer<typeof XcodeAddFilesInputSchema>;
-
-// Output schema for the Xcode file addition tool
-const XcodeAddFilesOutputSchema = z.object({
-  success: z.boolean().describe('Whether the command generation was successful'),
-  command: z.string().describe('The Ruby command to execute using xcodeproj gem'),
-  projectPath: z.string().describe('The project path that was processed'),
-  filePaths: z.array(z.string()).describe('Array of file paths that were processed'),
-  targetName: z.string().optional().describe('Target name if specified'),
-  message: z.string().describe('Success or informational message'),
-  error: z.string().optional().describe('Error message if operation failed'),
-});
+// Use the centralized schemas directly
+const XcodeAddFilesInputSchema = XCODE_ADD_FILES_TOOL.inputSchema;
+const XcodeAddFilesOutputSchema = XCODE_ADD_FILES_OUTPUT_SCHEMA;
 
 interface XcodeAddFilesResult {
   success: boolean;
@@ -49,31 +32,19 @@ interface XcodeAddFilesResult {
   error?: string;
 }
 
-export class UtilsXcodeAddFilesTool implements Tool {
-  public readonly name = 'Utils Xcode Add Files';
-  public readonly title = 'Xcode Project File Addition Utility';
-  public readonly toolId = 'utils-xcode-add-files';
-  public readonly description =
-    'Generates a Ruby command using the xcodeproj gem to add files to Xcode projects';
+export class UtilsXcodeAddFilesTool extends AbstractTool {
+  public readonly toolId = XCODE_ADD_FILES_TOOL.toolId;
+  public readonly name = XCODE_ADD_FILES_TOOL.name;
+  public readonly title = XCODE_ADD_FILES_TOOL.title;
+  public readonly description = XCODE_ADD_FILES_TOOL.description;
   public readonly inputSchema = XcodeAddFilesInputSchema;
   public readonly outputSchema = XcodeAddFilesOutputSchema;
 
-  public register(server: McpServer, annotations: ToolAnnotations): void {
-    const enhancedAnnotations = {
-      ...annotations,
-      title: this.title,
-    };
-
-    server.tool(
-      this.toolId,
-      this.description,
-      this.inputSchema.shape,
-      enhancedAnnotations,
-      this.handleRequest.bind(this)
-    );
+  constructor(server: McpServer, logger?: Logger) {
+    super(server, 'XcodeAddFilesTool', logger);
   }
 
-  private async handleRequest(input: XcodeAddFilesInput) {
+  protected async handleRequest(input: XcodeAddFilesInput) {
     try {
       const result = await this.addFilesToXcodeProject(input);
 
