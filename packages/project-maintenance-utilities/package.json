@@ -25,11 +25,11 @@
     "@octokit/openapi-types": "^25.1.0",
     "@octokit/rest": "^22.0.0",
     "@types/node": "^20.0.0",
-    "@types/semver": "^7.7.0",
+    "@types/semver": "^7.7.1",
     "@vitest/coverage-v8": "^3.2.4",
-    "eslint": "^9.0.0",
+    "eslint": "^9.36.0",
     "prettier": "^3.0.0",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "engines": {
