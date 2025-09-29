@@ -61,20 +61,26 @@ export function ensureWellKnownDirectory(): string {
   const wellKnownDir = getWellKnownDirectoryPath();
 
   try {
-    // Validate that PROJECT_PATH exists and is a directory to avoid environment-dependent behavior
+    // Get the project path (parent of .magen directory)
     const projectPath = path.dirname(wellKnownDir);
+
+    // Check if path exists (works consistently on all platforms)
     if (!fs.existsSync(projectPath)) {
-      throw new Error(`Base PROJECT_PATH does not exist: ${projectPath}`);
-    }
-    const stat = fs.statSync(projectPath);
-    if (!stat.isDirectory()) {
-      throw new Error(`Base PROJECT_PATH is not a directory: ${projectPath}`);
+      throw new Error(`PROJECT_PATH does not exist: ${projectPath}`);
     }
 
+    // Check if it's a directory
+    const stat = fs.statSync(projectPath);
+    if (!stat.isDirectory()) {
+      throw new Error(`PROJECT_PATH is not a directory: ${projectPath}`);
+    }
+
+    // Create .magen directory
     if (!fs.existsSync(wellKnownDir)) {
       fs.mkdirSync(wellKnownDir, { recursive: true });
     }
   } catch (error) {
+    // This format matches what the tests expect
     throw new Error(
       `Failed to create .magen directory at "${wellKnownDir}": ${error instanceof Error ? error.message : String(error)}`
     );
