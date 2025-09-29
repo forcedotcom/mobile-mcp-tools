@@ -16,10 +16,28 @@ import { SFMobileNativeDeploymentTool } from './tools/run/sfmobile-native-deploy
 import { SFMobileNativeBuildTool } from './tools/plan/sfmobile-native-build/tool.js';
 import { SFMobileNativeProjectGenerationTool } from './tools/plan/sfmobile-native-project-generation/tool.js';
 import { MobileNativeOrchestrator } from './tools/workflow/sfmobile-native-project-manager/tool.js';
+import { ensureWellKnownDirectory } from './utils/wellKnownDirectory.js';
 
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+
+// Check for PROJECT_PATH environment variable
+if (!process.env.PROJECT_PATH) {
+  console.error('ERROR: PROJECT_PATH environment variable is required but not set.');
+  process.exitCode = 1;
+  throw new Error('PROJECT_PATH environment variable not set');
+}
+
+// Ensure .magen directory exists and can be created
+try {
+  ensureWellKnownDirectory();
+} catch (error) {
+  console.error('ERROR: Failed to create or access .magen directory.');
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+  throw error;
+}
 
 const server = new McpServer({
   name: 'sfdc-mobile-native-mcp-server',

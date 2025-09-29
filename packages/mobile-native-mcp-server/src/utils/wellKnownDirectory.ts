@@ -37,14 +37,16 @@ export const WELL_KNOWN_FILES = {
 
 /**
  * Get the absolute path to the .magen directory
- * Based on current working directory (process.cwd())
+ * Based on PROJECT_PATH environment variable (required)
  *
  * @returns Absolute path to .magen directory
+ * @throws Error if PROJECT_PATH is not set
  */
 export function getWellKnownDirectoryPath(): string {
-  const wellKnownDir = process.env.PROJECT_PATH
-    ? path.resolve(process.env.PROJECT_PATH)
-    : process.cwd();
+  if (!process.env.PROJECT_PATH) {
+    throw new Error('PROJECT_PATH environment variable is required but not set');
+  }
+  const wellKnownDir = path.resolve(process.env.PROJECT_PATH);
   return path.join(wellKnownDir, WELL_KNOWN_DIR_NAME);
 }
 
@@ -53,12 +55,19 @@ export function getWellKnownDirectoryPath(): string {
  * Safe to call multiple times - idempotent operation
  *
  * @returns Absolute path to the .magen directory
+ * @throws Error if directory creation fails
  */
 export function ensureWellKnownDirectory(): string {
   const wellKnownDir = getWellKnownDirectoryPath();
 
-  if (!fs.existsSync(wellKnownDir)) {
-    fs.mkdirSync(wellKnownDir, { recursive: true });
+  try {
+    if (!fs.existsSync(wellKnownDir)) {
+      fs.mkdirSync(wellKnownDir, { recursive: true });
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to create .magen directory at "${wellKnownDir}": ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 
   return wellKnownDir;

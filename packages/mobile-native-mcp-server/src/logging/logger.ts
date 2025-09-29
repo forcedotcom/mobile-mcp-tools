@@ -82,21 +82,35 @@ export function createLogger(
   level: string = process.env.LOG_LEVEL || 'info',
   options: pino.LoggerOptions = {}
 ): Logger {
-  const logFilePath = getWorkflowLogsPath();
+  // Defer directory creation until logger is actually needed
+  try {
+    const logFilePath = getWorkflowLogsPath();
 
-  const pinoInstance = pino(
-    {
+    const pinoInstance = pino(
+      {
+        level,
+        // Use structured JSON output for file logging
+        ...options,
+      },
+      pino.destination({
+        dest: logFilePath,
+        sync: false, // Async logging for better performance
+      })
+    );
+
+    return new PinoLogger(pinoInstance);
+  } catch (error) {
+    // If .magen directory creation fails, fallback to console logging
+    console.error('Warning: Could not create file logger, falling back to console logging');
+    console.error(error instanceof Error ? error.message : String(error));
+
+    const pinoInstance = pino({
       level,
-      // Use structured JSON output for file logging
       ...options,
-    },
-    pino.destination({
-      dest: logFilePath,
-      sync: false, // Async logging for better performance
-    })
-  );
+    });
 
-  return new PinoLogger(pinoInstance);
+    return new PinoLogger(pinoInstance);
+  }
 }
 
 /**

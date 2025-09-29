@@ -487,14 +487,14 @@ describe('MobileNativeOrchestrator', () => {
   describe('Checkpointer Integration (File Mode)', () => {
     let tempDir: string;
     let fileOrchestrator: MobileNativeOrchestrator;
-    let originalProjectPath: string | undefined;
+    let originalProjectDir: string | undefined;
 
     beforeEach(async () => {
       // Create temporary directory for file-based testing
       tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'orchestrator-test-'));
 
       // Store original PROJECT_PATH and set it to our temp directory
-      originalProjectPath = process.env.PROJECT_PATH;
+      originalProjectDir = process.env.PROJECT_PATH;
       process.env.PROJECT_PATH = tempDir;
 
       // Create orchestrator without memory mode (file mode)
@@ -503,8 +503,8 @@ describe('MobileNativeOrchestrator', () => {
 
     afterEach(async () => {
       // Restore original PROJECT_PATH
-      if (originalProjectPath !== undefined) {
-        process.env.PROJECT_PATH = originalProjectPath;
+      if (originalProjectDir !== undefined) {
+        process.env.PROJECT_PATH = originalProjectDir;
       } else {
         delete process.env.PROJECT_PATH;
       }
