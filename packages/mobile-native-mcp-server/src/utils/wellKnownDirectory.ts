@@ -61,6 +61,16 @@ export function ensureWellKnownDirectory(): string {
   const wellKnownDir = getWellKnownDirectoryPath();
 
   try {
+    // Validate that PROJECT_PATH exists and is a directory to avoid environment-dependent behavior
+    const projectPath = path.dirname(wellKnownDir);
+    if (!fs.existsSync(projectPath)) {
+      throw new Error(`Base PROJECT_PATH does not exist: ${projectPath}`);
+    }
+    const stat = fs.statSync(projectPath);
+    if (!stat.isDirectory()) {
+      throw new Error(`Base PROJECT_PATH is not a directory: ${projectPath}`);
+    }
+
     if (!fs.existsSync(wellKnownDir)) {
       fs.mkdirSync(wellKnownDir, { recursive: true });
     }
