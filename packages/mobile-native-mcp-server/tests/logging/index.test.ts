@@ -6,7 +6,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import fs from 'fs';
+import * as wellKnownDirectory from '../../src/utils/wellKnownDirectory.js';
+import pino from 'pino';
 import {
   PinoLogger,
   createLogger,
@@ -84,6 +85,7 @@ describe('Logger Graceful Fallback Behavior', () => {
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+    vi.restoreAllMocks();
     if (originalProjectDir !== undefined) {
       process.env.PROJECT_PATH = originalProjectDir;
     } else {
@@ -92,17 +94,12 @@ describe('Logger Graceful Fallback Behavior', () => {
   });
 
   it('should create console logger when .magen directory cannot be created', () => {
-    // Set PROJECT_PATH to a non-existent directory
-    process.env.PROJECT_PATH = '/nonexistent/directory';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
-    // Mock fs.existsSync to return false for any path containing 'nonexistent'
-    // This ensures consistent behavior across platforms
-    const originalExistsSync = fs.existsSync;
-    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
-      if (typeof path === 'string' && path.includes('nonexistent')) {
-        return false;
-      }
-      return originalExistsSync(path);
+    // Mock getWorkflowLogsPath to throw an error
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockImplementation(() => {
+      throw new Error('Failed to create .magen directory');
     });
 
     const logger = createLogger();
@@ -117,16 +114,17 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create .magen directory')
     );
-
-    // Restore original implementation
-    vi.restoreAllMocks();
   });
 
   it('should create console logger when PROJECT_PATH points to invalid location', () => {
-    // Set PROJECT_PATH to a file instead of directory (this would cause mkdir to fail)
-    process.env.PROJECT_PATH = '/tmp';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
-    // Mock fs to make mkdir fail for this specific case
+    // Mock getWorkflowLogsPath to throw an error
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockImplementation(() => {
+      throw new Error('PROJECT_PATH is not a directory');
+    });
+
     const logger = createLogger();
 
     // Should still create a logger instance
@@ -134,9 +132,17 @@ describe('Logger Graceful Fallback Behavior', () => {
   });
 
   it('should create file logger when PROJECT_PATH is valid', () => {
-    // Set PROJECT_PATH to a valid directory
-    process.env.PROJECT_PATH = '/tmp';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
+    // Mock getWorkflowLogsPath to return a valid path
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockReturnValue(
+      '/test/path/.magen/workflow_logs.json'
+    );
+
+    // Mock pino.destination to avoid actual file creation
+    const mockDestination = { write: vi.fn() };
+    vi.spyOn(pino, 'destination').mockReturnValue(mockDestination as any);
     const logger = createLogger();
 
     // Should create a logger without errors
@@ -149,15 +155,12 @@ describe('Logger Graceful Fallback Behavior', () => {
   });
 
   it('should handle errors in createComponentLogger gracefully', () => {
-    process.env.PROJECT_PATH = '/nonexistent/directory';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
-    // Mock fs.existsSync for nonexistent paths
-    const originalExistsSync = fs.existsSync;
-    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
-      if (typeof path === 'string' && path.includes('nonexistent')) {
-        return false;
-      }
-      return originalExistsSync(path);
+    // Mock getWorkflowLogsPath to throw an error
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockImplementation(() => {
+      throw new Error('Failed to create .magen directory');
     });
 
     const componentLogger = createComponentLogger('TestComponent');
@@ -166,21 +169,15 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Warning: Could not create file logger, falling back to console logging'
     );
-
-    // Restore original implementation
-    vi.restoreAllMocks();
   });
 
   it('should handle errors in createWorkflowLogger gracefully', () => {
-    process.env.PROJECT_PATH = '/nonexistent/directory';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
-    // Mock fs.existsSync for nonexistent paths
-    const originalExistsSync = fs.existsSync;
-    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
-      if (typeof path === 'string' && path.includes('nonexistent')) {
-        return false;
-      }
-      return originalExistsSync(path);
+    // Mock getWorkflowLogsPath to throw an error
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockImplementation(() => {
+      throw new Error('Failed to create .magen directory');
     });
 
     const workflowLogger = createWorkflowLogger('TestWorkflow');
@@ -189,21 +186,15 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Warning: Could not create file logger, falling back to console logging'
     );
-
-    // Restore original implementation
-    vi.restoreAllMocks();
   });
 
   it('should maintain logger functionality in fallback mode', () => {
-    process.env.PROJECT_PATH = '/nonexistent/directory';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
-    // Mock fs.existsSync for nonexistent paths
-    const originalExistsSync = fs.existsSync;
-    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
-      if (typeof path === 'string' && path.includes('nonexistent')) {
-        return false;
-      }
-      return originalExistsSync(path);
+    // Mock getWorkflowLogsPath to throw an error
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockImplementation(() => {
+      throw new Error('Failed to create .magen directory');
     });
 
     const logger = createLogger();
@@ -215,21 +206,15 @@ describe('Logger Graceful Fallback Behavior', () => {
       logger.warn('Test warning message');
       logger.error('Test error message', new Error('Test error'));
     }).not.toThrow();
-
-    // Restore original implementation
-    vi.restoreAllMocks();
   });
 
   it('should create child loggers successfully in fallback mode', () => {
-    process.env.PROJECT_PATH = '/nonexistent/directory';
+    // Set PROJECT_PATH to a test value
+    process.env.PROJECT_PATH = '/test/path';
 
-    // Mock fs.existsSync for nonexistent paths
-    const originalExistsSync = fs.existsSync;
-    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
-      if (typeof path === 'string' && path.includes('nonexistent')) {
-        return false;
-      }
-      return originalExistsSync(path);
+    // Mock getWorkflowLogsPath to throw an error
+    vi.spyOn(wellKnownDirectory, 'getWorkflowLogsPath').mockImplementation(() => {
+      throw new Error('Failed to create .magen directory');
     });
 
     const logger = createLogger();
@@ -241,8 +226,5 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(() => {
       childLogger.info('Child logger test');
     }).not.toThrow();
-
-    // Restore original implementation
-    vi.restoreAllMocks();
   });
 });
