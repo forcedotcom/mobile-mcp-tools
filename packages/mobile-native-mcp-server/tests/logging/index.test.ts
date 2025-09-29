@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import fs from 'fs';
 import {
   PinoLogger,
   createLogger,
@@ -94,6 +95,16 @@ describe('Logger Graceful Fallback Behavior', () => {
     // Set PROJECT_PATH to a non-existent directory
     process.env.PROJECT_PATH = '/nonexistent/directory';
 
+    // Mock fs.existsSync to return false for any path containing 'nonexistent'
+    // This ensures consistent behavior across platforms
+    const originalExistsSync = fs.existsSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
+      if (typeof path === 'string' && path.includes('nonexistent')) {
+        return false;
+      }
+      return originalExistsSync(path);
+    });
+
     const logger = createLogger();
 
     // Should still return a PinoLogger instance (console-based)
@@ -106,6 +117,9 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to create .magen directory')
     );
+
+    // Restore original implementation
+    vi.restoreAllMocks();
   });
 
   it('should create console logger when PROJECT_PATH points to invalid location', () => {
@@ -137,16 +151,37 @@ describe('Logger Graceful Fallback Behavior', () => {
   it('should handle errors in createComponentLogger gracefully', () => {
     process.env.PROJECT_PATH = '/nonexistent/directory';
 
+    // Mock fs.existsSync for nonexistent paths
+    const originalExistsSync = fs.existsSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
+      if (typeof path === 'string' && path.includes('nonexistent')) {
+        return false;
+      }
+      return originalExistsSync(path);
+    });
+
     const componentLogger = createComponentLogger('TestComponent');
 
     expect(componentLogger).toBeInstanceOf(PinoLogger);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Warning: Could not create file logger, falling back to console logging'
     );
+
+    // Restore original implementation
+    vi.restoreAllMocks();
   });
 
   it('should handle errors in createWorkflowLogger gracefully', () => {
     process.env.PROJECT_PATH = '/nonexistent/directory';
+
+    // Mock fs.existsSync for nonexistent paths
+    const originalExistsSync = fs.existsSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
+      if (typeof path === 'string' && path.includes('nonexistent')) {
+        return false;
+      }
+      return originalExistsSync(path);
+    });
 
     const workflowLogger = createWorkflowLogger('TestWorkflow');
 
@@ -154,10 +189,22 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Warning: Could not create file logger, falling back to console logging'
     );
+
+    // Restore original implementation
+    vi.restoreAllMocks();
   });
 
   it('should maintain logger functionality in fallback mode', () => {
     process.env.PROJECT_PATH = '/nonexistent/directory';
+
+    // Mock fs.existsSync for nonexistent paths
+    const originalExistsSync = fs.existsSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
+      if (typeof path === 'string' && path.includes('nonexistent')) {
+        return false;
+      }
+      return originalExistsSync(path);
+    });
 
     const logger = createLogger();
 
@@ -168,10 +215,22 @@ describe('Logger Graceful Fallback Behavior', () => {
       logger.warn('Test warning message');
       logger.error('Test error message', new Error('Test error'));
     }).not.toThrow();
+
+    // Restore original implementation
+    vi.restoreAllMocks();
   });
 
   it('should create child loggers successfully in fallback mode', () => {
     process.env.PROJECT_PATH = '/nonexistent/directory';
+
+    // Mock fs.existsSync for nonexistent paths
+    const originalExistsSync = fs.existsSync;
+    vi.spyOn(fs, 'existsSync').mockImplementation(path => {
+      if (typeof path === 'string' && path.includes('nonexistent')) {
+        return false;
+      }
+      return originalExistsSync(path);
+    });
 
     const logger = createLogger();
     const childLogger = logger.child({ component: 'test' });
@@ -182,5 +241,8 @@ describe('Logger Graceful Fallback Behavior', () => {
     expect(() => {
       childLogger.info('Child logger test');
     }).not.toThrow();
+
+    // Restore original implementation
+    vi.restoreAllMocks();
   });
 });
