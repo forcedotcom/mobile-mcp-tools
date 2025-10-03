@@ -73,9 +73,7 @@ describe('SFMobileNativeBuildTool', () => {
       expect(guidance).toContain('xcodebuild -workspace');
       expect(guidance).toContain('<your-workspace>.xcworkspace');
       expect(guidance).toContain('<your-scheme>');
-      expect(guidance).toContain('<simulator-destination>');
       expect(guidance).toContain('BUILD SUCCEEDED');
-      expect(guidance).toContain('iOS 17.0 or greater');
     });
 
     it('should include project path in iOS build guidance', async () => {

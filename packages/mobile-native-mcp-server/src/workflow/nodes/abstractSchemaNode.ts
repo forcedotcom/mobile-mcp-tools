@@ -6,52 +6,45 @@
  */
 
 import z from 'zod';
-import { interrupt } from '@langchain/langgraph';
 import { BaseNode } from './abstractBaseNode.js';
-import {
-  MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
-  WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
-  WorkflowToolMetadata,
-  MCPToolInvocationData,
-} from '../../common/metadata.js';
+import { MCPToolInvocationData } from '../../common/metadata.js';
 import { Logger, createComponentLogger } from '../../logging/logger.js';
+import { ToolExecutor, LangGraphToolExecutor } from './toolExecutor.js';
 
-export abstract class AbstractSchemaNode<
-  TInputSchema extends typeof WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
-  TResultSchema extends z.ZodObject<z.ZodRawShape>,
-  TOutputSchema extends
-    typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA = typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
-> extends BaseNode {
-  protected abstract readonly workflowToolMetadata: WorkflowToolMetadata<
-    TInputSchema,
-    TResultSchema,
-    TOutputSchema
-  >;
-
+export abstract class AbstractSchemaNode extends BaseNode {
   protected readonly logger: Logger;
   protected readonly componentName: string;
+  protected readonly toolExecutor: ToolExecutor;
 
-  constructor(name: string) {
+  constructor(name: string, toolExecutor?: ToolExecutor, logger?: Logger) {
     super(name);
     this.componentName = `WorkflowNode:${this.constructor.name}`;
-    this.logger = createComponentLogger(this.componentName);
+    this.logger = logger ?? createComponentLogger(this.componentName);
+    this.toolExecutor = toolExecutor ?? new LangGraphToolExecutor();
   }
 
   /**
-   * Protected method to execute a tool with logging around the interrupt
-   * @param toolInvocationData The tool invocation data to pass to the interrupt
+   * Protected method to execute a tool with logging and validation.
+   *
+   * By default, results are validated using the provided Zod schema's parse method.
+   * Pass a custom validator function to implement additional validation logic.
+   *
+   * @param toolInvocationData The tool invocation data to pass to the tool executor
+   * @param resultSchema The schema to validate the result against
+   * @param validator Optional custom validator function
    * @returns The validated result from the tool execution
    */
-  protected executeToolWithLogging(
-    toolInvocationData: MCPToolInvocationData<TInputSchema>
+  protected executeToolWithLogging<TResultSchema extends z.ZodObject<z.ZodRawShape>>(
+    toolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
+    resultSchema: TResultSchema,
+    validator?: (result: unknown, schema: TResultSchema) => z.infer<TResultSchema>
   ): z.infer<TResultSchema> {
-    this.logger.debug('Tool invocation data (pre-interrupt)', { toolInvocationData });
+    this.logger.debug('Tool invocation data (pre-execution)', { toolInvocationData });
 
-    const result = interrupt(toolInvocationData);
+    const result = this.toolExecutor.execute(toolInvocationData);
 
-    this.logger.debug('Tool execution result (post-interrupt)', { result });
+    this.logger.debug('Tool execution result (post-execution)', { result });
 
-    const validatedResult = this.workflowToolMetadata.resultSchema.parse(result);
-    return validatedResult;
+    return validator ? validator(result, resultSchema) : resultSchema.parse(result);
   }
 }

@@ -42,10 +42,10 @@ export class SFMobileNativeBuildTool extends AbstractWorkflowTool<typeof BUILD_T
       Navigate to the ${projectPath} directory and run the following command to build the MSDK iOS App:
 
       \`\`\`bash
-      xcodebuild -workspace <your-workspace>.xcworkspace -scheme <your-scheme> -destination <simulator-destination> clean build
+      xcodebuild -workspace <your-workspace>.xcworkspace -scheme <your-scheme> -destination 'generic/platform=iOS Simulator' clean build
       \`\`\`
 
-      Replace <your-workspace>.xcworkspace and <your-scheme> with the actual workspace and scheme names of your project. Ensure that <simulator-destination>  points to a valid simulator running iOS 17.0 or greater.
+      Replace <your-workspace>.xcworkspace and <your-scheme> with the actual workspace and scheme names of your project.
 
       If the output includes **BUILD SUCCEEDED**, the build completed successfully. If you see errors such as **error:** or **Undefined symbol**, resolve them and try again. Refer back to Step 1 for guidance on fixing setup issues.
       

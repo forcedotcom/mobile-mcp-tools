@@ -59,20 +59,34 @@ describe('SFMobileNativeDeploymentTool', () => {
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
         targetDevice: 'iPhone-15-Pro',
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-123' },
       };
 
       const result = await tool.handleRequest(input);
 
-      expect(result.content).toBeDefined();
-      expect(result.content[0].type).toBe('text');
-      expect(result.content[0].text).toContain('Mobile Native App Deployment Guidance for iOS');
-      expect(result.content[0].text).toContain('Step 1: iOS Simulator must be ready');
-      expect(result.content[0].text).toContain('Step 2: Deploy application to iOS Simulator');
-      expect(result.content[0].text).toContain('xcrun simctl list devices | grep "iPhone-15-Pro"');
-      expect(result.content[0].text).toContain('xcrun simctl boot iPhone-15-Pro');
-      expect(result.content[0].text).toContain('xcrun simctl install iPhone-15-Pro <your-app>.app');
-      expect(result.content[0].text).toContain('xcrun simctl launch iPhone-15-Pro <app-bundle-id>');
+      expect(result.structuredContent).toBeDefined();
+      expect(result.structuredContent!.promptForLLM).toBeDefined();
+      expect(result.structuredContent!.promptForLLM!).toContain(
+        'Mobile Native App Deployment Guidance for iOS'
+      );
+      expect(result.structuredContent!.promptForLLM!).toContain(
+        'Step 1: iOS Simulator must be ready'
+      );
+      expect(result.structuredContent!.promptForLLM!).toContain(
+        'Step 2: Deploy application to iOS Simulator'
+      );
+      expect(result.structuredContent!.promptForLLM!).toContain(
+        'xcrun simctl list devices | grep "iPhone-15-Pro"'
+      );
+      expect(result.structuredContent!.promptForLLM!).toContain('xcrun simctl boot iPhone-15-Pro');
+      expect(result.structuredContent!.promptForLLM!).toContain(
+        'xcrun simctl install iPhone-15-Pro <your-app>.app'
+      );
+      expect(result.structuredContent!.promptForLLM!).toContain(
+        `xcrun simctl launch iPhone-15-Pro ${input.packageName}.${input.projectName}`
+      );
     });
 
     it('should generate guidance for iOS with release build', async () => {
@@ -81,6 +95,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         projectPath: '/path/to/project',
         buildType: 'release' as const,
         targetDevice: 'iPhone-15-Pro',
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-456' },
       };
 
@@ -97,6 +113,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         platform: 'iOS' as const,
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-789' },
       };
 
@@ -115,6 +133,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
         targetDevice: 'pixel-34',
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-android-123' },
       };
 
@@ -138,6 +158,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         projectPath: '/path/to/project',
         buildType: 'release' as const,
         targetDevice: 'pixel-34',
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-android-456' },
       };
 
@@ -154,6 +176,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         platform: 'Android' as const,
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-android-789' },
       };
 
@@ -170,6 +194,8 @@ describe('SFMobileNativeDeploymentTool', () => {
       const input = {
         platform: 'iOS' as const,
         projectPath: '/path/to/project',
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-default' },
       };
 
@@ -190,6 +216,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
         targetDevice: 'iPhone-14-Pro',
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-optional-device' },
       };
 
@@ -266,6 +294,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         platform: 'Android' as const,
         projectPath: '/path/to/project',
         buildType: 'debug' as const,
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-android-debug' },
       };
 
@@ -281,6 +311,8 @@ describe('SFMobileNativeDeploymentTool', () => {
         platform: 'Android' as const,
         projectPath: '/path/to/project',
         buildType: 'release' as const,
+        packageName: 'com.example.app',
+        projectName: 'ExampleApp',
         workflowStateData: { thread_id: 'test-android-release' },
       };
 

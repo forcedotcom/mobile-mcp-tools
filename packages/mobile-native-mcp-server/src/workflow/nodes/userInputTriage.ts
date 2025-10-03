@@ -9,32 +9,30 @@ import { MCPToolInvocationData } from '../../common/metadata.js';
 import { USER_INPUT_TRIAGE_TOOL } from '../../tools/plan/sfmobile-native-user-input-triage/metadata.js';
 import { State } from '../metadata.js';
 import { AbstractSchemaNode } from './abstractSchemaNode.js';
+import { ToolExecutor } from './toolExecutor.js';
+import { Logger } from '../../logging/logger.js';
 
-export class UserInputTriageNode extends AbstractSchemaNode<
-  typeof USER_INPUT_TRIAGE_TOOL.inputSchema,
-  typeof USER_INPUT_TRIAGE_TOOL.resultSchema,
-  typeof USER_INPUT_TRIAGE_TOOL.outputSchema
-> {
-  protected readonly workflowToolMetadata = USER_INPUT_TRIAGE_TOOL;
-
-  constructor() {
-    super('triageUserInput');
+export class UserInputTriageNode extends AbstractSchemaNode {
+  constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
+    super('triageUserInput', toolExecutor, logger);
   }
 
   execute = (state: State): Partial<State> => {
-    const toolInvocationData: MCPToolInvocationData<typeof this.workflowToolMetadata.inputSchema> =
-      {
-        llmMetadata: {
-          name: USER_INPUT_TRIAGE_TOOL.toolId,
-          description: USER_INPUT_TRIAGE_TOOL.description,
-          inputSchema: USER_INPUT_TRIAGE_TOOL.inputSchema,
-        },
-        input: {
-          userUtterance: state.userInput,
-        },
-      };
+    const toolInvocationData: MCPToolInvocationData<typeof USER_INPUT_TRIAGE_TOOL.inputSchema> = {
+      llmMetadata: {
+        name: USER_INPUT_TRIAGE_TOOL.toolId,
+        description: USER_INPUT_TRIAGE_TOOL.description,
+        inputSchema: USER_INPUT_TRIAGE_TOOL.inputSchema,
+      },
+      input: {
+        userUtterance: state.userInput,
+      },
+    };
 
-    const validatedResult = this.executeToolWithLogging(toolInvocationData);
+    const validatedResult = this.executeToolWithLogging(
+      toolInvocationData,
+      USER_INPUT_TRIAGE_TOOL.resultSchema
+    );
 
     // Extract the structured properties and merge them into the workflow state
     const { extractedProperties } = validatedResult;

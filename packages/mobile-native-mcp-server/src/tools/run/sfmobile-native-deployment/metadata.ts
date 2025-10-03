@@ -25,6 +25,8 @@ export const DEPLOYMENT_WORKFLOW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.
     .default('debug')
     .describe('Build type for deployment'),
   targetDevice: z.string().optional().describe('Target device identifier (optional)'),
+  packageName: z.string().describe('Package name for the mobile app (e.g., com.company.appname)'),
+  projectName: z.string().describe('Name for the mobile app project'),
 });
 
 export type DeploymentWorkflowInput = z.infer<typeof DEPLOYMENT_WORKFLOW_INPUT_SCHEMA>;

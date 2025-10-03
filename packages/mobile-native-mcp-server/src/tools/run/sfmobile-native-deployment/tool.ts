@@ -20,16 +20,9 @@ export class SFMobileNativeDeploymentTool extends AbstractWorkflowTool<typeof DE
     try {
       // Parsing here is about setting defaults from the input schema (e.g. buildType default).
       const validatedInput = this.toolMetadata.inputSchema.parse(input);
+      input.targetDevice = input.targetDevice ?? 'iPhone 15 Pro';
       const guidance = this.generateDeploymentGuidance(validatedInput);
-
-      return {
-        content: [
-          {
-            type: 'text' as const,
-            text: guidance,
-          },
-        ],
-      };
+      return this.finalizeWorkflowToolOutput(guidance, validatedInput.workflowStateData);
     } catch (error) {
       return {
         isError: true,
@@ -79,6 +72,16 @@ export class SFMobileNativeDeploymentTool extends AbstractWorkflowTool<typeof DE
 
   private generateTargetDeviceReadyStepIOS(input: DeploymentWorkflowInput): string {
     return dedent`
+      ### Launch the macOS Simulator app
+      If the macOS Simulator app is not running on the macOS host, we will not be able to proceed
+      with the deployment commands. The easiest way to ensure that the Simulator app is
+      running is to run:
+
+      \`\`\`bash
+      open -a Simulator
+      \`\`\`
+
+      ### Check to see if our targeted simulator is running
       Navigate to the ${input.projectPath} directory and run the following command to check if the simulator is running:
 
       \`\`\`bash
@@ -163,9 +166,8 @@ export class SFMobileNativeDeploymentTool extends AbstractWorkflowTool<typeof DE
     return input.platform === 'iOS'
       ? dedent`
         \`\`\`bash
-        xcrun simctl launch ${input.targetDevice} <app-bundle-id>
+        xcrun simctl launch ${input.targetDevice} ${input.packageName}.${input.projectName}
         \`\`\`
-        Replace <app-bundle-id> with the bundle id of the app.
       `
       : dedent`
         \`\`\`bash
