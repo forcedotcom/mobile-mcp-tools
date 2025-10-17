@@ -15,6 +15,7 @@ import { SFMobileNativeInputExtractionTool } from './tools/plan/sfmobile-native-
 import { UtilsXcodeAddFilesTool } from './tools/utils/utils-xcode-add-files/tool.js';
 import { SFMobileNativeDeploymentTool } from './tools/run/sfmobile-native-deployment/tool.js';
 import { SFMobileNativeBuildTool } from './tools/plan/sfmobile-native-build/tool.js';
+import { SFMobileNativeBuildRecoveryTool } from './tools/plan/sfmobile-native-build-recovery/tool.js';
 import { SFMobileNativeProjectGenerationTool } from './tools/plan/sfmobile-native-project-generation/tool.js';
 import { MobileNativeOrchestrator } from './tools/workflow/sfmobile-native-project-manager/tool.js';
 import { SFMobileNativeCompletionTool } from './tools/workflow/sfmobile-native-completion/tool.js';
@@ -25,6 +26,7 @@ import { SFMobileNativeProjectGenerationExecutor } from './tools/run/sfmobile-na
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
+import { MobileAppProjectPrompt } from './prompts/index.js';
 
 const server = new McpServer({
   name: 'sfdc-mobile-native-mcp-server',
@@ -55,10 +57,14 @@ const projectGenerationTool = new SFMobileNativeProjectGenerationTool(server);
 const projectGenerationExecutor = new SFMobileNativeProjectGenerationExecutor(server);
 const buildTool = new SFMobileNativeBuildTool(server);
 const buildExecutor = new SFMobileNativeBuildExecutor(server);
+const buildRecoveryTool = new SFMobileNativeBuildRecoveryTool(server);
 const deploymentTool = new SFMobileNativeDeploymentTool(server);
 const xcodeAddFilesTool = new UtilsXcodeAddFilesTool(server);
 const completionTool = new SFMobileNativeCompletionTool(server);
 const failureTool = new SFMobileNativeFailureTool(server);
+
+// Initialize prompts
+const mobileAppProjectPrompt = new MobileAppProjectPrompt(server);
 
 // Register orchestrator with specific annotations
 orchestrator.register(orchestratorAnnotations);
@@ -71,10 +77,14 @@ projectGenerationTool.register(readOnlyAnnotations);
 projectGenerationExecutor.register();
 buildTool.register(readOnlyAnnotations);
 buildExecutor.register();
+buildRecoveryTool.register(readOnlyAnnotations);
 deploymentTool.register(readOnlyAnnotations);
 xcodeAddFilesTool.register(readOnlyAnnotations);
 completionTool.register(readOnlyAnnotations);
 failureTool.register(readOnlyAnnotations);
+
+// Register prompts
+mobileAppProjectPrompt.register();
 
 export default server;
 

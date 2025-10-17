@@ -15,14 +15,14 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "lint": "eslint --config ../../eslint.config.mjs \"src/**/*.ts\"",
+    "lint": "eslint --max-warnings 0 --config ../../eslint.config.mjs \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "evaluate": "op run --env-file=.env -- tsx src/scripts/run-evaluation.ts",
     "evaluate:component": "op run --env-file=.env -- tsx src/scripts/run-evaluation.ts --component"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.13.2",
-    "globals": "^16.3.0",
+    "@modelcontextprotocol/sdk": "^1.20.1",
+    "globals": "^16.4.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {}

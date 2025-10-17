@@ -11,16 +11,19 @@ import { MockToolExecutor } from '../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../utils/MockLogger.js';
 import { createTestState } from '../../utils/stateBuilders.js';
 import { BUILD_TOOL } from '../../../src/tools/plan/sfmobile-native-build/metadata.js';
+import { BuildValidationService } from '../../../src/workflow/services/buildValidationService.js';
 
 describe('BuildValidationNode', () => {
   let node: BuildValidationNode;
   let mockToolExecutor: MockToolExecutor;
   let mockLogger: MockLogger;
+  let mockService: BuildValidationService;
 
   beforeEach(() => {
     mockToolExecutor = new MockToolExecutor();
     mockLogger = new MockLogger();
-    node = new BuildValidationNode(mockToolExecutor, mockLogger);
+    mockService = new BuildValidationService(mockToolExecutor, mockLogger);
+    node = new BuildValidationNode(mockService, mockToolExecutor, mockLogger);
   });
 
   describe('Constructor', () => {
@@ -34,29 +37,18 @@ describe('BuildValidationNode', () => {
       expect(node.execute).toBeDefined();
     });
 
-    it('should use provided tool executor', () => {
-      expect(node['toolExecutor']).toBe(mockToolExecutor);
+    it('should use provided build validation service', () => {
+      expect(node['buildValidationService']).toBe(mockService);
     });
 
-    it('should use provided logger', () => {
-      expect(node['logger']).toBe(mockLogger);
-    });
-
-    it('should create default tool executor when none provided', () => {
-      const nodeWithoutExecutor = new BuildValidationNode(undefined, mockLogger);
-      expect(nodeWithoutExecutor['toolExecutor']).toBeDefined();
-      expect(nodeWithoutExecutor['toolExecutor']).not.toBe(mockToolExecutor);
-    });
-
-    it('should create default logger when none provided', () => {
-      const nodeWithoutLogger = new BuildValidationNode(mockToolExecutor);
-      expect(nodeWithoutLogger['logger']).toBeDefined();
-      expect(nodeWithoutLogger['logger']).not.toBe(mockLogger);
+    it('should create default service when none provided', () => {
+      const nodeWithoutService = new BuildValidationNode();
+      expect(nodeWithoutService['buildValidationService']).toBeDefined();
     });
   });
 
-  describe('execute() - Tool Invocation', () => {
-    it('should invoke build tool with correct tool metadata', () => {
+  describe('execute() - Service Integration', () => {
+    it('should invoke build validation service', () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectName: 'TestProject',
@@ -72,10 +64,9 @@ describe('BuildValidationNode', () => {
       const lastCall = mockToolExecutor.getLastCall();
       expect(lastCall).toBeDefined();
       expect(lastCall?.llmMetadata.name).toBe(BUILD_TOOL.toolId);
-      expect(lastCall?.llmMetadata.description).toBe(BUILD_TOOL.description);
     });
 
-    it('should pass platform, projectPath, and projectName to build tool', () => {
+    it('should pass platform, projectPath, and projectName to service', () => {
       const testPlatform = 'iOS';
       const testProjectPath = '/Users/test/MyApp';
       const testProjectName = 'MyApp';
@@ -99,7 +90,7 @@ describe('BuildValidationNode', () => {
       expect(lastCall?.input.projectName).toBe(testProjectName);
     });
 
-    it('should validate result against build result schema', () => {
+    it('should reset build attempt count to 0 on success', () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectPath: '/path/to/project',
@@ -110,9 +101,47 @@ describe('BuildValidationNode', () => {
         buildSuccessful: true,
       });
 
-      expect(() => {
-        node.execute(inputState);
-      }).not.toThrow();
+      const result = node.execute(inputState);
+
+      // Counter is reset to 0 on successful build
+      expect(result.buildAttemptCount).toBe(0);
+    });
+
+    it('should reset build attempt count to 0 on success regardless of existing count', () => {
+      const inputState = createTestState({
+        platform: 'iOS',
+        projectPath: '/path/to/project',
+        projectName: 'TestProject',
+        buildAttemptCount: 2,
+      });
+
+      mockToolExecutor.setResult(BUILD_TOOL.toolId, {
+        buildSuccessful: true,
+      });
+
+      const result = node.execute(inputState);
+
+      // Counter is always reset to 0 on successful build, even from existing count
+      expect(result.buildAttemptCount).toBe(0);
+    });
+
+    it('should increment attempt count on failure', () => {
+      const inputState = createTestState({
+        platform: 'iOS',
+        projectPath: '/path/to/project',
+        projectName: 'TestProject',
+        buildAttemptCount: 2,
+      });
+
+      mockToolExecutor.setResult(BUILD_TOOL.toolId, {
+        buildSuccessful: false,
+        buildOutputFilePath: '/path/to/output.txt',
+      });
+
+      const result = node.execute(inputState);
+
+      // Counter is incremented on failed build
+      expect(result.buildAttemptCount).toBe(3);
     });
   });
 
@@ -191,22 +220,22 @@ describe('BuildValidationNode', () => {
   });
 
   describe('execute() - Build Success Results', () => {
-    it('should return build success result', () => {
+    it('should return build success result with attempt count', () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectName: 'TestProject',
         projectPath: '/path/to/project',
       });
 
-      const expectedResult = {
+      mockToolExecutor.setResult(BUILD_TOOL.toolId, {
         buildSuccessful: true,
-      };
-
-      mockToolExecutor.setResult(BUILD_TOOL.toolId, expectedResult);
+      });
 
       const result = node.execute(inputState);
 
-      expect(result).toEqual(expectedResult);
+      expect(result.buildSuccessful).toBe(true);
+      // Counter is reset to 0 on successful build
+      expect(result.buildAttemptCount).toBe(0);
     });
 
     it('should handle successful build', () => {
@@ -223,6 +252,7 @@ describe('BuildValidationNode', () => {
       const result = node.execute(inputState);
 
       expect(result.buildSuccessful).toBe(true);
+      expect(result.buildAttemptCount).toBeDefined();
     });
   });
 
@@ -236,49 +266,52 @@ describe('BuildValidationNode', () => {
 
       mockToolExecutor.setResult(BUILD_TOOL.toolId, {
         buildSuccessful: false,
+        buildOutputFilePath: '/tmp/build-output.txt',
       });
 
       const result = node.execute(inputState);
 
       expect(result.buildSuccessful).toBe(false);
+      expect(result.buildAttemptCount).toBeGreaterThan(0);
     });
 
-    it('should return build failure result', () => {
+    it('should return build failure result with output file path', () => {
       const inputState = createTestState({
         platform: 'Android',
         projectName: 'TestProject',
         projectPath: '/path/to/project',
       });
 
-      const expectedResult = {
+      mockToolExecutor.setResult(BUILD_TOOL.toolId, {
         buildSuccessful: false,
-      };
-
-      mockToolExecutor.setResult(BUILD_TOOL.toolId, expectedResult);
+        buildOutputFilePath: '/tmp/android-build-output.txt',
+      });
 
       const result = node.execute(inputState);
 
-      expect(result).toEqual(expectedResult);
+      expect(result.buildSuccessful).toBe(false);
+      expect(result.buildOutputFilePath).toBe('/tmp/android-build-output.txt');
     });
   });
 
   describe('execute() - Return Value', () => {
-    it('should return validated result from tool executor', () => {
+    it('should return result from service', () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectName: 'TestProject',
         projectPath: '/path/to/project',
       });
 
-      const expectedResult = {
+      mockToolExecutor.setResult(BUILD_TOOL.toolId, {
         buildSuccessful: true,
-      };
-
-      mockToolExecutor.setResult(BUILD_TOOL.toolId, expectedResult);
+      });
 
       const result = node.execute(inputState);
 
-      expect(result).toEqual(expectedResult);
+      expect(result).toBeDefined();
+      expect(result.buildSuccessful).toBe(true);
+      // Counter is reset to 0 on successful build
+      expect(result.buildAttemptCount).toBe(0);
     });
 
     it('should return partial state object', () => {
@@ -296,11 +329,13 @@ describe('BuildValidationNode', () => {
 
       expect(result).toBeDefined();
       expect(typeof result).toBe('object');
+      expect(result).toHaveProperty('buildSuccessful');
+      expect(result).toHaveProperty('buildAttemptCount');
     });
   });
 
   describe('execute() - Logging', () => {
-    it('should log tool invocation details', () => {
+    it('should log through service', () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectName: 'TestProject',
@@ -314,16 +349,14 @@ describe('BuildValidationNode', () => {
 
       node.execute(inputState);
 
-      const debugLogs = mockLogger.getLogsByLevel('debug');
-      expect(debugLogs.length).toBeGreaterThan(0);
+      const logs = mockLogger.getLogsByLevel('info');
+      expect(logs.length).toBeGreaterThan(0);
 
-      const preExecutionLog = debugLogs.find(log =>
-        log.message.includes('Tool invocation data (pre-execution)')
-      );
-      expect(preExecutionLog).toBeDefined();
+      const startLog = logs.find(log => log.message.includes('Executing build'));
+      expect(startLog).toBeDefined();
     });
 
-    it('should log tool result', () => {
+    it('should log build completion', () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectName: 'TestProject',
@@ -337,11 +370,9 @@ describe('BuildValidationNode', () => {
 
       node.execute(inputState);
 
-      const debugLogs = mockLogger.getLogsByLevel('debug');
-      const postExecutionLog = debugLogs.find(log =>
-        log.message.includes('Tool execution result (post-execution)')
-      );
-      expect(postExecutionLog).toBeDefined();
+      const infoLogs = mockLogger.getLogsByLevel('info');
+      const completionLog = infoLogs.find(log => log.message.includes('Build completed'));
+      expect(completionLog).toBeDefined();
     });
   });
 

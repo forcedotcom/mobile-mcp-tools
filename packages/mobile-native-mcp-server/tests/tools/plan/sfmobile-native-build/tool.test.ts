@@ -68,15 +68,16 @@ describe('SFMobileNativeBuildTool', () => {
       expect(result.content[0].type).toBe('text');
       const guidance = result.content[0].text;
 
-      // Check that it includes agent context
-      expect(guidance).toContain('You are a tech-adept agent acting on behalf of a user');
+      // Check that it includes restrictive context
+      expect(guidance).toContain('Your ONLY Task');
+      expect(guidance).toContain('DO NOT');
 
       // Check main title
-      expect(guidance).toContain('Salesforce Mobile App Build Guidance for iOS');
+      expect(guidance).toContain('Salesforce Mobile App Build Execution for iOS');
 
       // Check iOS build execution
-      expect(guidance).toContain('iOS Build Execution');
-      expect(guidance).toContain('Navigate to the /path/to/ios/project directory');
+      expect(guidance).toContain('Build Execution Steps');
+      expect(guidance).toContain('cd /path/to/ios/project');
       expect(guidance).toContain('xcodebuild');
       expect(guidance).toContain('MyiOSApp.xcworkspace');
       expect(guidance).toContain('-scheme MyiOSApp');
@@ -94,7 +95,7 @@ describe('SFMobileNativeBuildTool', () => {
 
       const result = await tool.handleRequest(input);
 
-      expect(result.content[0].text).toContain(`Navigate to the ${customPath} directory`);
+      expect(result.content[0].text).toContain(`cd ${customPath}`);
     });
   });
 
@@ -113,18 +114,20 @@ describe('SFMobileNativeBuildTool', () => {
       expect(result.content[0].type).toBe('text');
       const guidance = result.content[0].text;
 
-      // Check that it includes agent context
-      expect(guidance).toContain('You are a tech-adept agent acting on behalf of a user');
+      // Check that it includes restrictive context
+      expect(guidance).toContain('Your ONLY Task');
+      expect(guidance).toContain('DO NOT');
 
       // Check main title
-      expect(guidance).toContain('Salesforce Mobile App Build Guidance for Android');
+      expect(guidance).toContain('Salesforce Mobile App Build Execution for Android');
 
       // Check Android build execution
-      expect(guidance).toContain('Android Build Execution');
-      expect(guidance).toContain('Navigate to the /path/to/android/project directory');
+      expect(guidance).toContain('Build Execution Steps');
+      expect(guidance).toContain('cd /path/to/android/project');
       expect(guidance).toContain('./gradlew build');
-      expect(guidance).toContain('BUILD SUCCESSFUL');
-      expect(guidance).toContain('FAILURE:Build failed');
+      expect(guidance).toContain('exit code');
+      expect(guidance).toContain('buildSuccessful');
+      expect(guidance).toContain('buildOutputFilePath');
     });
 
     it('should include project path in Android build guidance', async () => {
@@ -138,7 +141,7 @@ describe('SFMobileNativeBuildTool', () => {
 
       const result = await tool.handleRequest(input);
 
-      expect(result.content[0].text).toContain(`Navigate to the ${customPath} directory`);
+      expect(result.content[0].text).toContain(`cd ${customPath}`);
     });
   });
 
@@ -182,7 +185,7 @@ describe('SFMobileNativeBuildTool', () => {
       expect(guidance).toContain('##');
       expect(guidance).toContain('```bash');
       expect(guidance).toContain('exit code');
-      expect(guidance).toContain('You are a tech-adept agent');
+      expect(guidance).toContain('STOP HERE');
     });
   });
 
@@ -198,7 +201,7 @@ describe('SFMobileNativeBuildTool', () => {
       const result = await tool.handleRequest(input);
 
       expect(result.content).toBeDefined();
-      expect(result.content[0].text).toContain('Navigate to the  directory');
+      expect(result.content[0].text).toContain('cd ');
     });
   });
 });

@@ -5,38 +5,44 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../common/metadata.js';
 import { State } from '../metadata.js';
-import { AbstractToolNode } from './abstractToolNode.js';
-import { BUILD_EXECUTOR_TOOL } from '../../tools/run/sfmobile-native-build-executor/metadata.js';
+import { BaseNode } from './abstractBaseNode.js';
 import { ToolExecutor } from './toolExecutor.js';
 import { Logger } from '../../logging/logger.js';
+import {
+  BuildValidationService,
+  BuildValidationServiceProvider,
+} from '../services/buildValidationService.js';
 
-export class BuildValidationNode extends AbstractToolNode {
-  constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
-    super('validateBuild', toolExecutor, logger);
+export class BuildValidationNode extends BaseNode {
+  private readonly buildValidationService: BuildValidationServiceProvider;
+
+  constructor(
+    buildValidationService?: BuildValidationServiceProvider,
+    toolExecutor?: ToolExecutor,
+    logger?: Logger
+  ) {
+    super('validateBuild');
+    this.buildValidationService =
+      buildValidationService ?? new BuildValidationService(toolExecutor, logger);
   }
 
   execute = (state: State): Partial<State> => {
-    // Call the build executor tool which will handle progress reporting
-    const toolInvocationData: MCPToolInvocationData<typeof BUILD_EXECUTOR_TOOL.inputSchema> = {
-      llmMetadata: {
-        name: BUILD_EXECUTOR_TOOL.toolId,
-        description: BUILD_EXECUTOR_TOOL.description,
-        inputSchema: BUILD_EXECUTOR_TOOL.inputSchema,
-      },
-      input: {
-        platform: state.platform,
-        projectPath: state.projectPath,
-        projectName: state.projectName,
-      },
+    // Increment build attempt count
+    const attemptCount = (state.buildAttemptCount ?? 0) + 1;
+
+    const result = this.buildValidationService.executeBuild({
+      platform: state.platform,
+      projectPath: state.projectPath,
+      projectName: state.projectName,
+    });
+
+    return {
+      buildSuccessful: result.buildSuccessful,
+      // Reset attempt count to 0 on success, so if we return to build validation
+      // later in the workflow, we start fresh
+      buildAttemptCount: result.buildSuccessful ? 0 : attemptCount,
+      buildOutputFilePath: result.buildOutputFilePath,
     };
-
-    const validatedResult = this.executeToolWithLogging(
-      toolInvocationData,
-      BUILD_EXECUTOR_TOOL.resultSchema
-    );
-
-    return { buildSuccessful: validatedResult.success };
   };
 }

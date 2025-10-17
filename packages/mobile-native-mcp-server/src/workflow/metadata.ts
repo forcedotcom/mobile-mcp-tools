@@ -72,6 +72,11 @@ export const MobileNativeWorkflowState = Annotation.Root({
   buildType: Annotation<'debug' | 'release'>,
   targetDevice: Annotation<string>,
   buildSuccessful: Annotation<boolean>,
+  buildAttemptCount: Annotation<number>,
+  buildErrorMessages: Annotation<string[]>,
+  maxBuildRetries: Annotation<number>,
+  buildOutputFilePath: Annotation<string>,
+  recoveryReadyForRetry: Annotation<boolean>,
   deploymentStatus: Annotation<string>,
 });
 

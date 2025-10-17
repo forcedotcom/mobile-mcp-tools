@@ -73,6 +73,17 @@ export class TempDirectoryManager {
   }
 
   /**
+   * Gets the path to the build output file based on platform.
+   * @param platform The platform of the app (iOS or Android)
+   * @returns The full path to the build output file
+   */
+  getBuildOutputFilePath(platform: PlatformEnum): string {
+    return platform === 'iOS'
+      ? this.getIOSBuildOutputFilePath()
+      : this.getAndroidBuildOutputFilePath();
+  }
+
+  /**
    * Gets the build output "root directory" for an app bundle/artifact
    * @param projectName The name of the project will be used as the umbrella directory name
    * @returns The full path to the app artifact root directory

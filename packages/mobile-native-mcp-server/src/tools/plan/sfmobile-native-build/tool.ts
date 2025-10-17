@@ -33,10 +33,19 @@ export class SFMobileNativeBuildTool extends AbstractWorkflowTool<typeof BUILD_T
 
   private generateBuildGuidance(input: BuildWorkflowInput) {
     return dedent`
-     You are a tech-adept agent acting on behalf of a user who is not familiar with the technical details of MSDK development. 
-     Carry out the steps in the following guideline for them, and share the key outcomes they need to know.
+     # Salesforce Mobile App Build Execution for ${input.platform}
 
-     # Salesforce Mobile App Build Guidance for ${input.platform}
+     ## IMPORTANT: Your ONLY Task
+     
+     Your sole responsibility is to:
+     1. Execute the build command exactly as specified below
+     2. Check the exit code to determine success or failure
+     3. Return the result immediately
+     
+     **DO NOT** attempt to fix any errors or issues you encounter.
+     **DO NOT** run any additional commands beyond what is specified.
+     
+     If the build fails, simply return the failure status. The build recovery process will handle fixes separately.
 
       ${input.platform === 'iOS' ? this.msdkAppBuildExecutionIOS(input.projectPath, input.projectName) : this.msdkAppBuildExecutionAndroid(input.projectPath)}
       
@@ -45,34 +54,53 @@ export class SFMobileNativeBuildTool extends AbstractWorkflowTool<typeof BUILD_T
 
   private msdkAppBuildExecutionIOS(projectPath: string, projectName: string) {
     return dedent`  
-      ## iOS Build Execution
-      Follow these instructions, step by step, to build the iOS App.
+      ## Build Execution Steps
 
-      1. Navigate to the ${projectPath} directory
-      2. Run the following \`xcodebuild\` CLI command to build the iOS app:
+      **Step 1:** Navigate to the project directory:
+      \`\`\`bash
+      cd ${projectPath}
+      \`\`\`
 
-         \`\`\`bash
-         { xcodebuild -workspace ${projectName}.xcworkspace -scheme ${projectName} -destination 'generic/platform=iOS Simulator' clean build CONFIGURATION_BUILD_DIR="${this.tempDirManager.getAppArtifactRootPath(projectName)}" > "${this.tempDirManager.getIOSBuildOutputFilePath()}" 2>&1; echo $?; }
-         \`\`\`
+      **Step 2:** Execute the build command (this is the ONLY command you should run):
+      \`\`\`bash
+      { xcodebuild -workspace ${projectName}.xcworkspace -scheme ${projectName} -destination 'generic/platform=iOS Simulator' clean build CONFIGURATION_BUILD_DIR="${this.tempDirManager.getAppArtifactRootPath(projectName)}" > "${this.tempDirManager.getIOSBuildOutputFilePath()}" 2>&1; echo $?; }
+      \`\`\`
       
-      3. The exit code of the command above will be printed to the console. If it is 0, the build completed
-         successfully. If it is not 0, the build failed.
-      4. If the build failed, check the "${this.tempDirManager.getIOSBuildOutputFilePath()}" file for the error
-         message, and attempt to fix the issue.
+      **Step 3:** Check the exit code:
+      - Exit code 0 = Build succeeded
+      - Any other exit code = Build failed
       
+      **Step 4:** Return the result IMMEDIATELY:
+      - Set \`buildSuccessful\` to \`true\` if exit code is 0, \`false\` otherwise
+      - If build failed (exit code is not 0), also set \`buildOutputFilePath\` to "${this.tempDirManager.getIOSBuildOutputFilePath()}"
+      
+      **STOP HERE.** Do not attempt to diagnose or fix any errors. Do not run any other commands.
     `;
   }
 
   private msdkAppBuildExecutionAndroid(projectPath: string) {
     return dedent`  
-      ## Android Build Execution
-      Navigate to the ${projectPath} directory and use the following command to build the MSDK Android App:
+      ## Build Execution Steps
 
+      **Step 1:** Navigate to the project directory:
       \`\`\`bash
-      ./gradlew build
+      cd ${projectPath}
       \`\`\`
 
-      If **BUILD SUCCESSFUL** is shown as the output, the build is successful. If there are build errors like **FAILURE:Build failed**, please fix them and retry the build. Refer to the step 1 to fix the setup issues.
+      **Step 2:** Execute the build command (this is the ONLY command you should run):
+      \`\`\`bash
+      { ./gradlew build > "${this.tempDirManager.getAndroidBuildOutputFilePath()}" 2>&1; echo $?; }
+      \`\`\`
+      
+      **Step 3:** Check the exit code:
+      - Exit code 0 = Build succeeded
+      - Any other exit code = Build failed
+      
+      **Step 4:** Return the result IMMEDIATELY:
+      - Set \`buildSuccessful\` to \`true\` if exit code is 0, \`false\` otherwise
+      - If build failed (exit code is not 0), also set \`buildOutputFilePath\` to "${this.tempDirManager.getAndroidBuildOutputFilePath()}"
+      
+      **STOP HERE.** Do not attempt to diagnose or fix any errors. Do not run any other commands.
     `;
   }
 }

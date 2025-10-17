@@ -24,3 +24,5 @@ Thumbs.db
 .cursor/mcp.json
 .sfdx/
 .github/instructions/nx.instructions.md
+
+.cursor/mcp.json

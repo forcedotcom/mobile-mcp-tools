@@ -24,6 +24,7 @@ export const BUILD_WORKFLOW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.exten
 
 export const BUILD_WORKFLOW_RESULT_SCHEMA = z.object({
   buildSuccessful: z.boolean().describe('Whether the build was successful'),
+  buildOutputFilePath: z.string().optional().describe('Path to build output file if build failed'),
 });
 
 export type BuildWorkflowInput = z.infer<typeof BUILD_WORKFLOW_INPUT_SCHEMA>;

@@ -124,15 +124,20 @@ export class LlmClient {
    */
   async streamToText(stream: ReadableStream<Uint8Array>): Promise<string> {
     let result = '';
-    const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
+    const decoder = new TextDecoder();
+    const reader = stream.getReader();
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) {
         break;
       }
+
+      // Decode the Uint8Array chunk to string
+      const textChunk = decoder.decode(value, { stream: true });
       // Ref: xGen API https://salesforce.quip.com/b9aJAKS55Oya
 
-      const data = this.processStream(value, StreamType.GENERATION);
+      const data = this.processStream(textChunk, StreamType.GENERATION);
       if (data && isGenerationEvent(data)) {
         result += data.generations.map((chunk: { text: string }) => chunk.text).join('');
         const parameters = data.generations[0]?.parameters;
@@ -147,7 +152,7 @@ export class LlmClient {
         continue; // As long as we receive successful generation stream continue ...
       }
 
-      const error = this.processStream(value, StreamType.ERROR);
+      const error = this.processStream(textChunk, StreamType.ERROR);
       if (error && isErrorEvent(error)) {
         console.error('LLM/Gateway error:', error);
         const errorResponse = new Error(`LLM/Gateway call failed due to: ${error.errorCode}`);
