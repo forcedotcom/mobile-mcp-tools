@@ -150,6 +150,44 @@ The three-phase workflow follows this pattern:
 
 ### Phase Workflow and Checkpoints
 
+**Steel Thread Implementation** (Current):
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Orchestrator as Workflow Orchestrator
+    participant PlanPhase as Plan Phase
+    participant RunPhase as Run Phase
+
+    User->>Orchestrator: Initial app request (with platform)
+    Orchestrator->>PlanPhase: Validate environment (env vars)
+
+    Note over PlanPhase: User Input Collection Loop
+    loop Until all properties collected
+        PlanPhase->>PlanPhase: Extract properties from user input
+        alt Properties incomplete
+            PlanPhase->>User: Request missing properties
+            User->>PlanPhase: Provide requested data
+        end
+    end
+
+    PlanPhase->>PlanPhase: Discover & select template
+    PlanPhase->>PlanPhase: Generate project with OAuth config
+
+    Note over PlanPhase: Build Validation & Recovery Loop
+    loop Until build succeeds (max 3 attempts)
+        PlanPhase->>PlanPhase: Validate build
+        alt Build failed
+            PlanPhase->>PlanPhase: Analyze & attempt fixes
+        end
+    end
+
+    PlanPhase->>RunPhase: Deploy to simulator/emulator
+    RunPhase->>User: CHECKPOINT: Functioning Contact list app
+```
+
+**Full Vision** (Future Design/Iterate Phase):
+
 ```mermaid
 sequenceDiagram
     participant User
@@ -158,10 +196,11 @@ sequenceDiagram
     participant RunPhase as Run Phase
 
     User->>PlanPhase: Initial app request
-    PlanPhase->>PlanPhase: Environment setup
+    PlanPhase->>PlanPhase: Environment validation
+    PlanPhase->>PlanPhase: User input collection
     PlanPhase->>PlanPhase: Template selection
-    PlanPhase->>PlanPhase: Connected app inputs
-    PlanPhase->>PlanPhase: Create mobile app project
+    PlanPhase->>PlanPhase: Project generation
+    PlanPhase->>PlanPhase: Build validation & recovery
     PlanPhase->>RunPhase: Deploy & validate login
     RunPhase->>User: CHECKPOINT: Functioning mobile app
     User->>DesignPhase: Feature requirements + feedback
@@ -212,9 +251,9 @@ By the end of each Design/Iterate phase, the user validates implemented features
 #### Template Selection
 
 - Determine optimal `sfdx-mobilesdk-plugin` project template based on user requirements
-- **Primary Template Source**: Official [SalesforceMobileSDK-Templates](https://github.com/forcedotcom/SalesforceMobileSDK-Templates) repository via Git submodule, with architecture designed to support additional template sources in future iterations
+- **Primary Template Source**: Official [SalesforceMobileSDK-Templates](https://github.com/forcedotcom/SalesforceMobileSDK-Templates) repository included as package files, with architecture designed to support additional template sources in future iterations
 - **Template Repository Integration**:
-  - Git submodule at `<ServerRoot>/resources/SalesforceMobileSDK-Templates/` provides local access to official Salesforce templates as primary foundation
+  - Templates included at `<ServerRoot>/templates/` provide local access to official Salesforce templates as primary foundation
   - `sfmobile-native-template-discovery` tool parses template metadata with extensible architecture for multiple template sources
   - Platform-specific template filtering (iOS/Android) based on user requirements across all available template repositories
   - Direct integration with `sfdx-mobilesdk-plugin` CLI using local template paths
@@ -228,9 +267,9 @@ By the end of each Design/Iterate phase, the user validates implemented features
   - Complexity ratings (simple, moderate, advanced) for appropriate template selection
   - List of customization points with file-level modification instructions
   - Platform-specific configuration and dependency information
-- **Local Access**: All templates and metadata available locally via Git submodule without network dependencies
+- **Local Access**: All templates and metadata available locally as packaged files without network dependencies
 - **Extensible Architecture**: Template discovery system designed to accommodate additional template repositories and community-contributed templates in future releases
-- **Automatic Updates**: Submodule updates provide access to latest templates and improvements from Salesforce Mobile SDK team
+- **Package Updates**: NPM package updates provide access to latest templates and improvements from Salesforce Mobile SDK team
 
 #### Connected App Configuration
 
@@ -370,38 +409,32 @@ The workflow engine leverages [LangGraph.js StateGraph](https://langchain-ai.git
 
 ```typescript
 interface WorkflowState {
-  // Project Context
-  projectId: string;
-  projectPath?: string;
+  // Core workflow data
+  userInput: unknown; // Current user input (original request or tool output)
   platform: 'iOS' | 'Android';
 
-  // User Intent and Requirements
-  userInput: string; // Current user input (original request or tool output)
-  userRequirements: string[];
-  currentPhase: 'environment' | 'plan' | 'design-iterate' | 'run';
+  // Plan phase state
+  validEnvironment: boolean;
+  workflowFatalErrorMessages: string[];
+  selectedTemplate: string;
+  projectName: string;
+  projectPath: string;
+  packageName: string;
+  organization: string;
+  connectedAppClientId: string;
+  connectedAppCallbackUri: string;
+  loginHost: string;
 
-  // Environment and Template Context
-  environmentValidated: boolean;
-  selectedTemplate?: string;
-  templateMetadata?: object;
-  connectedAppConfig?: {
-    clientId: string;
-    callbackUri: string;
-  };
-
-  // Design/Iterate State
-  taskList: WorkflowTask[];
-  currentTaskIndex: number;
-  changelogEntries: ChangelogEntry[];
-  iterationCount: number;
-
-  // Runtime State
-  lastBuildStatus: 'success' | 'failed' | 'unknown';
-  deploymentStatus: 'deployed' | 'failed' | 'not-deployed';
-  userFeedback?: string;
-
-  // Error Context
-  errorState?: WorkflowError;
+  // Build and deployment state
+  buildType: 'debug' | 'release';
+  targetDevice: string;
+  buildSuccessful: boolean;
+  buildAttemptCount: number;
+  buildErrorMessages: string[];
+  maxBuildRetries: number;
+  buildOutputFilePath: string;
+  recoveryReadyForRetry: boolean;
+  deploymentStatus: string;
 }
 
 interface WorkflowToolMetadata<T extends z.ZodRawShape> {
@@ -545,11 +578,11 @@ const ENVIRONMENT_VALIDATION_TOOL_METADATA: WorkflowToolMetadata<
 **Well-Known Directory Structure**: The `.magen/` directory serves as a well-known location for storing project artifacts and state information:
 
 - **Purpose**: Centralized storage for workflow state, tool artifacts, logging data, and other persistent project data
-- **Scope**: Project-specific (relative to current working directory where tools are invoked)
+- **Scope**: User home directory by default (`~/.magen/`), or project-specific (`$PROJECT_PATH/.magen/`) when `PROJECT_PATH` environment variable is set
 - **Future Extensibility**: Designed to accommodate additional artifacts such as configuration files, cached metadata, and tool-specific state
 - **Convention**: Hidden directory (dot-prefixed) to avoid workspace clutter while remaining accessible for debugging
 
-**Logging Architecture**: All workflow orchestration and MCP tool interactions are logged to `.magen/workflow_logs.json` for comprehensive debugging and audit capabilities:
+**Logging Architecture**: All workflow orchestration and MCP tool interactions are logged to `~/.magen/workflow_logs.json` (or `$PROJECT_PATH/.magen/workflow_logs.json`) for comprehensive debugging and audit capabilities:
 
 - **Structured Logging**: JSON-formatted log entries with structured metadata for workflow sessions, tool invocations, and error tracking
 - **Persistent Debugging**: Log files preserved across sessions for comprehensive workflow analysis and troubleshooting
@@ -560,30 +593,37 @@ const ENVIRONMENT_VALIDATION_TOOL_METADATA: WorkflowToolMetadata<
 
 The workflow uses [LangGraph persistence](https://langchain-ai.github.io/langgraphjs/concepts/persistence/) to maintain state across tool invocations and workflow session boundaries.
 
-#### SQLite-Based Checkpointing
+#### JSON-Based Checkpointing
 
-**Implementation**: Uses [`SqliteSaver`](https://langchain-ai.github.io/langgraphjs/reference/classes/checkpoint_sqlite.SqliteSaver.html) checkpointer for robust local state persistence:
+**Implementation**: Uses custom `JsonCheckpointSaver` class for cross-platform compatible state persistence without binary dependencies:
 
 ```typescript
-import path from 'path';
-import { SqliteSaver } from '@langchain/langgraph/checkpoint/sqlite';
+import { JsonCheckpointSaver } from './workflow/jsonCheckpointer.js';
+import { WorkflowStatePersistence } from './workflow/workflowStatePersistence.js';
+import { getWorkflowStateStorePath } from './utils/wellKnownDirectory.js';
 
-const checkpointer = new SqliteSaver({
-  // SQLite database will be created automatically via better-sqlite3
-  // No external SQLite installation required
-  connectionString: path.join(process.cwd(), '.magen', 'workflow-state.db'),
-});
+// Create JSON checkpointer that serializes state using base64 encoding
+const checkpointer = new JsonCheckpointSaver();
+
+// Load persisted state from .magen directory if it exists
+const storePath = getWorkflowStateStorePath(); // ~/.magen/workflow-state.json
+const statePersistence = new WorkflowStatePersistence(storePath);
+const savedState = await statePersistence.readState();
+if (savedState) {
+  await checkpointer.importState(savedState);
+}
 
 const workflow = workflowGraph.compile({
   checkpointer,
 });
 ```
 
-**Storage Location**: Workflow state persisted in `./.magen/workflow-state.db` relative to current working directory, ensuring:
+**Storage Location**: Workflow state persisted in `~/.magen/workflow-state.json` (or `$PROJECT_PATH/.magen/workflow-state.json` if `PROJECT_PATH` environment variable is set), ensuring:
 
+- Cross-platform compatibility without native binary dependencies
+- Human-readable JSON format for debugging and state inspection
 - Long-lived reference data remains accessible across sessions
-- Project-specific workflow history and replay capabilities
-- Integration with LangGraph debugging and introspection tools
+- Project-specific workflow history and replay capabilities when `PROJECT_PATH` is configured
 
 #### Workflow State Round-Tripping and Persistence
 
@@ -595,16 +635,23 @@ interface WorkflowStateData {
 }
 
 // Orchestrator execution with round-tripped workflow state
-const executeWorkflow = async (userInput: string, workflowStateData?: WorkflowStateData) => {
+const executeWorkflow = async (
+  userInput: Record<string, unknown>,
+  workflowStateData?: WorkflowStateData
+) => {
   // Generate new thread_id if none provided (new workflow)
   const threadId = workflowStateData?.thread_id || generateUniqueThreadId();
   const config = { configurable: { thread_id: threadId } };
 
-  // Initialize SQLite checkpointer for server-side persistence
-  // Database stored in the user's development workspace (where MCP tools were launched)
-  const checkpointer = new SqliteSaver({
-    connectionString: path.join(process.cwd(), '.magen', 'workflow-state.db'),
-  });
+  // Initialize JSON checkpointer for server-side persistence
+  // State stored in user's home directory .magen/ folder (or PROJECT_PATH if set)
+  const checkpointer = new JsonCheckpointSaver();
+  const storePath = getWorkflowStateStorePath();
+  const statePersistence = new WorkflowStatePersistence(storePath);
+  const savedState = await statePersistence.readState();
+  if (savedState) {
+    await checkpointer.importState(savedState);
+  }
 
   // Compile workflow with persistent state
   const compiledWorkflow = workflow.compile({ checkpointer });
@@ -665,7 +712,7 @@ Following the stateless service pattern (similar to web cookies), workflow state
 ```typescript
 // User starts new workflow - no workflowStateData provided
 const result = await orchestrator.execute({
-  userInput: 'I want an iOS Contact list app',
+  userInput: { platform: 'iOS', intent: 'Contact list app' },
   // workflowStateData: undefined (new session)
 });
 // Returns: { workflowStateData: { thread_id: "mobile-1699123456-a7b2c9" } }
@@ -702,7 +749,7 @@ class TemplateDiscoveryTool {
 ```typescript
 // LLM re-invokes orchestrator with preserved state
 const resumeResult = await orchestrator.execute({
-  userInput: 'Selected template: iOSNativeSwiftTemplate',
+  userInput: { selectedTemplate: 'iOSNativeSwiftTemplate', platform: 'iOS' },
   workflowStateData: { thread_id: 'mobile-1699123456-a7b2c9' }, // Same session
 });
 ```
@@ -788,87 +835,99 @@ The StateGraph implements the three-phase architecture through deterministic nod
 
 ```typescript
 const WorkflowStateAnnotation = Annotation.Root({
-  projectId: Annotation<string>,
-  userInput: Annotation<string>,
+  // Core workflow data
+  userInput: Annotation<unknown>,
   platform: Annotation<'iOS' | 'Android'>,
-  environmentValidated: Annotation<boolean>,
+
+  // Plan phase state
+  validEnvironment: Annotation<boolean>,
+  workflowFatalErrorMessages: Annotation<string[]>,
   selectedTemplate: Annotation<string>,
-  taskList: Annotation<WorkflowTask[]>,
-  // ... other state properties
+  projectName: Annotation<string>,
+  projectPath: Annotation<string>,
+  packageName: Annotation<string>,
+  organization: Annotation<string>,
+  connectedAppClientId: Annotation<string>,
+  connectedAppCallbackUri: Annotation<string>,
+  loginHost: Annotation<string>,
+
+  // Build and deployment state
+  buildType: Annotation<'debug' | 'release'>,
+  targetDevice: Annotation<string>,
+  buildSuccessful: Annotation<boolean>,
+  buildAttemptCount: Annotation<number>,
+  buildErrorMessages: Annotation<string[]>,
+  maxBuildRetries: Annotation<number>,
+  buildOutputFilePath: Annotation<string>,
+  recoveryReadyForRetry: Annotation<boolean>,
+  deploymentStatus: Annotation<string>,
 });
 
 const workflowGraph = new StateGraph(WorkflowStateAnnotation)
-  // Entry point and initialization
-  .addNode('initializeProject', initializeProjectNode)
-  .addNode('analyzeUserRequest', analyzeUserRequestNode)
+  // Workflow nodes (steel thread implementation)
+  .addNode('validateEnvironment', environmentValidationNode.execute)
+  .addNode('initialUserInputExtraction', initialUserInputExtractionNode.execute)
+  .addNode('getUserInput', userInputNode.execute)
+  .addNode('templateDiscovery', templateDiscoveryNode.execute)
+  .addNode('projectGeneration', projectGenerationNode.execute)
+  .addNode('buildValidation', buildValidationNode.execute)
+  .addNode('buildRecovery', buildRecoveryNode.execute)
+  .addNode('deployment', deploymentNode.execute)
+  .addNode('completion', completionNode.execute)
+  .addNode('failure', failureNode.execute)
 
-  // Phase 1: Plan
-  .addNode('validateEnvironment', validateEnvironmentNode)
-  .addNode('discoverTemplates', discoverTemplatesNode)
-  .addNode('gatherConnectedAppConfig', gatherConnectedAppConfigNode)
-  .addNode('generateProject', generateProjectNode)
-  .addNode('validateInitialBuild', validateInitialBuildNode)
-  .addNode('deployGeneratedApp', deployGeneratedAppNode)
-  .addNode('planPhaseCheckpoint', planPhaseCheckpointNode)
-
-  // Phase 2: Design/Iterate
-  .addNode('planTasks', planTasksNode)
-  .addNode('executeTask', executeTaskNode)
-  .addNode('validateTaskBuild', validateTaskBuildNode)
-  .addNode('deployTaskChanges', deployTaskChangesNode)
-  .addNode('gatherTaskFeedback', gatherTaskFeedbackNode)
-  .addNode('processTaskFeedback', processTaskFeedbackNode)
-  .addNode('iterationCheckpoint', iterationCheckpointNode)
-
-  // Phase 3: Run (Integrated)
-  .addNode('deployToDevice', deployToDeviceNode)
-  .addNode('validateDeployment', validateDeploymentNode)
-  .addNode('collectUserFeedback', collectUserFeedbackNode)
-
-  // Workflow control and error handling
-  .addNode('handleError', handleErrorNode)
-  .addNode('completeWorkflow', completeWorkflowNode);
+  // Define workflow edges
+  .addEdge(START, 'validateEnvironment')
+  .addConditionalEdges('validateEnvironment', checkEnvironmentValidatedRouter.execute)
+  .addConditionalEdges('initialUserInputExtraction', checkPropertiesFulFilledRouter.execute)
+  .addEdge('getUserInput', 'initialUserInputExtraction')
+  .addEdge('templateDiscovery', 'projectGeneration')
+  .addEdge('projectGeneration', 'buildValidation')
+  // Build validation with recovery loop
+  .addConditionalEdges('buildValidation', checkBuildSuccessfulRouter.execute)
+  .addEdge('buildRecovery', 'buildValidation')
+  // Continue to deployment and completion
+  .addEdge('deployment', 'completion')
+  .addEdge('completion', END)
+  .addEdge('failure', END);
 
 // Example node implementations following the interrupt pattern
-function validateEnvironmentNode(state: WorkflowState): Partial<WorkflowState> {
-  if (state.environmentValidated) {
-    return state;
-  }
+// Environment validation (synchronous node - no interrupt)
+class EnvironmentValidationNode extends BaseNode {
+  execute = (state: State): Partial<State> => {
+    const { invalidEnvironmentMessages, connectedAppClientId, connectedAppCallbackUri } =
+      this.validateEnvironmentVariables();
 
-  const interruptData: MCPToolInvocationData<
-    typeof ENVIRONMENT_VALIDATION_TOOL_METADATA.inputSchema.shape
-  > = {
-    llmMetadata: ENVIRONMENT_VALIDATION_TOOL_METADATA,
-    input: {
-      platform: state.platform,
-      targetMobilePlatform: state.platform,
-    },
-    isComplete: false,
-  };
-
-  const validationResult = interrupt(interruptData);
-  return {
-    environmentValidated: true,
-    ...validationResult,
+    const validEnvironment = invalidEnvironmentMessages.length === 0;
+    return {
+      validEnvironment,
+      workflowFatalErrorMessages: validEnvironment ? undefined : invalidEnvironmentMessages,
+      connectedAppClientId,
+      connectedAppCallbackUri,
+    };
   };
 }
 
-function discoverTemplatesNode(state: WorkflowState): Partial<WorkflowState> {
-  const interruptData: MCPToolInvocationData<
-    typeof TEMPLATE_DISCOVERY_TOOL_METADATA.inputSchema.shape
-  > = {
-    llmMetadata: TEMPLATE_DISCOVERY_TOOL_METADATA,
-    input: {
+// Template discovery (tool invocation via interrupt)
+class TemplateDiscoveryNode extends AbstractToolNode {
+  execute = (state: State): Partial<State> => {
+    return this.executeTool(state, templateDiscoveryTool, {
       platform: state.platform,
-      userRequirements: state.userRequirements,
-    },
-    isComplete: false,
+      workflowStateData: { thread_id: '' }, // Populated by orchestrator
+    });
   };
+}
 
-  const templateResult = interrupt(interruptData);
-  return {
-    selectedTemplate: templateResult.selectedTemplate,
-    templateMetadata: templateResult.metadata,
+// Build recovery (service-based invocation)
+class BuildRecoveryNode extends BaseNode {
+  execute = (state: State): Partial<State> => {
+    const service = new BuildRecoveryService();
+    const result = service.recoverBuild(state);
+
+    return {
+      buildErrorMessages: result.fixesAttempted,
+      recoveryReadyForRetry: result.readyForRetry,
+    };
   };
 }
 ```
@@ -1034,8 +1093,10 @@ const WORKFLOW_STATE_DATA_SCHEMA = z.object({
 // Orchestrator input schema for workflow resumption
 const ORCHESTRATOR_INPUT_SCHEMA = z.object({
   userInput: z
-    .string()
-    .describe('User input (initial request or output from previously executed MCP tool)'),
+    .record(z.string(), z.unknown())
+    .describe(
+      'Structured user input (initial request or output from previously executed MCP tool)'
+    ),
   workflowStateData: WORKFLOW_STATE_DATA_SCHEMA.optional().describe(
     'Workflow session state for continuation (auto-generated if not provided)'
   ),
@@ -1322,6 +1383,7 @@ The server provides MCP prompts that allow users to initiate workflows through s
 **Description:** Launch the Magen (Mobile App Generation) workflow to create a new mobile application project for iOS or Android
 
 **Arguments:**
+
 - `platform` (required): The target mobile platform for the application
   - Valid values: `iOS` | `Android`
   - Provides completion suggestions in compatible MCP hosts
@@ -1336,10 +1398,13 @@ The `mobile_app_project` prompt provides a structured, user-friendly way to init
 **Usage Example:**
 
 In a compatible MCP host (e.g., Cursor), users can invoke:
+
 ```
 /mobile_app_project platform:iOS
 ```
+
 or
+
 ```
 /mobile_app_project platform:Android
 ```
@@ -1347,6 +1412,7 @@ or
 **Prompt Response:**
 
 When invoked, the prompt returns a structured conversation that:
+
 1. Acknowledges the user's platform choice
 2. Explains the Magen framework workflow
 3. Describes the workflow phases (requirements gathering, template selection, project generation, build setup, deployment)
@@ -1356,6 +1422,7 @@ When invoked, the prompt returns a structured conversation that:
 **Design Rationale:**
 
 The prompt is designed to be:
+
 - **Platform-Focused**: The only required argument is platform selection, keeping the initial interaction simple
 - **Extensible**: Future enhancements could add additional optional arguments (e.g., template preferences, project name) without breaking existing usage
 - **Conversational**: The prompt response is crafted to naturally lead into the orchestrator workflow while providing helpful context
@@ -1380,6 +1447,7 @@ All prompts in the server follow a consistent architectural pattern:
    - Grouped in a dedicated "Register prompts" section
 
 This pattern enables:
+
 - **Consistency**: All prompts follow the same structure and conventions
 - **Maintainability**: Easy to add new prompts by following the established pattern
 - **Type Safety**: Leverages TypeScript and Zod for argument validation
@@ -1394,14 +1462,27 @@ This pattern enables:
 Following the monorepo pattern established in `mobile-mcp-tools`:
 
 ```
-mobile-native/
+mobile-native-mcp-server/
 ├── src/           # MCP server implementation
 │   ├── tools/     # MCP tool implementations
-│   │   ├── orchestration/  # Workflow orchestration and project management
-│   │   │   └── sfmobile-native-project-manager.ts
-│   │   ├── plan/      # Environment validation, template discovery, project creation
-│   │   ├── design-iterate/ # Task planning, feature implementation, changelog management
-│   │   └── run/       # Deployment, validation, live feedback
+│   │   ├── base/      # Abstract base classes
+│   │   │   ├── abstractTool.ts           # Base class for all tools
+│   │   │   └── abstractWorkflowTool.ts   # Base class for workflow tools
+│   │   ├── plan/      # Plan phase tools
+│   │   │   ├── sfmobile-native-template-discovery/
+│   │   │   ├── sfmobile-native-project-generation/
+│   │   │   ├── sfmobile-native-build/
+│   │   │   ├── sfmobile-native-build-recovery/
+│   │   │   ├── sfmobile-native-get-input/
+│   │   │   └── sfmobile-native-input-extraction/
+│   │   ├── run/       # Run phase tools
+│   │   │   └── sfmobile-native-deployment/
+│   │   ├── utils/     # Utility tools
+│   │   │   └── utils-xcode-add-files/
+│   │   └── workflow/  # Workflow orchestration tools
+│   │       ├── sfmobile-native-project-manager/
+│   │       ├── sfmobile-native-completion/
+│   │       └── sfmobile-native-failure/
 │   ├── prompts/   # MCP prompt implementations
 │   │   ├── base/              # Abstract base classes
 │   │   │   └── abstractPrompt.ts  # Base class for all prompts
@@ -1410,23 +1491,39 @@ mobile-native/
 │   │   │   └── metadata.ts        # Prompt metadata and response generation
 │   │   └── index.ts               # Prompt exports
 │   ├── workflow/  # LangGraph.js workflow engine
-│   │   ├── graph.ts       # StateGraph definition and node implementations
-│   │   ├── state.ts       # Workflow state schema and interfaces
-│   │   ├── nodes/         # Individual workflow node implementations
-│   │   └── checkpointing.ts # SQLite-based state persistence
-│   ├── schemas/   # Zod schemas for tool inputs/outputs and workflow state
-│   └── utils/     # Shared utilities and CLI integrations
-├── resources/     # Template repository and documentation
-│   ├── SalesforceMobileSDK-Templates/  # Git submodule: Official Salesforce Mobile SDK Templates
-│   ├── setup-guides/ # Environment setup instructions
-│   └── api-docs/      # Mobile SDK API documentation excerpts
-├── scripts/       # Project utilities and maintenance
+│   │   ├── graph.ts                   # StateGraph definition
+│   │   ├── metadata.ts                # Workflow state annotation
+│   │   ├── jsonCheckpointer.ts        # JSON-based state persistence
+│   │   ├── workflowStatePersistence.ts # File I/O for workflow state
+│   │   ├── nodes/                     # Individual workflow node implementations
+│   │   │   ├── abstractBaseNode.ts
+│   │   │   ├── abstractToolNode.ts
+│   │   │   ├── buildRecovery.ts
+│   │   │   ├── buildValidation.ts
+│   │   │   └── [other nodes]
+│   │   └── services/                  # Reusable MCP tool services
+│   │       ├── abstractService.ts
+│   │       ├── buildRecoveryService.ts
+│   │       ├── buildValidationService.ts
+│   │       ├── getInputService.ts
+│   │       └── inputExtractionService.ts
+│   ├── common/    # Common types and schemas
+│   ├── utils/     # Shared utilities
+│   │   └── wellKnownDirectory.ts  # .magen directory management
+│   └── logging/   # Structured logging with Pino
+│       └── logger.ts
+├── templates/     # Official Salesforce Mobile SDK Templates (packaged with NPM)
+│   ├── iOSNativeSwiftTemplate/
+│   ├── AndroidNativeKotlinTemplate/
+│   ├── MobileSyncExplorerSwift/
+│   ├── MobileSyncExplorerKotlinTemplate/
+│   └── templates.json
 ├── tests/         # Comprehensive testing suite
+│   ├── tools/     # Tool-specific tests
+│   ├── workflow/  # Workflow node and service tests
 │   ├── prompts/   # Prompt-specific tests
-│   │   ├── mobile-app-project.test.ts  # Unit tests for prompt generation
-│   │   └── integration.test.ts         # Integration tests for prompt registration
-│   └── ...
-└── package.json   # Project configuration and dependencies (includes @langchain/langgraph)
+│   └── utils/     # Utility tests
+└── package.json   # Project configuration (includes @langchain/langgraph)
 ```
 
 ## Generated Mobile App Project Structure (includes changelog system)
@@ -1444,10 +1541,11 @@ mobile-app-project/
 ## Development Workspace Structure (workflow state persistence)
 
 ```
-development-workspace/          # User's Cursor project/workspace directory
-├── .magen/
-│   ├── workflow-state.db      # SQLite database for workflow state persistence (created at runtime)
-│   └── workflow_logs.json     # Structured JSON logs for workflow orchestration and MCP tool interactions
+~/.magen/                       # User's home directory .magen folder (or $PROJECT_PATH/.magen/ if set)
+├── workflow-state.json        # JSON-serialized workflow checkpoints (created at runtime)
+└── workflow_logs.json         # Structured JSON logs for workflow orchestration and MCP tool interactions
+
+development-workspace/         # User's development workspace directory
 ├── mobile-app-project/        # Generated native mobile app projects
 │   ├── ContactListApp/
 │   ├── AnotherMobileApp/
@@ -1976,22 +2074,25 @@ jobs:
 ```
 mobile-mcp-tools/
 ├── packages/
-│   ├── mobile-native/                  # Enhanced with simple documentation
+│   ├── mobile-native-mcp-server/       # Enhanced with simple documentation (future)
 │   │   ├── src/
 │   │   │   ├── tools/
-│   │   │   │   ├── createiOSProject.ts
-│   │   │   │   ├── createAndroidProject.ts
-│   │   │   │   └── configureAuthentication.ts
-│   │   │   ├── documentation/
-│   │   │   │   ├── DocumentationService.ts
-│   │   │   │   ├── SimpleDocumentStore.ts
-│   │   │   │   ├── HtmlParser.ts
-│   │   │   │   ├── MarkdownParser.ts
-│   │   │   │   └── config.ts           # Tool mappings configuration
-│   │   │   └── database/
-│   │   │       └── docs.sqlite         # Local document storage
+│   │   │   │   ├── plan/               # Plan phase tools
+│   │   │   │   ├── run/                # Run phase tools
+│   │   │   │   ├── utils/              # Utility tools
+│   │   │   │   └── workflow/           # Workflow orchestration tools
+│   │   │   ├── workflow/
+│   │   │   │   ├── graph.ts            # LangGraph workflow definition
+│   │   │   │   ├── metadata.ts         # Workflow state annotation
+│   │   │   │   ├── jsonCheckpointer.ts # JSON-based state persistence
+│   │   │   │   ├── nodes/              # Workflow node implementations
+│   │   │   │   └── services/           # Reusable MCP tool services
+│   │   │   ├── prompts/                # MCP prompts
+│   │   │   ├── utils/                  # Utility functions
+│   │   │   └── logging/                # Structured logging
+│   │   ├── templates/                  # Salesforce Mobile SDK templates
 │   │   └── package.json
-│   └── project-maintenance-utilities/   # Enhanced with simple doc updates
+│   └── project-maintenance-utilities/  # Enhanced with simple doc updates (future)
 │       ├── src/services/implementations/
 │       │   └── DocumentationUpdateService.ts
 │       └── package.json
@@ -2481,7 +2582,7 @@ The `sfmobile-native-environment-validation` tool specified above represents the
 First, verify access to the official Salesforce Mobile SDK Templates:
 
 ```bash
-ls -la <ServerRoot>/resources/SalesforceMobileSDK-Templates/
+ls -la <ServerRoot>/templates/
 ```
 
 **Expected**: Directory contains official Salesforce Mobile SDK template folders and `templates.json` metadata file.
@@ -2491,7 +2592,7 @@ ls -la <ServerRoot>/resources/SalesforceMobileSDK-Templates/
 Use the `sfdx-mobilesdk-plugin` CLI to get comprehensive template information:
 
 ```bash
-sf mobilesdk ios listtemplates --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json
+sf mobilesdk ios listtemplates --templatesource=<ServerRoot>/templates --doc --json
 ```
 
 **Template Discovery:**
@@ -2538,7 +2639,7 @@ Parse the JSON output from the `listtemplates` command to match user requirement
 For additional template details, use the `describetemplate` command:
 
 ```bash
-sf mobilesdk ios describetemplate --template=iOSNativeSwiftTemplate --templatesource=<ServerRoot>/resources/SalesforceMobileSDK-Templates --doc --json
+sf mobilesdk ios describetemplate --template=iOSNativeSwiftTemplate --templatesource=<ServerRoot>/templates --doc --json
 ```
 
 **Template Details:**
@@ -2551,12 +2652,12 @@ sf mobilesdk ios describetemplate --template=iOSNativeSwiftTemplate --templateso
 ## Step 5: Validation and Next Steps
 
 **Selected Template**: iOSNativeSwiftTemplate
-**Template Path**: `<ServerRoot>/resources/SalesforceMobileSDK-Templates/iOSNativeSwiftTemplate/`
+**Template Path**: `<ServerRoot>/templates/iOSNativeSwiftTemplate/`
 
 **Next Step**: Proceed with `sfmobile-native-project-generation` using:
 
 - selectedTemplate: "iOSNativeSwiftTemplate"
-- templateSource: "<ServerRoot>/resources/SalesforceMobileSDK-Templates"
+- templateSource: "<ServerRoot>/templates"
 
 **Template Customization Notes**:
 
@@ -2567,9 +2668,9 @@ sf mobilesdk ios describetemplate --template=iOSNativeSwiftTemplate --templateso
 
 ### Implementation Strategy
 
-The `sfmobile-native-template-discovery` tool leverages the Git submodule integration to provide reliable, local access to official Salesforce Mobile SDK templates while maintaining instruction-first principles and extensible architecture:
+The `sfmobile-native-template-discovery` tool leverages packaged templates to provide reliable, local access to official Salesforce Mobile SDK templates while maintaining instruction-first principles and extensible architecture:
 
-- **Primary Submodule Integration**: Direct access to official Salesforce templates without network dependencies during development
+- **Primary Package Integration**: Direct access to official Salesforce templates packaged with NPM distribution, eliminating network dependencies during development
 - **Extensible Metadata Parsing**: Intelligent interpretation of template metadata with architecture designed to support multiple template sources
 - **Platform Filtering**: Automatic filtering based on target mobile platform (iOS/Android) across all available template repositories
 - **Feature Matching**: Template recommendation based on user requirements and feature keywords from comprehensive template catalog
