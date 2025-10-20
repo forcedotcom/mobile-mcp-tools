@@ -20,7 +20,6 @@ import { MobileNativeOrchestrator } from './tools/workflow/sfmobile-native-proje
 import { SFMobileNativeCompletionTool } from './tools/workflow/sfmobile-native-completion/tool.js';
 import { SFMobileNativeFailureTool } from './tools/workflow/sfmobile-native-failure/tool.js';
 import { SFMobileNativeBuildExecutor } from './tools/run/sfmobile-native-build-executor/tool.js';
-import { SFMobileNativeProjectGenerationExecutor } from './tools/run/sfmobile-native-project-generation-executor/tool.js';
 
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
@@ -53,7 +52,6 @@ const getInputTool = new SFMobileNativeGetInputTool(server);
 const inputExtractionTool = new SFMobileNativeInputExtractionTool(server);
 const templateDiscoveryTool = new SFMobileNativeTemplateDiscoveryTool(server);
 const projectGenerationTool = new SFMobileNativeProjectGenerationTool(server);
-const projectGenerationExecutor = new SFMobileNativeProjectGenerationExecutor(server);
 const buildExecutor = new SFMobileNativeBuildExecutor(server);
 const buildRecoveryTool = new SFMobileNativeBuildRecoveryTool(server);
 const deploymentTool = new SFMobileNativeDeploymentTool(server);
@@ -72,7 +70,6 @@ getInputTool.register(readOnlyAnnotations);
 inputExtractionTool.register(readOnlyAnnotations);
 templateDiscoveryTool.register(readOnlyAnnotations);
 projectGenerationTool.register(readOnlyAnnotations);
-projectGenerationExecutor.register();
 buildExecutor.register();
 buildRecoveryTool.register(readOnlyAnnotations);
 deploymentTool.register(readOnlyAnnotations);
