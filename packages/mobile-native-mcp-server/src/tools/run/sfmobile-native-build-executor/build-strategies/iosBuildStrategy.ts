@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChildProcess, spawn } from 'child_process';
-import { BuildStrategy } from './buildStrategy.js';
+import { BuildStrategy, BuildOptions } from './buildStrategy.js';
 import { BuildExecutorResult } from '../metadata.js';
 import { TempDirectoryManager } from '../../../../common.js';
 import { Logger } from '../../../../logging/logger.js';
@@ -14,7 +14,8 @@ export class IOSBuildStrategy implements BuildStrategy {
 
   public async build(
     projectPath: string,
-    sendProgress: (message: string, progress: number, total: number) => Promise<void>
+    sendProgress: (message: string, progress: number, total: number) => Promise<void>,
+    options: BuildOptions
   ): Promise<BuildExecutorResult> {
     await sendProgress('Starting iOS build...', 0, 100);
 
@@ -64,22 +65,23 @@ export class IOSBuildStrategy implements BuildStrategy {
     const buildOutputFilePath = this.tempDirManager.getIOSBuildOutputFilePath();
 
     return new Promise(resolve => {
-      const buildProcess: ChildProcess = spawn(
-        'xcodebuild',
-        [
-          projectFlag,
-          projectFile,
-          '-scheme',
-          scheme,
-          '-destination',
-          'generic/platform=iOS Simulator',
-          'clean',
-          'build',
-        ],
-        {
-          cwd: projectPath,
-        }
-      );
+      const buildArgs = [
+        projectFlag,
+        projectFile,
+        '-scheme',
+        scheme,
+        '-destination',
+        'generic/platform=iOS Simulator',
+      ];
+
+      if (options.clean) {
+        buildArgs.push('clean');
+      }
+      buildArgs.push('build');
+
+      const buildProcess: ChildProcess = spawn('xcodebuild', buildArgs, {
+        cwd: projectPath,
+      });
 
       let output = '';
       let errorOutput = '';

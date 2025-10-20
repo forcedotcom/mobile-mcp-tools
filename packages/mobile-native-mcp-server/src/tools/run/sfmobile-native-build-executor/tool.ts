@@ -68,7 +68,9 @@ export class SFMobileNativeBuildExecutor {
           if (!strategy) {
             throw new Error(`Unsupported platform: ${input.platform}`);
           }
-          result = await strategy.build(input.projectPath, sendProgress);
+          result = await strategy.build(input.projectPath, sendProgress, {
+            clean: input.clean,
+          });
         } catch (error) {
           result = {
             success: false,

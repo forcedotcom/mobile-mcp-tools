@@ -14,6 +14,7 @@ import { PLATFORM_ENUM, PROJECT_PATH_FIELD } from '../../../common/schemas.js';
 export const BUILD_EXECUTOR_INPUT_SCHEMA = z.object({
   platform: PLATFORM_ENUM,
   projectPath: PROJECT_PATH_FIELD,
+  clean: z.boolean().optional().default(true).describe('Whether to perform a clean build'),
 });
 
 export const BUILD_EXECUTOR_RESULT_SCHEMA = z.object({
