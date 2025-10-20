@@ -21,6 +21,7 @@ export const BUILD_EXECUTOR_RESULT_SCHEMA = z.object({
   message: z.string().describe('Status message about the build'),
   output: z.string().optional().describe('Build output'),
   error: z.string().optional().describe('Error message if build failed'),
+  buildOutputFilePath: z.string().optional().describe('Path to build output file if build failed'),
 });
 
 export type BuildExecutorInput = z.infer<typeof BUILD_EXECUTOR_INPUT_SCHEMA>;
