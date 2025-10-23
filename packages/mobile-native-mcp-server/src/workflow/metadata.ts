@@ -79,6 +79,122 @@ export const MobileNativeWorkflowState = Annotation.Root({
   connectedAppCallbackUri: Annotation<string>,
   loginHost: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.loginHost.zodType>>,
 
+  // PRD Generation state
+  originalUserUtterance: Annotation<string>,
+  featureBrief: Annotation<string>,
+  functionalRequirements: Annotation<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      category: string;
+    }>
+  >,
+  approvedRequirements: Annotation<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      category: string;
+    }>
+  >,
+  rejectedRequirements: Annotation<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      category: string;
+    }>
+  >,
+  modifiedRequirements: Annotation<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      priority: 'high' | 'medium' | 'low';
+      category: string;
+      originalId: string;
+      modificationNotes: string;
+    }>
+  >,
+  requirementsReviewSummary: Annotation<string>,
+
+  // Gap Analysis state
+  gapAnalysisScore: Annotation<number>,
+  identifiedGaps: Annotation<
+    Array<{
+      id: string;
+      title: string;
+      description: string;
+      severity: 'critical' | 'high' | 'medium' | 'low';
+      category: string;
+      impact: string;
+      suggestedRequirements: Array<{
+        title: string;
+        description: string;
+        priority: 'high' | 'medium' | 'low';
+        category: string;
+      }>;
+    }>
+  >,
+  requirementStrengths: Annotation<
+    Array<{
+      requirementId: string;
+      strengthScore: number;
+      strengths: string[];
+      weaknesses: string[];
+    }>
+  >,
+  overallAssessment: Annotation<{
+    coverageScore: number;
+    completenessScore: number;
+    clarityScore: number;
+    feasibilityScore: number;
+  }>,
+  gapAnalysisRecommendations: Annotation<string[]>,
+  gapAnalysisSummary: Annotation<string>,
+
+  // Iteration Control state
+  requirementsIterationCount: Annotation<number>,
+  shouldContinueIteration: Annotation<boolean>,
+  iterationComplete: Annotation<boolean>,
+  userWantsToContinueDespiteGaps: Annotation<boolean>,
+
+  // PRD Generation Results
+  prdContent: Annotation<string>,
+  prdFilePath: Annotation<string>,
+  prdDocumentStatus: Annotation<{
+    author: string;
+    lastModified: string;
+    status: 'draft' | 'finalized';
+  }>,
+  prdRequirementsCount: Annotation<number>,
+  prdTraceabilityTableRows: Annotation<
+    Array<{
+      requirementId: string;
+      technicalRequirementIds: string;
+      userStoryIds: string;
+    }>
+  >,
+
+  // PRD Review and Finalization
+  prdApproved: Annotation<boolean>,
+  prdModifications: Annotation<
+    Array<{
+      section: string;
+      originalContent: string;
+      modifiedContent: string;
+      modificationReason: string;
+    }>
+  >,
+  prdUserFeedback: Annotation<string>,
+  prdReviewSummary: Annotation<string>,
+  prdFinalized: Annotation<boolean>,
+  workflowComplete: Annotation<boolean>,
+
   // Build and deployment state
   buildType: Annotation<'debug' | 'release'>,
   targetDevice: Annotation<string>,
