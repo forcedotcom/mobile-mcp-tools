@@ -20,13 +20,13 @@ import { SFMobileNativeProjectGenerationTool } from './tools/plan/sfmobile-nativ
 import { MobileNativeOrchestrator } from './tools/workflow/sfmobile-native-project-manager/tool.js';
 import { SFMobileNativeCompletionTool } from './tools/workflow/sfmobile-native-completion/tool.js';
 import { SFMobileNativeFailureTool } from './tools/workflow/sfmobile-native-failure/tool.js';
-import { PRDGenerationOrchestrator } from './tools/magi/magi-prd-orchestrator/tool.js';
-import { MagiFeatureBriefGenerationTool } from './tools/magi/magi-feature-brief/tool.js';
-import { SFMobileNativeFunctionalRequirementsTool } from './tools/magi/magi-functional-requirements/tool.js';
-import { SFMobileNativeRequirementsReviewTool } from './tools/magi/magi-requirements-review/tool.js';
-import { SFMobileNativeGapAnalysisTool } from './tools/magi/magi-gap-analysis/tool.js';
-import { SFMobileNativePRDGenerationTool } from './tools/magi/magi-prd-generation/tool.js';
-import { SFMobileNativePRDReviewTool } from './tools/magi/magi-prd-review/tool.js';
+import { PRDGenerationOrchestrator } from './tools/magi/prd/magi-prd-orchestrator/tool.js';
+import { MagiFeatureBriefGenerationTool } from './tools/magi/prd/magi-prd-feature-brief/tool.js';
+import { SFMobileNativeFunctionalRequirementsTool } from './tools/magi/prd/magi-prd-functional-requirements/tool.js';
+import { SFMobileNativeRequirementsReviewTool } from './tools/magi/prd/magi-prd-requirements-review/tool.js';
+import { SFMobileNativeGapAnalysisTool } from './tools/magi/prd/magi-prd-gap-analysis/tool.js';
+import { SFMobileNativePRDGenerationTool } from './tools/magi/prd/magi-prd-generation/tool.js';
+import { SFMobileNativePRDReviewTool } from './tools/magi/prd/magi-prd-review/tool.js';
 
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;

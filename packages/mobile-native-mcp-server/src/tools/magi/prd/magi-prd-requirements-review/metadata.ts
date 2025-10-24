@@ -6,12 +6,12 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../common/schemas.js';
+import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '../../../../common/metadata.js';
 
 /**
  * Functional Requirement Schema
@@ -64,7 +64,7 @@ export const REQUIREMENTS_REVIEW_TOOL: WorkflowToolMetadata<
   typeof REQUIREMENTS_REVIEW_INPUT_SCHEMA,
   typeof REQUIREMENTS_REVIEW_RESULT_SCHEMA
 > = {
-  toolId: 'magi-requirements-review',
+  toolId: 'magi-prd-requirements-review',
   title: 'Magi - Requirements Review and Approval',
   description:
     'Presents functional requirements to the user for review, approval, rejection, or modification',

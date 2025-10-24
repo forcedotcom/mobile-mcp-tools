@@ -7,20 +7,20 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { PRDGenerationOrchestrator } from '../../src/tools/magi/magi-prd-orchestrator/tool.js';
-import { MagiFeatureBriefGenerationTool } from '../../src/tools/magi/magi-feature-brief/tool.js';
-import { SFMobileNativeFunctionalRequirementsTool } from '../../src/tools/magi/magi-functional-requirements/tool.js';
-import { SFMobileNativeRequirementsReviewTool } from '../../src/tools/magi/magi-requirements-review/tool.js';
-import { SFMobileNativeGapAnalysisTool } from '../../src/tools/magi/magi-gap-analysis/tool.js';
-import { SFMobileNativePRDGenerationTool } from '../../src/tools/magi/magi-prd-generation/tool.js';
-import { SFMobileNativePRDReviewTool } from '../../src/tools/magi/magi-prd-review/tool.js';
-import { PRDOrchestratorInput } from '../../src/tools/magi/magi-prd-orchestrator/metadata.js';
-import { FeatureBriefWorkflowInput } from '../../src/tools/magi/magi-feature-brief/metadata.js';
-import { FunctionalRequirementsInput } from '../../src/tools/magi/magi-functional-requirements/metadata.js';
-import { RequirementsReviewInput } from '../../src/tools/magi/magi-requirements-review/metadata.js';
-import { GapAnalysisInput } from '../../src/tools/magi/magi-gap-analysis/metadata.js';
-import { PRDGenerationInput } from '../../src/tools/magi/magi-prd-generation/metadata.js';
-import { PRDReviewInput } from '../../src/tools/magi/magi-prd-review/metadata.js';
+import { PRDGenerationOrchestrator } from '../../src/tools/magi/prd/magi-prd-orchestrator/tool.js';
+import { MagiFeatureBriefGenerationTool } from '../../src/tools/magi/prd/magi-prd-feature-brief/tool.js';
+import { SFMobileNativeFunctionalRequirementsTool } from '../../src/tools/magi/prd/magi-prd-functional-requirements/tool.js';
+import { SFMobileNativeRequirementsReviewTool } from '../../src/tools/magi/prd/magi-prd-requirements-review/tool.js';
+import { SFMobileNativeGapAnalysisTool } from '../../src/tools/magi/prd/magi-prd-gap-analysis/tool.js';
+import { SFMobileNativePRDGenerationTool } from '../../src/tools/magi/prd/magi-prd-generation/tool.js';
+import { SFMobileNativePRDReviewTool } from '../../src/tools/magi/prd/magi-prd-review/tool.js';
+import { PRDOrchestratorInput } from '../../src/tools/magi/prd/magi-prd-orchestrator/metadata.js';
+import { FeatureBriefWorkflowInput } from '../../src/tools/magi/prd/magi-prd-feature-brief/metadata.js';
+import { FunctionalRequirementsInput } from '../../src/tools/magi/prd/magi-prd-functional-requirements/metadata.js';
+import { RequirementsReviewInput } from '../../src/tools/magi/prd/magi-prd-requirements-review/metadata.js';
+import { GapAnalysisInput } from '../../src/tools/magi/prd/magi-prd-gap-analysis/metadata.js';
+import { PRDGenerationInput } from '../../src/tools/magi/prd/magi-prd-generation/metadata.js';
+import { PRDReviewInput } from '../../src/tools/magi/prd/magi-prd-review/metadata.js';
 
 describe('PRD Workflow Integration Test', () => {
   let server: McpServer;
@@ -62,9 +62,9 @@ describe('PRD Workflow Integration Test', () => {
       orchestratorResponse1.structuredContent.orchestrationInstructionsPrompt
     );
 
-    // Verify we get instructions to call magi-feature-brief
+    // Verify we get instructions to call magi-prd-feature-brief
     expect(orchestratorResponse1.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-feature-brief'
+      'magi-prd-feature-brief'
     );
 
     // Extract thread_id from the response
@@ -76,8 +76,8 @@ describe('PRD Workflow Integration Test', () => {
     const threadId = threadIdMatch![1];
     console.log('🧵 Thread ID:', threadId);
 
-    // Step 2: Call magi-feature-brief tool
-    console.log('📝 Calling magi-feature-brief tool...');
+    // Step 2: Call magi-prd-feature-brief tool
+    console.log('📝 Calling magi-prd-feature-brief tool...');
     const featureBriefInput: FeatureBriefWorkflowInput = {
       userUtterance: originalUserUtterance,
       workflowStateData: { thread_id: threadId },
@@ -109,11 +109,11 @@ describe('PRD Workflow Integration Test', () => {
 
     // Verify we get instructions to call the next tool (functional requirements)
     expect(orchestratorResponse2.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-functional-requirements'
+      'magi-prd-functional-requirements'
     );
 
-    // Step 4: Call magi-functional-requirements tool
-    console.log('⚙️ Calling magi-functional-requirements tool...');
+    // Step 4: Call magi-prd-functional-requirements tool
+    console.log('⚙️ Calling magi-prd-functional-requirements tool...');
     const functionalRequirementsInput: FunctionalRequirementsInput = {
       projectPath,
       featureBrief:
@@ -190,11 +190,11 @@ describe('PRD Workflow Integration Test', () => {
 
     // Verify we get instructions to call requirements review
     expect(orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-requirements-review'
+      'magi-prd-requirements-review'
     );
 
-    // Step 6: Call magi-requirements-review tool
-    console.log('📋 Calling magi-requirements-review tool...');
+    // Step 6: Call magi-prd-requirements-review tool
+    console.log('📋 Calling magi-prd-requirements-review tool...');
     const requirementsReviewInput: RequirementsReviewInput = {
       projectPath,
       functionalRequirements: [
@@ -298,11 +298,11 @@ describe('PRD Workflow Integration Test', () => {
 
     // Verify we get instructions to call gap analysis
     expect(orchestratorResponse4.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-gap-analysis'
+      'magi-prd-gap-analysis'
     );
 
-    // Step 8: Call magi-gap-analysis tool
-    console.log('🔍 Calling magi-gap-analysis tool...');
+    // Step 8: Call magi-prd-gap-analysis tool
+    console.log('🔍 Calling magi-prd-gap-analysis tool...');
     const gapAnalysisInput: GapAnalysisInput = {
       projectPath,
       featureBrief:

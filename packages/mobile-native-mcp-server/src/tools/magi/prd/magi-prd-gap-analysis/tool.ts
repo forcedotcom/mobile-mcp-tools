@@ -6,9 +6,9 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../logging/logger.js';
+import { Logger } from '../../../../logging/logger.js';
 import { GAP_ANALYSIS_TOOL, GapAnalysisInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../base/prdAbstractWorkflowTool.js';
+import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
 export class SFMobileNativeGapAnalysisTool extends PRDAbstractWorkflowTool<
   typeof GAP_ANALYSIS_TOOL

@@ -6,9 +6,9 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../logging/logger.js';
+import { Logger } from '../../../../logging/logger.js';
 import { FEATURE_BRIEF_TOOL, FeatureBriefWorkflowInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../base/prdAbstractWorkflowTool.js';
+import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
 export class MagiFeatureBriefGenerationTool extends PRDAbstractWorkflowTool<
   typeof FEATURE_BRIEF_TOOL

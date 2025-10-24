@@ -6,12 +6,12 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../common/schemas.js';
+import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '../../../../common/metadata.js';
 
 /**
  * Functional Requirement Schema
@@ -89,7 +89,7 @@ export const FUNCTIONAL_REQUIREMENTS_TOOL: WorkflowToolMetadata<
   typeof FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,
   typeof FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA
 > = {
-  toolId: 'magi-functional-requirements',
+  toolId: 'magi-prd-functional-requirements',
   title: 'Magi - Functional Requirements Generation',
   description:
     'Analyzes the feature brief and existing requirements/gaps to propose functional requirements for user approval',

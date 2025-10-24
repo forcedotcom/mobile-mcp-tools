@@ -10,7 +10,7 @@ import {
   ToolMetadata,
   WORKFLOW_PROPERTY_NAMES,
   WORKFLOW_STATE_DATA_SCHEMA,
-} from '../../../common/metadata.js';
+} from '../../../../common/metadata.js';
 
 /**
  * PRD Orchestrator input schema

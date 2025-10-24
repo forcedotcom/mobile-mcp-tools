@@ -6,12 +6,12 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../common/schemas.js';
+import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '../../../../common/metadata.js';
 
 /**
  * Functional Requirement Schema
@@ -122,7 +122,7 @@ export const GAP_ANALYSIS_TOOL: WorkflowToolMetadata<
   typeof GAP_ANALYSIS_INPUT_SCHEMA,
   typeof GAP_ANALYSIS_RESULT_SCHEMA
 > = {
-  toolId: 'magi-gap-analysis',
+  toolId: 'magi-prd-gap-analysis',
   title: 'Magi - Gap Analysis',
   description:
     'Analyzes current functional requirements against the feature brief to identify gaps, score requirement strengths, and provide improvement recommendations',

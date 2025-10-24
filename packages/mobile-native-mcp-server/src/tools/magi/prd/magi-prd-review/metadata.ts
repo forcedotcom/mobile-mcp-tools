@@ -6,12 +6,12 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../common/schemas.js';
+import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '../../../../common/metadata.js';
 
 /**
  * PRD Review Tool Input Schema

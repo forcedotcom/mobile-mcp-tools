@@ -8,7 +8,7 @@
 import { MCPToolInvocationData } from '../../../../common/metadata.js';
 import { PRDState } from '../metadata.js';
 import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
-import { FEATURE_BRIEF_TOOL } from '../../../../tools/magi/magi-feature-brief/metadata.js';
+import { FEATURE_BRIEF_TOOL } from '../../../../tools/magi/prd/magi-prd-feature-brief/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 

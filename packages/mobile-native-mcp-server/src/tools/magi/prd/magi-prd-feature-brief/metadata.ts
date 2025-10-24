@@ -10,7 +10,7 @@ import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '../../../../common/metadata.js';
 
 /**
  * Finish Tool Input Schema
@@ -34,7 +34,7 @@ export const FEATURE_BRIEF_TOOL: WorkflowToolMetadata<
   typeof FEATURE_BRIEF_WORKFLOW_INPUT_SCHEMA,
   typeof FEATURE_BRIEF_WORKFLOW_RESULT_SCHEMA
 > = {
-  toolId: 'magi-feature-brief',
+  toolId: 'magi-prd-feature-brief',
   title: 'Magi - Generate Feature Brief',
   description: 'Guides LLM through the process creating a feature brief from a user utterance',
   inputSchema: FEATURE_BRIEF_WORKFLOW_INPUT_SCHEMA,

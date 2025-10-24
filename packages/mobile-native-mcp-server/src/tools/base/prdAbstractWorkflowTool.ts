@@ -18,7 +18,7 @@ import {
   WorkflowStateData,
   WorkflowToolMetadata,
 } from '../../common/metadata.js';
-import { PRD_ORCHESTRATOR_TOOL } from '../magi/magi-prd-orchestrator/metadata.js';
+import { PRD_ORCHESTRATOR_TOOL } from '../magi/prd/magi-prd-orchestrator/metadata.js';
 import { Logger } from '../../logging/logger.js';
 
 /**

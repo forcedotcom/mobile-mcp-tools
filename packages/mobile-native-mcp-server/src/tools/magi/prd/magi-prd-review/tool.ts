@@ -6,9 +6,9 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../logging/logger.js';
+import { Logger } from '../../../../logging/logger.js';
 import { PRD_REVIEW_TOOL, PRDReviewInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../base/prdAbstractWorkflowTool.js';
+import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
 export class SFMobileNativePRDReviewTool extends PRDAbstractWorkflowTool<typeof PRD_REVIEW_TOOL> {
   constructor(server: McpServer, logger?: Logger) {

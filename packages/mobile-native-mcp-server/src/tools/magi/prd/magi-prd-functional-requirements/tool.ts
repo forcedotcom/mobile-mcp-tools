@@ -6,9 +6,9 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../logging/logger.js';
+import { Logger } from '../../../../logging/logger.js';
 import { FUNCTIONAL_REQUIREMENTS_TOOL, FunctionalRequirementsInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../base/prdAbstractWorkflowTool.js';
+import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
 export class SFMobileNativeFunctionalRequirementsTool extends PRDAbstractWorkflowTool<
   typeof FUNCTIONAL_REQUIREMENTS_TOOL
