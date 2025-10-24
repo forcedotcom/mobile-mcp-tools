@@ -7,7 +7,7 @@
 
 import { PRDState } from '../metadata.js';
 import { PRDBaseNode } from './prdBaseNode.js';
-import { Logger } from '../../../logging/logger.js';
+import { Logger } from '../../../../logging/logger.js';
 
 export class PRDFinalizationNode extends PRDBaseNode {
   constructor() {

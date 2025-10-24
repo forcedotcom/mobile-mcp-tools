@@ -14,10 +14,10 @@ import { PRD_ORCHESTRATOR_TOOL, PRDOrchestratorInput, PRDOrchestratorOutput } fr
 import { Logger, createWorkflowLogger } from '../../../logging/logger.js';
 import { AbstractTool } from '../../base/abstractTool.js';
 import { MCPToolInvocationData, WORKFLOW_PROPERTY_NAMES } from '../../../common/metadata.js';
-import { PRDState } from '../../../workflow/prd/metadata.js';
+import { PRDState } from '../../../workflow/magi/prd/metadata.js';
 import { JsonCheckpointSaver } from '../../../workflow/jsonCheckpointer.js';
 import { WorkflowStatePersistence } from '../../../workflow/workflowStatePersistence.js';
-import { prdGenerationWorkflow } from '../../../workflow/prd/graph.js';
+import { prdGenerationWorkflow } from '../../../workflow/magi/prd/graph.js';
 
 /**
  * Generate unique thread ID for PRD workflow sessions

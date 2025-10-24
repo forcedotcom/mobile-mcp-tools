@@ -5,11 +5,11 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../../common/metadata.js';
+import { MCPToolInvocationData } from '../../../../common/metadata.js';
 import { PRDState } from '../metadata.js';
 import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
-import { ToolExecutor } from '../../nodes/toolExecutor.js';
-import { Logger } from '../../../logging/logger.js';
+import { ToolExecutor } from '../../../nodes/toolExecutor.js';
+import { Logger } from '../../../../logging/logger.js';
 
 export class PRDMagiInitializationNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {

@@ -5,34 +5,35 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../../common/metadata.js';
+import { MCPToolInvocationData } from '../../../../common/metadata.js';
 import { PRDState } from '../metadata.js';
 import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
-import { REQUIREMENTS_REVIEW_TOOL } from '../../../tools/magi/magi-requirements-review/metadata.js';
-import { ToolExecutor } from '../../nodes/toolExecutor.js';
-import { Logger } from '../../../logging/logger.js';
+import { GAP_ANALYSIS_TOOL } from '../../../../tools/magi/magi-gap-analysis/metadata.js';
+import { ToolExecutor } from '../../../nodes/toolExecutor.js';
+import { Logger } from '../../../../logging/logger.js';
 
-export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
+export class PRDGapAnalysisNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
-    super('requirementsReview', toolExecutor, logger);
+    super('gapAnalysis', toolExecutor, logger);
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    const toolInvocationData: MCPToolInvocationData<typeof REQUIREMENTS_REVIEW_TOOL.inputSchema> = {
+    const toolInvocationData: MCPToolInvocationData<typeof GAP_ANALYSIS_TOOL.inputSchema> = {
       llmMetadata: {
-        name: REQUIREMENTS_REVIEW_TOOL.toolId,
-        description: REQUIREMENTS_REVIEW_TOOL.description,
-        inputSchema: REQUIREMENTS_REVIEW_TOOL.inputSchema,
+        name: GAP_ANALYSIS_TOOL.toolId,
+        description: GAP_ANALYSIS_TOOL.description,
+        inputSchema: GAP_ANALYSIS_TOOL.inputSchema,
       },
       input: {
         projectPath: state.projectPath,
+        featureBrief: state.featureBrief || '',
         functionalRequirements: state.functionalRequirements || [],
       },
     };
 
     const validatedResult = this.executeToolWithLogging(
       toolInvocationData,
-      REQUIREMENTS_REVIEW_TOOL.resultSchema
+      GAP_ANALYSIS_TOOL.resultSchema
     );
     return validatedResult;
   };

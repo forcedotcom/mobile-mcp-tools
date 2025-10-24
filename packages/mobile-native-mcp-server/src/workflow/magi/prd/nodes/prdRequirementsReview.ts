@@ -5,35 +5,34 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../../common/metadata.js';
+import { MCPToolInvocationData } from '../../../../common/metadata.js';
 import { PRDState } from '../metadata.js';
 import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
-import { GAP_ANALYSIS_TOOL } from '../../../tools/magi/magi-gap-analysis/metadata.js';
-import { ToolExecutor } from '../../nodes/toolExecutor.js';
-import { Logger } from '../../../logging/logger.js';
+import { REQUIREMENTS_REVIEW_TOOL } from '../../../../tools/magi/magi-requirements-review/metadata.js';
+import { ToolExecutor } from '../../../nodes/toolExecutor.js';
+import { Logger } from '../../../../logging/logger.js';
 
-export class PRDGapAnalysisNode extends PRDAbstractToolNode {
+export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
-    super('gapAnalysis', toolExecutor, logger);
+    super('requirementsReview', toolExecutor, logger);
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    const toolInvocationData: MCPToolInvocationData<typeof GAP_ANALYSIS_TOOL.inputSchema> = {
+    const toolInvocationData: MCPToolInvocationData<typeof REQUIREMENTS_REVIEW_TOOL.inputSchema> = {
       llmMetadata: {
-        name: GAP_ANALYSIS_TOOL.toolId,
-        description: GAP_ANALYSIS_TOOL.description,
-        inputSchema: GAP_ANALYSIS_TOOL.inputSchema,
+        name: REQUIREMENTS_REVIEW_TOOL.toolId,
+        description: REQUIREMENTS_REVIEW_TOOL.description,
+        inputSchema: REQUIREMENTS_REVIEW_TOOL.inputSchema,
       },
       input: {
         projectPath: state.projectPath,
-        featureBrief: state.featureBrief || '',
         functionalRequirements: state.functionalRequirements || [],
       },
     };
 
     const validatedResult = this.executeToolWithLogging(
       toolInvocationData,
-      GAP_ANALYSIS_TOOL.resultSchema
+      REQUIREMENTS_REVIEW_TOOL.resultSchema
     );
     return validatedResult;
   };
