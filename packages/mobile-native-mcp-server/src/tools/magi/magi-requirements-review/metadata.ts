@@ -64,8 +64,8 @@ export const REQUIREMENTS_REVIEW_TOOL: WorkflowToolMetadata<
   typeof REQUIREMENTS_REVIEW_INPUT_SCHEMA,
   typeof REQUIREMENTS_REVIEW_RESULT_SCHEMA
 > = {
-  toolId: 'sfmobile-native-requirements-review',
-  title: 'Salesforce Mobile Native App - Requirements Review and Approval',
+  toolId: 'magi-requirements-review',
+  title: 'Magi - Requirements Review and Approval',
   description:
     'Presents functional requirements to the user for review, approval, rejection, or modification',
   inputSchema: REQUIREMENTS_REVIEW_INPUT_SCHEMA,

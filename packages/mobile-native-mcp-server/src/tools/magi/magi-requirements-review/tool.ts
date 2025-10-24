@@ -8,9 +8,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../../../logging/logger.js';
 import { REQUIREMENTS_REVIEW_TOOL, RequirementsReviewInput } from './metadata.js';
-import { AbstractWorkflowTool } from '../../base/abstractWorkflowTool.js';
+import { PRDAbstractWorkflowTool } from '../../base/prdAbstractWorkflowTool.js';
 
-export class SFMobileNativeRequirementsReviewTool extends AbstractWorkflowTool<
+export class SFMobileNativeRequirementsReviewTool extends PRDAbstractWorkflowTool<
   typeof REQUIREMENTS_REVIEW_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {

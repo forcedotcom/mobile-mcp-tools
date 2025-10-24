@@ -8,9 +8,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../../../logging/logger.js';
 import { PRD_GENERATION_TOOL, PRDGenerationInput } from './metadata.js';
-import { AbstractWorkflowTool } from '../../base/abstractWorkflowTool.js';
+import { PRDAbstractWorkflowTool } from '../../base/prdAbstractWorkflowTool.js';
 
-export class SFMobileNativePRDGenerationTool extends AbstractWorkflowTool<
+export class SFMobileNativePRDGenerationTool extends PRDAbstractWorkflowTool<
   typeof PRD_GENERATION_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {

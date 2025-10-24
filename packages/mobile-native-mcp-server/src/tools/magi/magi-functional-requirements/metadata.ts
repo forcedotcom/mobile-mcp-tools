@@ -89,8 +89,8 @@ export const FUNCTIONAL_REQUIREMENTS_TOOL: WorkflowToolMetadata<
   typeof FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,
   typeof FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA
 > = {
-  toolId: 'sfmobile-native-functional-requirements',
-  title: 'Salesforce Mobile Native App - Functional Requirements Generation',
+  toolId: 'magi-functional-requirements',
+  title: 'Magi - Functional Requirements Generation',
   description:
     'Analyzes the feature brief and existing requirements/gaps to propose functional requirements for user approval',
   inputSchema: FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,

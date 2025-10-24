@@ -55,8 +55,8 @@ export const PRD_REVIEW_TOOL: WorkflowToolMetadata<
   typeof PRD_REVIEW_INPUT_SCHEMA,
   typeof PRD_REVIEW_RESULT_SCHEMA
 > = {
-  toolId: 'sfmobile-native-prd-review',
-  title: 'Salesforce Mobile Native App - PRD Review',
+  toolId: 'magi-prd-review',
+  title: 'Magi - PRD Review',
   description: 'Presents the generated PRD to the user for review, approval, or modification',
   inputSchema: PRD_REVIEW_INPUT_SCHEMA,
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,

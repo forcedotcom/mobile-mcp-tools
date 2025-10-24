@@ -20,15 +20,6 @@ import { CheckPropertiesFulFilledRouter } from './nodes/checkPropertiesFulfilled
 import { GetUserInputNode } from './nodes/getUserInput.js';
 import { FailureNode } from './nodes/failureNode.js';
 import { CheckEnvironmentValidatedRouter } from './nodes/checkEnvironmentValidated.js';
-import { MagiInitializationNode } from './nodes/magiInitialization.js';
-import { FeatureBriefGenerationNode } from './nodes/featureBriefGeneration.js';
-import { FunctionalRequirementsGenerationNode } from './nodes/functionalRequirementsGeneration.js';
-import { RequirementsReviewNode } from './nodes/requirementsReview.js';
-import { GapAnalysisNode } from './nodes/gapAnalysis.js';
-import { RequirementsIterationControlNode } from './nodes/requirementsIterationControl.js';
-import { PRDGenerationNode } from './nodes/prdGeneration.js';
-import { PRDReviewNode } from './nodes/prdReview.js';
-import { PRDFinalizationNode } from './nodes/prdFinalization.js';
 
 const initialUserInputExtractionNode = new UserInputExtractionNode();
 const userInputNode = new GetUserInputNode();
@@ -86,63 +77,3 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addEdge(deploymentNode.name, completionNode.name)
   .addEdge(completionNode.name, END)
   .addEdge(failureNode.name, END);
-
-const magiInitializationNode = new MagiInitializationNode();
-
-// PRD Generation Workflow Nodes
-const featureBriefGenerationNode = new FeatureBriefGenerationNode();
-const functionalRequirementsGenerationNode = new FunctionalRequirementsGenerationNode();
-const requirementsReviewNode = new RequirementsReviewNode();
-const gapAnalysisNode = new GapAnalysisNode();
-const requirementsIterationControlNode = new RequirementsIterationControlNode();
-const prdGenerationNode = new PRDGenerationNode();
-const prdReviewNode = new PRDReviewNode();
-const prdFinalizationNode = new PRDFinalizationNode();
-
-/**
- * PRD Generation Workflow Graph
- * Complete flow: Feature Brief → Requirements → Review → Gap Analysis → Iteration Loop → PRD Generation → PRD Review → Finalization
- */
-export const prdGenerationWorkflow = new StateGraph(MobileNativeWorkflowState)
-  // Add all PRD generation workflow nodes
-  .addNode(magiInitializationNode.name, magiInitializationNode.execute)
-  .addNode(featureBriefGenerationNode.name, featureBriefGenerationNode.execute)
-  .addNode(functionalRequirementsGenerationNode.name, functionalRequirementsGenerationNode.execute)
-  .addNode(requirementsReviewNode.name, requirementsReviewNode.execute)
-  .addNode(gapAnalysisNode.name, gapAnalysisNode.execute)
-  .addNode(requirementsIterationControlNode.name, requirementsIterationControlNode.execute)
-  .addNode(prdGenerationNode.name, prdGenerationNode.execute)
-  .addNode(prdReviewNode.name, prdReviewNode.execute)
-  .addNode(prdFinalizationNode.name, prdFinalizationNode.execute)
-
-  // Define workflow edges
-  .addEdge(START, magiInitializationNode.name)
-  .addEdge(magiInitializationNode.name, featureBriefGenerationNode.name)
-  .addEdge(featureBriefGenerationNode.name, functionalRequirementsGenerationNode.name)
-  .addEdge(functionalRequirementsGenerationNode.name, requirementsReviewNode.name)
-  .addEdge(requirementsReviewNode.name, gapAnalysisNode.name)
-
-  // Gap Analysis → Iteration Control (conditional)
-  .addConditionalEdges(gapAnalysisNode.name, state => {
-    // Check if we should continue iteration or proceed to PRD generation
-    const shouldContinue = state.shouldContinueIteration;
-    return shouldContinue ? requirementsIterationControlNode.name : prdGenerationNode.name;
-  })
-
-  // Iteration Control → Requirements Generation (if continuing) or PRD Generation (if stopping)
-  .addConditionalEdges(requirementsIterationControlNode.name, state => {
-    const shouldContinue = state.shouldContinueIteration;
-    return shouldContinue ? functionalRequirementsGenerationNode.name : prdGenerationNode.name;
-  })
-
-  // PRD Generation → PRD Review
-  .addEdge(prdGenerationNode.name, prdReviewNode.name)
-
-  // PRD Review → PRD Finalization (if approved) or back to PRD Generation (if modifications needed)
-  .addConditionalEdges(prdReviewNode.name, state => {
-    const prdApproved = state.prdApproved;
-    return prdApproved ? prdFinalizationNode.name : prdGenerationNode.name;
-  })
-
-  // PRD Finalization is terminal
-  .addEdge(prdFinalizationNode.name, END);

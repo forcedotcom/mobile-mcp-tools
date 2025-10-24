@@ -80,8 +80,8 @@ export const PRD_GENERATION_TOOL: WorkflowToolMetadata<
   typeof PRD_GENERATION_INPUT_SCHEMA,
   typeof PRD_GENERATION_RESULT_SCHEMA
 > = {
-  toolId: 'sfmobile-native-prd-generation',
-  title: 'Salesforce Mobile Native App - PRD Generation',
+  toolId: 'magi-prd-generation',
+  title: 'Magi - PRD Generation',
   description:
     'Generates a comprehensive Product Requirements Document (PRD.md) from approved feature brief and requirements',
   inputSchema: PRD_GENERATION_INPUT_SCHEMA,

@@ -122,8 +122,8 @@ export const GAP_ANALYSIS_TOOL: WorkflowToolMetadata<
   typeof GAP_ANALYSIS_INPUT_SCHEMA,
   typeof GAP_ANALYSIS_RESULT_SCHEMA
 > = {
-  toolId: 'sfmobile-native-gap-analysis',
-  title: 'Salesforce Mobile Native App - Requirements Gap Analysis',
+  toolId: 'magi-gap-analysis',
+  title: 'Magi - Gap Analysis',
   description:
     'Analyzes current functional requirements against the feature brief to identify gaps, score requirement strengths, and provide improvement recommendations',
   inputSchema: GAP_ANALYSIS_INPUT_SCHEMA,
