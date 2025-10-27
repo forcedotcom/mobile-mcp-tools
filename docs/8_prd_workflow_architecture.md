@@ -594,45 +594,6 @@ Loop back to review process:
 .addEdge(gapRequirementsGenerationNode.name, requirementsReviewNode.name)
 ```
 
-## Iterative Refinement
-
-The workflow implements a sophisticated **iterative refinement** mechanism:
-
-### Iteration Trigger
-Gap analysis score below 80% triggers iteration:
-```typescript
-const shouldContinueIteration = gapAnalysisScore < 0.8;
-```
-
-### Iteration Flow
-1. **Gap Analysis** → identifies deficiencies
-2. **Iteration Control** → decides to continue
-3. **Gap Requirements Generation** → proposes new requirements
-4. **Requirements Review** → evaluates new requirements
-5. **Return to Gap Analysis** → re-evaluates completeness
-
-### Quality Metrics
-
-#### Gap Analysis Score Components
-- **Coverage** (0-100): How well requirements cover the feature brief
-- **Completeness** (0-100): How complete and thorough requirements are
-- **Clarity** (0-100): How clear, specific, and actionable requirements are
-- **Feasibility** (0-100): How realistic and implementable requirements are
-
-**Overall Score = Weighted average of components**
-
-#### Requirement Strengths Scoring
-Each requirement is analyzed individually:
-- **Strength Score** (0-10): Overall quality rating
-- **Strengths**: What the requirement does well
-- **Weaknesses**: Areas for improvement
-
-### Iteration Stopping Criteria
-Iteration continues until:
-- Gap analysis score reaches 80% or higher
-- User explicitly stops iteration
-- Maximum iteration count reached (if implemented)
-
 ## Integration with MCP Server
 
 The PRD workflow is orchestrated by the `magi-prd-orchestrator` tool, which:
