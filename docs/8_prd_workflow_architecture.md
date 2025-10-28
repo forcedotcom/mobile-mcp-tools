@@ -186,14 +186,20 @@ There are two base node classes in the PRD workflow:
 **Class:** `PRDRequirementsReviewNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-requirements-review`
+**Artifact:** `{magiSddPath}/{featureId}/requirements.json`
 
-**Purpose:** Facilitates user/stakeholder review and approval of functional requirements.
+**Purpose:** Facilitates user/stakeholder review of functional requirements and **persists the results to a file**.
 
 **Responsibilities:**
 - Presents requirements for review
 - Captures approval/rejection/modification decisions
+- **Creates and updates `requirements.json` after each review cycle to persist the cumulative state of all requirements.**
+- **Maintains a review history within the artifact for traceability.**
 - Records user feedback
 - Generates review summary
+
+**Artifact Management:**
+This node is responsible for managing the `requirements.json` artifact. After each review, it reads the existing file, merges the new results, and writes the file back to disk. It then updates the workflow's in-memory state to match the persisted artifact, ensuring that subsequent nodes like Gap Analysis and PRD Generation have a complete and accurate view of all approved requirements.
 
 **Tool Input:**
 ```typescript
@@ -612,6 +618,30 @@ prdFinalized: boolean
 #### Error Handling State
 ```typescript
 prdWorkflowFatalErrorMessages: string[] // Array of error messages for failure communication
+```
+
+#### Requirements Artifact (`requirements.json`)
+A JSON file that acts as the single source of truth for the state of all requirements for a given feature. It is managed exclusively by the `PRDRequirementsReviewNode`.
+
+**Location:** `{magiSddPath}/{featureId}/requirements.json`
+
+**Structure:**
+```json
+{
+  "featureId": "string",
+  "approvedRequirements": "Array<Requirement>",
+  "rejectedRequirements": "Array<Requirement>",
+  "modifiedRequirements": "Array<ModifiedRequirement>",
+  "reviewHistory": [
+    {
+      "timestamp": "Date",
+      "summary": "string",
+      "approvedIds": "string[]",
+      "rejectedIds": "string[]",
+      "modifiedIds": "string[]"
+    }
+  ]
+}
 ```
 
 ## Flow Control
