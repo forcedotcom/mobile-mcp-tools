@@ -51,6 +51,10 @@ graph TD
     PR -->|Not Approved| PG
     
     F --> End[END]
+    
+    Error[Failure Node] --> End
+    
+    style Error fill:#ffcccc,stroke:#ff0000
 ```
 
 ## Architecture Components
@@ -89,11 +93,13 @@ There are two base node classes in the PRD workflow:
 - Sets `projectPath` - the root project directory
 - Sets `originalUserUtterance` - the user's original request
 - Sets `magiSddPath` - path to the magi-sdd directory
+- Sets `prdWorkflowFatalErrorMessages` - array of error messages if initialization fails
 
 **Error Handling:**
-- Throws error if `projectPath` is missing
-- Throws error if `originalUserUtterance` is missing
-- Throws error if directory creation fails
+- If `projectPath` is missing: sets `prdWorkflowFatalErrorMessages` and returns (router will route to failure)
+- If `originalUserUtterance` is missing: sets `prdWorkflowFatalErrorMessages` and returns (router will route to failure)
+- If directory creation fails: sets `prdWorkflowFatalErrorMessages` with error details (router will route to failure)
+- Node **does not throw errors** - instead populates error state and lets router handle routing to failure node
 
 ---
 
@@ -495,6 +501,47 @@ if (userWantsToContinue === true) {
 - Terminates workflow
 - Returns to orchestrator
 
+---
+
+### 11. Failure Node
+**Class:** `PRDFailureNode`  
+**Type:** Tool Node  
+**Tool:** `magi-prd-failure`
+
+**Purpose:** Handles non-recoverable workflow failures and communicates them to the user.
+
+**Responsibilities:**
+- Invokes the PRD failure tool with error messages
+- Formats failure information for user display
+- Terminates workflow with error state
+
+**Tool Input:**
+```typescript
+{
+  messages: string[] // Array of error messages describing failures
+}
+```
+
+**Tool Output:**
+```typescript
+{} // Empty result object, workflow terminates
+```
+
+**Key State Updates:**
+- Reads `prdWorkflowFatalErrorMessages` from state
+- Workflow terminates (routes to END)
+
+**Error Handling Flow:**
+1. Error occurs in any workflow node
+2. Orchestrator catches the error and populates `prdWorkflowFatalErrorMessages` in state
+3. Orchestrator routes execution to `prdFailureNode`
+4. Failure node invokes the PRD failure tool to communicate the error to the user
+5. Workflow terminates with error status
+
+**Note:** Currently, no automatic recovery mechanisms are implemented. All errors are non-recoverable and result in workflow termination. Future enhancements may add retry logic or partial recovery capabilities.
+
+---
+
 ## State Management
 
 ### PRD Workflow State
@@ -562,21 +609,47 @@ prdReviewSummary: string
 prdFinalized: boolean
 ```
 
+#### Error Handling State
+```typescript
+prdWorkflowFatalErrorMessages: string[] // Array of error messages for failure communication
+```
+
 ## Flow Control
 
 ### Linear Edges
 Simple linear progression with no branching:
 1. START → Magi Initialization
-2. Magi Initialization → Feature Brief Generation
-3. Feature Brief Generation → Initial Requirements Generation
-4. Initial Requirements Generation → Requirements Review
-5. Requirements Review → Gap Analysis
-6. Gap Analysis → Requirements Iteration Control
-7. PRD Generation → PRD Review
-8. Finalization → END
+2. Feature Brief Generation → Initial Requirements Generation
+3. Initial Requirements Generation → Requirements Review
+4. Requirements Review → Gap Analysis
+5. Gap Analysis → Requirements Iteration Control
+6. PRD Generation → PRD Review
+7. Finalization → END
+8. Failure Node → END
 
 ### Conditional Edges
 Branching logic based on state evaluation:
+
+#### Magi Initialization → Feature Brief Generation or Failure
+```typescript
+.addConditionalEdges(magiInitializationNode.name, prdInitializationValidatedRouter.execute)
+```
+
+**Decision Logic:**
+The `PRDInitializationValidatedRouter` checks if initialization was successful:
+- If `prdWorkflowFatalErrorMessages` has any entries → route to Failure Node
+- Otherwise → proceed to Feature Brief Generation
+
+**Common Error Scenarios:**
+- `projectPath` missing in user input
+- `originalUserUtterance` missing in user input
+- Directory creation failures (permissions, disk space, etc.)
+
+**Flow:**
+- If errors present → Failure Node
+- If no errors → Feature Brief Generation Node
+
+---
 
 #### Iteration Control → Gap Requirements or PRD Generation
 ```typescript
