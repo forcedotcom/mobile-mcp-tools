@@ -38,11 +38,10 @@ graph TD
     IR --> RR[Requirements Review]
     RR --> GA[Gap Analysis]
     
-    GA -->|Score < threshold| IC[Iteration Control]
-    GA -->|Score >= threshold| PG[PRD Generation]
+    GA --> IC[Iteration Control]
     
     IC -->|Continue| GR[Gap Requirements Generation]
-    IC -->|Stop| PG
+    IC -->|Stop| PG[PRD Generation]
     
     GR --> RR
     
@@ -227,7 +226,7 @@ There are two base node classes in the PRD workflow:
 **Type:** Tool Node  
 **Tool:** `magi-prd-gap-analysis`
 
-**Purpose:** Analyzes requirements for gaps, incompleteness, and quality issues.
+**Purpose:** Analyzes requirements for gaps, incompleteness, and quality issues. Also captures user decision on whether to continue refining requirements.
 
 **Responsibilities:**
 - Compares approved requirements against feature brief
@@ -235,6 +234,7 @@ There are two base node classes in the PRD workflow:
 - Scores requirement strengths and weaknesses
 - Provides overall quality assessment
 - Suggests improvements
+- Asks the user whether to continue refining or proceed to PRD generation
 
 **Tool Input:**
 ```typescript
@@ -258,8 +258,10 @@ There are two base node classes in the PRD workflow:
     impact: string,
     suggestedRequirements: Array<SuggestedRequirement>
   }>,
+  requirementStrengths: Array<RequirementStrength>,
   recommendations: string[],
-  summary: string
+  summary: string,
+  userWantsToContinueDespiteGaps?: boolean
 }
 ```
 
@@ -269,6 +271,14 @@ There are two base node classes in the PRD workflow:
 - Sets `requirementStrengths` - analysis of each requirement
 - Sets `gapAnalysisRecommendations` - high-level recommendations
 - Sets `gapAnalysisSummary` - summary of findings
+- Sets `userWantsToContinueDespiteGaps` - user's decision to continue or proceed (optional)
+
+**User Decision:**
+After presenting gap analysis results, the tool asks the user whether to:
+- Continue refining requirements to address identified gaps
+- Proceed to PRD generation despite the gaps (useful when gaps are minor or acceptable)
+
+The user's decision is captured in the `userWantsToContinueDespiteGaps` field, which influences the iteration control decision.
 
 ---
 
@@ -276,16 +286,35 @@ There are two base node classes in the PRD workflow:
 **Class:** `PRDRequirementsIterationControlNode`  
 **Type:** Base Node (no tools)
 
-**Purpose:** Determines whether to continue refining requirements or proceed to PRD generation.
+**Purpose:** Determines whether to continue refining requirements or proceed to PRD generation based on gap analysis results and user preference.
 
 **Responsibilities:**
 - Evaluates gap analysis score
+- Checks for explicit user decision
 - Makes iteration control decision
-- Implements quality threshold logic
+- Implements quality threshold logic with user override capability
 
 **Decision Logic:**
+The node uses the following priority order:
+
+1. **User Override (Highest Priority)**: If `userWantsToContinueDespiteGaps` is explicitly set:
+   - `true` → always continue iteration
+   - `false` → always proceed to PRD generation
+
+2. **Automatic Threshold (Fallback)**: If no explicit user decision:
+   - `shouldContinueIteration = gapAnalysisScore < 0.8` (80% threshold)
+
+This ensures users have full control over the iteration process while maintaining sensible defaults.
+
+**Implementation:**
 ```typescript
-const shouldContinueIteration = gapAnalysisScore < 0.8; // 80% threshold
+if (userWantsToContinue === true) {
+  shouldContinueIteration = true;  // User wants to continue
+} else if (userWantsToContinue === false) {
+  shouldContinueIteration = false;  // User wants to proceed
+} else {
+  shouldContinueIteration = gapAnalysisScore < 0.8;  // Use threshold
+}
 ```
 
 **Key State Updates:**
@@ -542,22 +571,12 @@ Simple linear progression with no branching:
 3. Feature Brief Generation → Initial Requirements Generation
 4. Initial Requirements Generation → Requirements Review
 5. Requirements Review → Gap Analysis
-6. PRD Generation → PRD Review
-7. Finalization → END
+6. Gap Analysis → Requirements Iteration Control
+7. PRD Generation → PRD Review
+8. Finalization → END
 
 ### Conditional Edges
 Branching logic based on state evaluation:
-
-#### Gap Analysis → Iteration Control or PRD Generation
-```typescript
-.addConditionalEdges(gapAnalysisNode.name, state => {
-  const shouldContinue = state.shouldContinueIteration;
-  return shouldContinue ? requirementsIterationControlNode.name : prdGenerationNode.name;
-})
-```
-
-**Decision:** If `shouldContinueIteration = true` → continue refining requirements  
-**Else:** Proceed to PRD generation
 
 #### Iteration Control → Gap Requirements or PRD Generation
 ```typescript
@@ -567,8 +586,16 @@ Branching logic based on state evaluation:
 })
 ```
 
-**Decision:** If `shouldContinueIteration = true` → generate gap-based requirements  
-**Else:** Proceed to PRD generation
+**Decision Logic:**
+The `shouldContinueIteration` flag is determined by the Requirements Iteration Control Node using this priority:
+1. **User Override**: If `userWantsToContinueDespiteGaps` is explicitly `true` or `false`, use that value
+2. **Automatic Threshold**: If no user decision, use gap score (< 80% continues iteration)
+
+**Flow:**
+- If `shouldContinueIteration = true` → generate gap-based requirements
+- If `shouldContinueIteration = false` → proceed to PRD generation
+
+**Note:** Gap Analysis now always flows to Requirements Iteration Control, which makes the decision based on both gap score and user preference.
 
 #### PRD Review → Finalization or PRD Generation
 ```typescript
@@ -607,5 +634,11 @@ The PRD workflow is orchestrated by the `magi-prd-orchestrator` tool, which:
 ### Human-in-the-Loop
 The workflow supports interruptions at key points:
 - **Requirements Review**: User reviews and approves requirements
-- **Gap Analysis**: User may choose to skip iteration
+- **Gap Analysis**: User can choose to continue refining requirements or proceed to PRD generation despite identified gaps
 - **PRD Review**: User reviews and approves PRD
+
+#### User Control Over Iteration
+The `userWantsToContinueDespiteGaps` state field allows users to:
+- **Override automatic decisions**: Users can explicitly decide to continue refining or proceed to PRD regardless of gap analysis score
+- **Flexible workflow**: Enables users to balance thoroughness with time constraints
+- **Informed decisions**: Gap analysis presents results before asking for user input, enabling informed choices
