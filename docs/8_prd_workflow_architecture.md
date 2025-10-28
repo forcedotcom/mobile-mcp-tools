@@ -130,7 +130,6 @@ There are two base node classes in the PRD workflow:
 
 **Key State Updates:**
 - Sets `featureId` - unique identifier for the feature
-- Sets `featureDirectoryPath` - path to feature directory
 - Sets `featureBrief` - path to feature brief markdown file
 
 **Output Files:**
@@ -464,12 +463,8 @@ const shouldContinueIteration = gapAnalysisScore < 0.8; // 80% threshold
 **Purpose:** Marks the PRD workflow as complete.
 
 **Responsibilities:**
-- Sets `workflowComplete` flag
 - Terminates workflow
 - Returns to orchestrator
-
-**Key State Updates:**
-- Sets `workflowComplete: true`
 
 ## State Management
 
@@ -483,7 +478,6 @@ userInput: Record<string, unknown>
 projectPath: string
 featureId: string
 magiSddPath: string
-featureDirectoryPath: string
 originalUserUtterance: string
 ```
 
@@ -537,7 +531,6 @@ prdModifications: Array<PRDModification>
 prdUserFeedback: string
 prdReviewSummary: string
 prdFinalized: boolean
-workflowComplete: boolean
 ```
 
 ## Flow Control
