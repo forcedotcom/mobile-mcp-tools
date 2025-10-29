@@ -11,6 +11,7 @@ The PRD (Product Requirements Document) Generation Workflow is a comprehensive A
 ### Phase 1: Initialization and Feature Brief
 - **Initialize** project and extract user requirements
 - **Generate** feature brief from user utterance
+- **Review** feature brief with user approval
 
 ### Phase 2: Initial Requirements Generation
 - **Generate** initial functional requirements from feature brief
@@ -34,7 +35,9 @@ The PRD (Product Requirements Document) Generation Workflow is a comprehensive A
 graph TD
     Start[START] --> Init[Magi Initialization]
     Init --> FB[Feature Brief Generation]
-    FB --> IR[Initial Requirements Generation]
+    FB --> FBReview[Feature Brief Review]
+    FBReview -->|Not Approved| FB
+    FBReview -->|Approved| IR[Initial Requirements Generation]
     IR --> RR[Requirements Review]
     RR --> GA[Gap Analysis]
     
@@ -142,7 +145,54 @@ There are two base node classes in the PRD workflow:
 
 ---
 
-### 3. Initial Requirements Generation Node
+### 3. Feature Brief Review Node
+**Class:** `PRDFeatureBriefReviewNode`  
+**Type:** Tool Node  
+**Tool:** `magi-prd-feature-brief-review`
+
+**Purpose:** Facilitates user review and approval of the generated feature brief before proceeding to requirements generation.
+
+**Responsibilities:**
+- Presents feature brief to user for review
+- Captures approval/rejection/modification decisions
+- Records user feedback
+- Generates review summary
+
+**Tool Input:**
+```typescript
+{
+  projectPath: string,
+  featureBrief: string // Path to feature brief file
+}
+```
+
+**Tool Output:**
+```typescript
+{
+  approved: boolean,
+  userFeedback?: string,
+  reviewSummary: string,
+  modifications?: Array<{
+    section: string,
+    modificationReason: string,
+    requestedContent: string
+  }>
+}
+```
+
+**Key State Updates:**
+- Sets `featureBriefApproved` - approval status
+- Sets `featureBriefUserFeedback` - user feedback
+- Sets `featureBriefReviewSummary` - review summary
+
+**Workflow Behavior:**
+- If approved → proceed to initial requirements generation
+- If modifications needed → return to feature brief generation for re-generation
+- All changes are documented for tracking
+
+---
+
+### 4. Initial Requirements Generation Node
 **Class:** `PRDInitialRequirementsGenerationNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-initial-requirements`
@@ -566,6 +616,9 @@ originalUserUtterance: string
 #### Feature Brief State
 ```typescript
 featureBrief: string // Path to feature-brief.md file
+featureBriefApproved: boolean // Whether the feature brief is approved
+featureBriefReviewSummary: string // Summary of the review process
+featureBriefUserFeedback: string // User feedback on the feature brief
 ```
 
 #### Requirements State
@@ -649,7 +702,7 @@ A JSON file that acts as the single source of truth for the state of all require
 ### Linear Edges
 Simple linear progression with no branching:
 1. START → Magi Initialization
-2. Feature Brief Generation → Initial Requirements Generation
+2. Feature Brief Generation → Feature Brief Review
 3. Initial Requirements Generation → Requirements Review
 4. Requirements Review → Gap Analysis
 5. Gap Analysis → Requirements Iteration Control
@@ -678,6 +731,31 @@ The `PRDInitializationValidatedRouter` checks if initialization was successful:
 **Flow:**
 - If errors present → Failure Node
 - If no errors → Feature Brief Generation Node
+
+---
+
+#### Feature Brief Review → Iterate or Proceed
+```typescript
+.addConditionalEdges(featureBriefReviewNode.name, state => {
+  const isApproved = state.featureBriefApproved;
+  return isApproved ? initialRequirementsGenerationNode.name : featureBriefGenerationNode.name;
+})
+```
+
+**Decision Logic:**
+The `featureBriefApproved` flag is set by the Feature Brief Review Node based on user feedback:
+- If `featureBriefApproved = true` → proceed to Initial Requirements Generation
+- If `featureBriefApproved = false` → return to Feature Brief Generation to iterate
+
+**Flow:**
+- If approved → Initial Requirements Generation Node
+- If not approved → Feature Brief Generation Node (iterate)
+
+**User Options:**
+The user can:
+- Approve the feature brief as-is
+- Request modifications to specific sections
+- Request a complete revision if the brief doesn't match their vision
 
 ---
 
