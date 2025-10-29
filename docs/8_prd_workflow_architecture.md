@@ -36,7 +36,8 @@ graph TD
     Start[START] --> Init[Magi Initialization]
     Init --> FB[Feature Brief Generation]
     FB --> FBReview[Feature Brief Review]
-    FBReview -->|Not Approved| FB
+    FBReview -->|Not Approved| FBUpdate[Feature Brief Update]
+    FBUpdate --> FBReview
     FBReview -->|Approved| IR[Initial Requirements Generation]
     IR --> RR[Requirements Review]
     RR --> GA[Gap Analysis]
@@ -117,7 +118,7 @@ There are two base node classes in the PRD workflow:
 - Calls the feature brief generation tool
 - Retrieves existing feature IDs to ensure uniqueness
 - Creates feature directory structure
-- Writes feature brief to disk
+- Stores feature brief content in state (does NOT write to disk yet)
 - Generates recommended feature ID
 
 **Tool Input:**
@@ -138,31 +139,93 @@ There are two base node classes in the PRD workflow:
 
 **Key State Updates:**
 - Sets `featureId` - unique identifier for the feature
-- Sets `featureBrief` - path to feature brief markdown file
+- Sets `featureBrief` - path where file will be written (after approval)
+- Sets `featureBriefContent` - markdown content stored in-memory
 
 **Output Files:**
-- Creates: `{magiSddPath}/{featureId}/feature-brief.md`
+- **Does NOT create file yet** - file is only written after approval in Review Node
+- Directory is created: `{magiSddPath}/{featureId}/`
+- File path determined: `{magiSddPath}/{featureId}/feature-brief.md`
+
+**Note:** 
+- This node is ONLY for initial generation. For iterations/updates, see Feature Brief Update Node.
+- The feature brief file is **only written to disk after approval** in the Review Node.
 
 ---
 
-### 3. Feature Brief Review Node
-**Class:** `PRDFeatureBriefReviewNode`  
+### 3. Feature Brief Update Node
+**Class:** `PRDFeatureBriefUpdateNode`  
 **Type:** Tool Node  
-**Tool:** `magi-prd-feature-brief-review`
+**Tool:** `magi-prd-feature-brief-update`
 
-**Purpose:** Facilitates user review and approval of the generated feature brief before proceeding to requirements generation.
+**Purpose:** Updates an existing feature brief based on user feedback and modification requests from the review process. This node is specifically designed for iteration scenarios after a feature brief has been reviewed and not approved.
 
 **Responsibilities:**
-- Presents feature brief to user for review
-- Captures approval/rejection/modification decisions
-- Records user feedback
-- Generates review summary
+- Reads existing feature brief content from state (or file if it exists)
+- Incorporates user feedback and requested modifications
+- Stores updated content in state (does NOT write to disk yet)
+- Maintains the same feature ID throughout iterations
 
 **Tool Input:**
 ```typescript
 {
   projectPath: string,
-  featureBrief: string // Path to feature brief file
+  existingFeatureId: string, // Must be reused
+  featureBrief: string, // Path to file OR content from state
+  userUtterance: unknown, // Original utterance for context
+  userFeedback?: string, // User feedback from review
+  modifications?: Array<{
+    section: string,
+    modificationReason: string,
+    requestedContent: string
+  }> // Specific modification requests
+}
+```
+
+**Tool Output:**
+```typescript
+{
+  featureBriefMarkdown: string // Updated feature brief content
+}
+```
+
+**Key State Updates:**
+- Updates `featureBriefContent` in state (stores updated content)
+- Preserves `featureId` and `featureBrief` path (no changes)
+- Clears review state after update
+
+**Output Files:**
+- **Does NOT write file yet** - file is only written after approval in Review Node
+- Uses same file path: `{magiSddPath}/{featureId}/feature-brief.md`
+
+**Key Differences from Generation Node:**
+- **Generation Node**: Creates new feature brief from scratch
+- **Update Node**: Revises existing feature brief based on feedback
+- **Update Node**: Always reuses existing directory and feature ID
+- **Update Node**: Incorporates review feedback and modifications
+
+---
+
+### 4. Feature Brief Review Node
+**Class:** `PRDFeatureBriefReviewNode`  
+**Type:** Tool Node  
+**Tool:** `magi-prd-feature-brief-review`
+
+**Purpose:** Facilitates user review and approval of the generated feature brief before proceeding to requirements generation. Writes the feature brief file to disk only when approved.
+
+**Responsibilities:**
+- Presents feature brief content from state to user for review
+- Captures approval/rejection/modification decisions
+- Records user feedback
+- Generates review summary
+- **Writes feature brief file to disk when approved**
+
+**Tool Input:**
+```typescript
+{
+  projectPath: string,
+  featureBrief: string, // Path to feature brief file (or content if file doesn't exist)
+  featureBriefContent?: string // Content from state (used when file doesn't exist yet)
 }
 ```
 
@@ -186,13 +249,17 @@ There are two base node classes in the PRD workflow:
 - Sets `featureBriefReviewSummary` - review summary
 
 **Workflow Behavior:**
-- If approved → proceed to initial requirements generation
-- If modifications needed → return to feature brief generation for re-generation
+- If approved → write feature brief file to disk, then proceed to initial requirements generation
+- If modifications needed → route to Feature Brief Update Node (not Generation Node)
 - All changes are documented for tracking
+
+**File Writing:**
+- **When approved**: Writes `featureBriefContent` from state to `featureBrief` file path
+- **When not approved**: File is NOT written; content remains in state for iteration
 
 ---
 
-### 4. Initial Requirements Generation Node
+### 5. Initial Requirements Generation Node
 **Class:** `PRDInitialRequirementsGenerationNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-initial-requirements`
@@ -615,10 +682,12 @@ originalUserUtterance: string
 
 #### Feature Brief State
 ```typescript
-featureBrief: string // Path to feature-brief.md file
+featureBrief: string // Path to feature-brief.md file (set after approval)
+featureBriefContent: string // Feature brief markdown content (in-memory during review/iteration)
 featureBriefApproved: boolean // Whether the feature brief is approved
 featureBriefReviewSummary: string // Summary of the review process
 featureBriefUserFeedback: string // User feedback on the feature brief
+featureBriefModifications: Array<Modification> // Requested modifications from review
 ```
 
 #### Requirements State
@@ -703,12 +772,13 @@ A JSON file that acts as the single source of truth for the state of all require
 Simple linear progression with no branching:
 1. START → Magi Initialization
 2. Feature Brief Generation → Feature Brief Review
-3. Initial Requirements Generation → Requirements Review
-4. Requirements Review → Gap Analysis
-5. Gap Analysis → Requirements Iteration Control
-6. PRD Generation → PRD Review
-7. Finalization → END
-8. Failure Node → END
+3. Feature Brief Update → Feature Brief Review (iteration loop)
+4. Initial Requirements Generation → Requirements Review
+5. Requirements Review → Gap Analysis
+6. Gap Analysis → Requirements Iteration Control
+7. PRD Generation → PRD Review
+8. Finalization → END
+9. Failure Node → END
 
 ### Conditional Edges
 Branching logic based on state evaluation:
@@ -734,28 +804,35 @@ The `PRDInitializationValidatedRouter` checks if initialization was successful:
 
 ---
 
-#### Feature Brief Review → Iterate or Proceed
+#### Feature Brief Review → Update or Proceed
 ```typescript
 .addConditionalEdges(featureBriefReviewNode.name, state => {
   const isApproved = state.featureBriefApproved;
-  return isApproved ? initialRequirementsGenerationNode.name : featureBriefGenerationNode.name;
+  return isApproved ? initialRequirementsGenerationNode.name : featureBriefUpdateNode.name;
 })
+.addEdge(featureBriefUpdateNode.name, featureBriefReviewNode.name)
 ```
 
 **Decision Logic:**
 The `featureBriefApproved` flag is set by the Feature Brief Review Node based on user feedback:
 - If `featureBriefApproved = true` → proceed to Initial Requirements Generation
-- If `featureBriefApproved = false` → return to Feature Brief Generation to iterate
+- If `featureBriefApproved = false` → route to Feature Brief Update Node
 
 **Flow:**
 - If approved → Initial Requirements Generation Node
-- If not approved → Feature Brief Generation Node (iterate)
+- If not approved → Feature Brief Update Node → Feature Brief Review Node (iteration loop)
 
 **User Options:**
 The user can:
 - Approve the feature brief as-is
 - Request modifications to specific sections
 - Request a complete revision if the brief doesn't match their vision
+
+**Iteration Loop:**
+When modifications are requested:
+1. Feature Brief Review → Feature Brief Update (with feedback/modifications)
+2. Feature Brief Update → Feature Brief Review (user reviews updated version)
+3. Process repeats until approved
 
 ---
 
