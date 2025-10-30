@@ -96,14 +96,12 @@ There are two base node classes in the PRD workflow:
 **Key State Updates:**
 - Sets `projectPath` - the root project directory
 - Sets `userUtterance` - the user's original request
-- Sets `prdWorkspacePath` - path to the magi-sdd directory
 - Sets `prdWorkflowFatalErrorMessages` - array of error messages if initialization fails
 
 **Error Handling:**
-- If `projectPath` is missing: sets `prdWorkflowFatalErrorMessages` and returns (router will route to failure)
-- If `userUtterance` is missing: sets `prdWorkflowFatalErrorMessages` and returns (router will route to failure)
+- If `projectPath` or `userUtterance` is missing: throws an Error (orchestrator catches and routes to failure)
 - If directory creation fails: sets `prdWorkflowFatalErrorMessages` with error details (router will route to failure)
-- Node **does not throw errors** - instead populates error state and lets router handle routing to failure node
+- The router (`PRDInitializationValidatedRouter`) checks for `prdWorkflowFatalErrorMessages` and routes to failure node if present
 
 ---
 
@@ -139,13 +137,12 @@ There are two base node classes in the PRD workflow:
 
 **Key State Updates:**
 - Sets `featureId` - unique identifier for the feature
-- Sets `featureBriefPath` - path where file will be written (after approval)
 - Sets `featureBriefContent` - markdown content stored in-memory
 
 **Output Files:**
 - **Does NOT create file yet** - file is only written after approval in Review Node
-- Directory is created: `{prdWorkspacePath}/{featureId}/`
-- File path determined: `{prdWorkspacePath}/{featureId}/feature-brief.md`
+- Directory is created: `{projectPath}/magi-sdd/{featureId}/` (calculated on-demand)
+- File path determined: `{projectPath}/magi-sdd/{featureId}/feature-brief.md` (calculated on-demand)
 
 **Note:** 
 - This node is ONLY for initial generation. For iterations/updates, see Feature Brief Update Node.
@@ -190,12 +187,12 @@ There are two base node classes in the PRD workflow:
 
 **Key State Updates:**
 - Updates `featureBriefContent` in state (stores updated content)
-- Preserves `featureId` and `featureBriefPath` (no changes)
+- Preserves `featureId` (no changes)
 - Clears review state after update
 
 **Output Files:**
 - **Does NOT write file yet** - file is only written after approval in Review Node
-- Uses same file path: `{prdWorkspacePath}/{featureId}/feature-brief.md`
+- Uses same file path: `{projectPath}/magi-sdd/{featureId}/feature-brief.md` (calculated on-demand)
 
 **Key Differences from Generation Node:**
 - **Generation Node**: Creates new feature brief from scratch
@@ -251,7 +248,7 @@ There are two base node classes in the PRD workflow:
 - All changes are documented for tracking
 
 **File Writing:**
-- **When approved**: Writes `featureBriefContent` from state to `featureBriefPath`
+- **When approved**: Writes `featureBriefContent` from state to `{projectPath}/magi-sdd/{featureId}/feature-brief.md` (calculated on-demand)
 - **When not approved**: File is NOT written; content remains in state for iteration
 
 ---
@@ -295,11 +292,11 @@ There are two base node classes in the PRD workflow:
 
 ---
 
-### 4. Requirements Review Node
+### 6. Requirements Review Node
 **Class:** `PRDRequirementsReviewNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-requirements-review`
-**Artifact:** `{prdWorkspacePath}/{featureId}/requirements.md`
+**Artifact:** `{projectPath}/magi-sdd/{featureId}/requirements.md`
 
 **Purpose:** Facilitates user/stakeholder review of functional requirements and **persists the results to a markdown file**.
 
@@ -335,7 +332,7 @@ This node is responsible for managing the `requirements.md` artifact. After each
 
 **Key State Updates:**
 - **Does NOT store requirement data in state** - requirements are read from markdown file when needed
-- Path to requirements.md is calculated on-demand using `resolveRequirementsArtifactPath()` utility
+- Path to requirements.md is calculated on-demand using `resolveRequirementsArtifactPath()` utility from the feature directory
 
 **Workflow Behavior:**
 - User can approve, reject, or modify each requirement
@@ -344,7 +341,7 @@ This node is responsible for managing the `requirements.md` artifact. After each
 
 ---
 
-### 5. Gap Analysis Node
+### 7. Gap Analysis Node
 **Class:** `PRDGapAnalysisNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-gap-analysis`
@@ -408,7 +405,7 @@ The user's decision is captured in state as `userIterationOverride` (tool output
 
 ---
 
-### 6. Requirements Iteration Control Node
+### 8. Requirements Iteration Control Node
 **Class:** `PRDRequirementsIterationControlNode`  
 **Type:** Base Node (no tools)
 
@@ -423,36 +420,36 @@ The user's decision is captured in state as `userIterationOverride` (tool output
 **Decision Logic:**
 The node uses the following priority order:
 
-1. **User Override (Highest Priority)**: If `userWantsToContinueDespiteGaps` is explicitly set:
+1. **User Override (Highest Priority)**: If `userIterationOverride` is explicitly set:
    - `true` → always continue iteration
    - `false` → always proceed to PRD generation
 
 2. **Automatic Threshold (Fallback)**: If no explicit user decision:
-   - `shouldContinueIteration = gapAnalysisScore < 0.8` (80% threshold)
+   - `shouldIterate = gapAnalysisScore < 0.8` (80% threshold, normalized from 0..100 if needed)
 
 This ensures users have full control over the iteration process while maintaining sensible defaults.
 
 **Implementation:**
 ```typescript
-if (userWantsToContinue === true) {
-  shouldContinueIteration = true;  // User wants to continue
-} else if (userWantsToContinue === false) {
-  shouldContinueIteration = false;  // User wants to proceed
+if (userIterationOverride === true) {
+  shouldIterate = true;  // User wants to continue
+} else if (userIterationOverride === false) {
+  shouldIterate = false;  // User wants to proceed
 } else {
-  shouldContinueIteration = gapAnalysisScore < 0.8;  // Use threshold
+  shouldIterate = normalizedScore < 0.8;  // Use threshold
 }
 ```
 
 **Key State Updates:**
-- Sets `shouldContinueIteration` - boolean flag for iteration
+- Sets `shouldIterate` - boolean flag for iteration
 
 **Control Flow:**
-- If `shouldContinueIteration = true` → proceed to gap requirements generation
-- If `shouldContinueIteration = false` → proceed to PRD generation
+- If `shouldIterate = true` → proceed to gap requirements generation
+- If `shouldIterate = false` → proceed to PRD generation
 
 ---
 
-### 7. Gap Requirements Generation Node
+### 9. Gap Requirements Generation Node
 **Class:** `PRDGapRequirementsGenerationNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-gap-requirements`
@@ -503,7 +500,7 @@ Then generates new requirements addressing gaps while avoiding all excluded item
 
 ---
 
-### 8. PRD Generation Node
+### 10. PRD Generation Node
 **Class:** `PRDGenerationNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-generation`
@@ -553,8 +550,8 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 
 **Key State Updates:**
 - Sets `prdContent` - full PRD markdown
-- Sets `prdPath` - path to PRD file
 - Sets `prdStatus` - document metadata
+- PRD file is written to `{projectPath}/magi-sdd/{featureId}/prd.md` (calculated on-demand)
 
 **PRD Structure:**
 1. Document Status (author, date, status)
@@ -565,7 +562,7 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 
 ---
 
-### 9. PRD Review Node
+### 11. PRD Review Node
 **Class:** `PRDReviewNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-review`
@@ -608,7 +605,7 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 
 ---
 
-### 10. Finalization Node
+### 12. Finalization Node
 **Class:** `PRDFinalizationNode`  
 **Type:** Base Node (no tools)
 
@@ -620,7 +617,7 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 
 ---
 
-### 11. Failure Node
+### 13. Failure Node
 **Class:** `PRDFailureNode`  
 **Type:** Tool Node  
 **Tool:** `magi-prd-failure`
@@ -670,18 +667,20 @@ The workflow state (`PRDState`) is defined using LangGraph's `Annotation` API. S
 userInput: Record<string, unknown>
 projectPath: string
 featureId: string
-prdWorkspacePath: string
 userUtterance: string
 ```
 
+**Note:** Paths like `prdWorkspacePath`, `featureBriefPath`, and `prdPath` are **not stored in state**. They are calculated on-demand using utility functions that derive them from `projectPath` and `featureId`.
+
 #### Feature Brief State
 ```typescript
-featureBriefPath: string // Path to feature-brief.md file (set after approval)
 featureBriefContent: string // Feature brief markdown content (in-memory during review/iteration)
 isFeatureBriefApproved: boolean // Whether the feature brief is approved
 featureBriefUserFeedback: string // User feedback on the feature brief
 featureBriefModifications: Array<Modification> // Requested modifications from review
 ```
+
+**Note:** `featureBriefPath` is **not stored in state**. It is calculated on-demand using `getMagiPath()` utility when needed.
 
 #### Requirements State
 ```typescript
@@ -704,20 +703,21 @@ userIterationOverride: boolean
 
 #### Iteration Control State
 ```typescript
-shouldIterate: boolean
-userIterationOverride: boolean
+shouldIterate: boolean // Determined by Iteration Control Node based on gap score and user override
+userIterationOverride: boolean // User's explicit decision to continue or proceed (optional)
 ```
 
 #### PRD Generation Results
 ```typescript
 prdContent: string
-prdPath: string
 prdStatus: {
   author: string,
   lastModified: string,
   status: 'draft' | 'finalized'
 }
 ```
+
+**Note:** `prdPath` is **not stored in state**. It is calculated on-demand using `getMagiPath()` utility. The PRD file is written to `{projectPath}/magi-sdd/{featureId}/prd.md`.
 
 #### PRD Review State
 ```typescript
@@ -732,7 +732,7 @@ prdWorkflowFatalErrorMessages: string[] // Array of error messages for failure c
 #### Requirements Artifact (`requirements.md`)
 A markdown file that acts as the **single source of truth** for the state of all requirements for a given feature. It is managed exclusively by the `PRDRequirementsReviewNode` and read by all tools that need requirement data.
 
-**Location:** `{prdWorkspacePath}/{featureId}/requirements.md`
+**Location:** `{projectPath}/magi-sdd/{featureId}/requirements.md`
 
 **Purpose:**
 - Human-readable and review-friendly format
@@ -750,7 +750,7 @@ The markdown file contains structured sections for:
 
 **Access Pattern:**
 - Workflow nodes calculate the artifact path on-demand using `resolveRequirementsArtifactPath()` utility
-- Utility derives path from `featureBriefPath` (if available) or `featureId` + `prdWorkspacePath`
+- Utility derives path from the feature directory (calculated from `projectPath` and `featureId`)
 - Tools receive the path and read/parse the markdown file directly
 - This ensures tools always see the latest version, even if edited externally
 
@@ -835,7 +835,7 @@ When modifications are requested:
 **Decision Logic:**
 The `shouldIterate` flag is determined by the Requirements Iteration Control Node using this priority:
 1. **User Override**: If `userIterationOverride` is explicitly `true` or `false`, use that value
-2. **Automatic Threshold**: If no explicit user decision, use gap score (< 80% continues iteration; internally normalized if tool returns 0..100)
+2. **Automatic Threshold**: If no explicit user decision, use gap score (< 80% continues iteration; score is normalized to 0..1 if tool returns 0..100)
 
 **Flow:**
 - If `shouldIterate = true` → generate gap-based requirements
