@@ -53,18 +53,21 @@ export const GAP_SCHEMA = z.object({
  * Note: This tool is specifically for gap-based requirements generation.
  * For initial requirements generation, use magi-prd-initial-requirements instead.
  */
-export const GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  featureBrief: z.string().describe('The feature brief generated from the previous step'),
-  requirementsContent: z
-    .string()
-    .optional()
-    .describe('The existing requirements content to build upon'),
-  identifiedGaps: z
-    .array(GAP_SCHEMA)
-    .describe('Identified gaps that need to be addressed (required for gap-based generation)'),
-});
+export const GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA =
+  WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
+    featureBrief: z.string().describe('The feature brief generated from the previous step'),
+    requirementsContent: z
+      .string()
+      .optional()
+      .describe('The existing requirements content to build upon'),
+    identifiedGaps: z
+      .array(GAP_SCHEMA)
+      .describe('Identified gaps that need to be addressed (required for gap-based generation)'),
+  });
 
-export type GapBasedFunctionalRequirementsInput = z.infer<typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA>;
+export type GapBasedFunctionalRequirementsInput = z.infer<
+  typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA
+>;
 
 export const GAP_BASED_FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA = z.object({
   functionalRequirements: z

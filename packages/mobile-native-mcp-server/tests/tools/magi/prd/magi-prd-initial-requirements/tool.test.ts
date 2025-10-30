@@ -29,7 +29,9 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
   describe('Tool Metadata', () => {
     it('should have correct tool metadata', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-initial-requirements');
-      expect(tool.toolMetadata.title).toBe('Magi - Generate Initial Requirements from Feature Brief');
+      expect(tool.toolMetadata.title).toBe(
+        'Magi - Generate Initial Requirements from Feature Brief'
+      );
       expect(tool.toolMetadata.description).toBe(
         'Analyzes the feature brief to propose initial functional requirements'
       );

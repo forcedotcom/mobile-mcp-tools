@@ -12,7 +12,6 @@ import { PRD_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-review/meta
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
-import z from 'zod';
 
 export class PRDReviewNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -37,9 +36,10 @@ export class PRDReviewNode extends PRDAbstractToolNode {
     }
 
     // Tool result not provided - need to call the tool
-    const prdFilePath = state.projectPath && state.featureId 
-      ? getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.PRD)
-      : '';
+    const prdFilePath =
+      state.projectPath && state.featureId
+        ? getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.PRD)
+        : '';
 
     const toolInvocationData: MCPToolInvocationData<typeof PRD_REVIEW_TOOL.inputSchema> = {
       llmMetadata: {

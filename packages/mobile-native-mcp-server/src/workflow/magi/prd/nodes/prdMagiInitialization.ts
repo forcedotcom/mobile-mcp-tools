@@ -19,7 +19,7 @@ export class PRDMagiInitializationNode extends PRDAbstractToolNode {
   execute = (state: PRDState): Partial<PRDState> => {
     // Extract required values from userInput
     const projectPath = state.userInput?.projectPath as string;
-    const userUtterance = (state.userInput as any)?.userUtterance as string;
+    const userUtterance = state.userInput?.userUtterance as string;
 
     // Validate that projectPath is provided
     if (!projectPath || !userUtterance) {

@@ -13,7 +13,6 @@ import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { REQUIREMENTS_REVIEW_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-requirements-review/metadata.js';
 import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
 import * as fs from 'fs';
-import * as path from 'path';
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
@@ -35,14 +34,6 @@ vi.mock('fs', () => ({
   existsSync: vi.fn(),
   readFileSync: vi.fn(),
   unlinkSync: vi.fn(),
-}));
-
-// Mock path
-vi.mock('path', () => ({
-  default: {
-    join: vi.fn((...args) => args.join('/')),
-  },
-  join: vi.fn((...args) => args.join('/')),
 }));
 
 describe('PRDRequirementsReviewNode', () => {

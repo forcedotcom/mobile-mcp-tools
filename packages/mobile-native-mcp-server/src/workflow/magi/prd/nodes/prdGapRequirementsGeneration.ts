@@ -53,5 +53,5 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
       GAP_REQUIREMENTS_TOOL.resultSchema
     );
     return validatedResult;
-  }
+  };
 }

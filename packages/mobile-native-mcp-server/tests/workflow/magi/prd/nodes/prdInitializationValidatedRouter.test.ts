@@ -15,10 +15,7 @@ describe('PRDInitializationValidatedRouter', () => {
   const failureNodeName = 'prdFailure';
 
   beforeEach(() => {
-    router = new PRDInitializationValidatedRouter(
-      initializationValidatedNodeName,
-      failureNodeName
-    );
+    router = new PRDInitializationValidatedRouter(initializationValidatedNodeName, failureNodeName);
   });
 
   describe('Constructor', () => {

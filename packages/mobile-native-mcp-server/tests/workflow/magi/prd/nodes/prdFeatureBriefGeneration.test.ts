@@ -49,7 +49,9 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add authentication',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
+        '/path/to/project/magi-sdd'
+      );
       vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue(['existing-feature']);
       vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
@@ -76,8 +78,13 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add authentication feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue(['feature-1', 'feature-2']);
+      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
+        '/path/to/project/magi-sdd'
+      );
+      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([
+        'feature-1',
+        'feature-2',
+      ]);
       vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
@@ -103,7 +110,9 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
+        '/path/to/project/magi-sdd'
+      );
       vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([]);
       vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
@@ -128,7 +137,9 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
+        '/path/to/project/magi-sdd'
+      );
       vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([]);
       vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
@@ -181,7 +192,9 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
+        '/path/to/project/magi-sdd'
+      );
       vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([]);
       vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
