@@ -11,13 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { GAP_ANALYSIS_TOOL } from '../../../../tools/magi/prd/magi-prd-gap-analysis/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import fs from 'fs';
-import {
-  resolveFeatureDirectory,
-  resolveRequirementsArtifactPath,
-  getMagiPath,
-  MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
+import { readMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
 
 export class PRDGapAnalysisNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -45,20 +39,18 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
       };
     }
 
-    // Resolve feature directory and then requirements artifact path
-    const featureDirectory = resolveFeatureDirectory(state);
-    if (!featureDirectory) {
-      throw new Error(
-        'Cannot determine feature directory: projectPath and featureId are missing'
-      );
-    }
+    // Get feature brief content from state or file
+    const featureBriefContent = state.featureBriefContent
+      ? state.featureBriefContent
+      : state.projectPath && state.featureId
+        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
+        : '';
 
-    const requirementsArtifactPath = resolveRequirementsArtifactPath(featureDirectory);
-
-    // Read requirements content from markdown file
-    const requirementsContent = fs.existsSync(requirementsArtifactPath)
-      ? fs.readFileSync(requirementsArtifactPath, 'utf8')
-      : '';
+    // Read requirements content from file
+    const requirementsContent =
+      state.projectPath && state.featureId
+        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.REQUIREMENTS)
+        : '';
 
     // Tool result not provided - need to call the tool
     const toolInvocationData: MCPToolInvocationData<typeof GAP_ANALYSIS_TOOL.inputSchema> = {
@@ -68,7 +60,7 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
         inputSchema: GAP_ANALYSIS_TOOL.inputSchema,
       },
       input: {
-        featureBrief: state.featureBriefContent || this.getFeatureBriefContent(state),
+        featureBrief: featureBriefContent,
         requirementsContent,
       },
     };
@@ -82,24 +74,5 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
       identifiedGaps: validatedResult.identifiedGaps,
       userIterationOverride: validatedResult.userWantsToContinueDespiteGaps,
     };
-  }
-
-  private getFeatureBriefContent(state: PRDState): string {
-    if (state.featureBriefContent) {
-      return state.featureBriefContent;
-    }
-    
-    if (state.projectPath && state.featureId) {
-      try {
-        const featureBriefPath = getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF);
-        if (fs.existsSync(featureBriefPath)) {
-          return fs.readFileSync(featureBriefPath, 'utf8');
-        }
-      } catch (error) {
-        // Feature brief may not exist yet
-      }
-    }
-    
-    return '';
-  }
+  };
 }

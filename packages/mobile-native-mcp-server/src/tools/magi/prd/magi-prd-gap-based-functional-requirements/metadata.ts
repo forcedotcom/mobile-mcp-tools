@@ -48,50 +48,46 @@ export const GAP_SCHEMA = z.object({
 });
 
 /**
- * Functional Requirements Tool Input Schema
+ * Gap-Based Functional Requirements Tool Input Schema
+ *
+ * Note: This tool is specifically for gap-based requirements generation.
+ * For initial requirements generation, use magi-prd-initial-requirements instead.
  */
-export const FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
+export const GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
   featureBrief: z.string().describe('The feature brief generated from the previous step'),
-  existingRequirements: z
-    .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
+  requirementsContent: z
+    .string()
     .optional()
-    .describe('Existing functional requirements to build upon'),
+    .describe('The existing requirements content to build upon'),
   identifiedGaps: z
     .array(GAP_SCHEMA)
-    .optional()
-    .describe('Identified gaps that need to be addressed'),
-  isGapBasedGeneration: z
-    .boolean()
-    .optional()
-    .describe('Whether this is gap-based generation (true) or initial generation (false)'),
+    .describe('Identified gaps that need to be addressed (required for gap-based generation)'),
 });
 
-export type FunctionalRequirementsInput = z.infer<typeof FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA>;
+export type GapBasedFunctionalRequirementsInput = z.infer<typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA>;
 
-export const FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA = z.object({
+export const GAP_BASED_FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA = z.object({
   functionalRequirements: z
     .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
     .describe('Array of proposed functional requirements'),
   summary: z.string().describe('Summary of the proposed functional requirements'),
-  generationType: z.enum(['initial', 'gap-based']).describe('Type of generation performed'),
   gapsAddressed: z
     .array(z.string())
-    .optional()
     .describe('IDs of gaps that were addressed by the new requirements'),
 });
 
 /**
- * Functional Requirements Tool Metadata
+ * Gap-Based Functional Requirements Tool Metadata
  */
-export const FUNCTIONAL_REQUIREMENTS_TOOL: WorkflowToolMetadata<
-  typeof FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,
-  typeof FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA
+export const GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL: WorkflowToolMetadata<
+  typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,
+  typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA
 > = {
-  toolId: 'magi-prd-functional-requirements',
-  title: 'Magi - Functional Requirements Generation',
+  toolId: 'magi-prd-gap-based-functional-requirements',
+  title: 'Magi - Gap-Based Functional Requirements Generation',
   description:
-    'Analyzes the feature brief and existing requirements/gaps to propose functional requirements for user approval',
-  inputSchema: FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,
+    'Generates functional requirements based on identified gaps. For initial requirements generation, use magi-prd-initial-requirements instead.',
+  inputSchema: GAP_BASED_FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA,
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
-  resultSchema: FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA,
+  resultSchema: GAP_BASED_FUNCTIONAL_REQUIREMENTS_RESULT_SCHEMA,
 } as const;

@@ -8,20 +8,33 @@
 import { MCPToolInvocationData } from '../../../../common/metadata.js';
 import { PRDState } from '../metadata.js';
 import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
-import { GAP_REQUIREMENTS_TOOL } from '../../../../tools/magi/prd/magi-prd-gap-requirements/metadata.js';
+import { GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL } from '../../../../tools/magi/prd/magi-prd-gap-based-functional-requirements/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 import { readMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
 
 /**
  * Workflow node for generating functional requirements based on identified gaps.
+ *
+ * NOTE: This node is currently not used in the PRD workflow graph.
+ * The workflow uses PRDInitialRequirementsGenerationNode and PRDGapRequirementsGenerationNode instead.
+ *
+ * If this node is to be used, it requires identifiedGaps from state (typically from gap analysis).
  */
-export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
+export class PRDGapBasedFunctionalRequirementsGenerationNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
-    super('gapRequirementsGeneration', toolExecutor, logger);
+    super('gapBasedFunctionalRequirementsGeneration', toolExecutor, logger);
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
+    // This tool requires identified gaps - validate they exist
+    if (!state.identifiedGaps || state.identifiedGaps.length === 0) {
+      throw new Error(
+        'PRDGapBasedFunctionalRequirementsGenerationNode requires identifiedGaps in state. ' +
+          'Ensure gap analysis has been performed before using this node.'
+      );
+    }
+
     // Get feature brief content from state or file
     const featureBriefContent = state.featureBriefContent
       ? state.featureBriefContent
@@ -35,11 +48,13 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
         ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.REQUIREMENTS)
         : '';
 
-    const toolInvocationData: MCPToolInvocationData<typeof GAP_REQUIREMENTS_TOOL.inputSchema> = {
+    const toolInvocationData: MCPToolInvocationData<
+      typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL.inputSchema
+    > = {
       llmMetadata: {
-        name: GAP_REQUIREMENTS_TOOL.toolId,
-        description: GAP_REQUIREMENTS_TOOL.description,
-        inputSchema: GAP_REQUIREMENTS_TOOL.inputSchema,
+        name: GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL.toolId,
+        description: GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL.description,
+        inputSchema: GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL.inputSchema,
       },
       input: {
         featureBrief: featureBriefContent,
@@ -50,8 +65,8 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
 
     const validatedResult = this.executeToolWithLogging(
       toolInvocationData,
-      GAP_REQUIREMENTS_TOOL.resultSchema
+      GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL.resultSchema
     );
     return validatedResult;
-  }
+  };
 }

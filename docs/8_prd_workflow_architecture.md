@@ -500,6 +500,50 @@ Then generates new requirements addressing gaps while avoiding all excluded item
 
 ---
 
+### 9a. Gap-Based Functional Requirements Generation Node (Unused)
+**Class:** `PRDGapBasedFunctionalRequirementsGenerationNode`  
+**Type:** Tool Node  
+**Tool:** `magi-prd-gap-based-functional-requirements`
+
+**Purpose:** Generates functional requirements based on identified gaps. This node is currently **not used** in the PRD workflow graph.
+
+**Note:** The workflow currently uses `PRDGapRequirementsGenerationNode` with the `magi-prd-gap-requirements` tool instead. This node and tool (`magi-prd-gap-based-functional-requirements`) are available for future use or alternative workflow patterns.
+
+**Responsibilities:**
+- Requires `identifiedGaps` in state (must be populated by gap analysis)
+- Reads feature brief content from state or file
+- Reads requirements content from file
+- Generates new functional requirements addressing identified gaps
+
+**Tool Input:**
+```typescript
+{
+  featureBrief: string, // Feature brief content
+  requirementsContent?: string, // Content of requirements.md file (read by node)
+  identifiedGaps: Array<Gap> // Required - identified gaps from gap analysis
+}
+```
+
+**Tool Output:**
+```typescript
+{
+  functionalRequirements: Array<Requirement>,
+  summary: string,
+  gapsAddressed: string[] // Gap IDs addressed by these requirements
+}
+```
+
+**Key State Updates:**
+- Sets `functionalRequirements` - array of proposed requirements
+- Sets requirements summary
+
+**When to Use:**
+- If a future workflow pattern requires a separate gap-based functional requirements generation step
+- For workflows that need to distinguish between gap-based requirements and initial requirements more explicitly
+- Currently unused - the workflow uses `PRDGapRequirementsGenerationNode` instead
+
+---
+
 ### 10. PRD Generation Node
 **Class:** `PRDGenerationNode`  
 **Type:** Tool Node  

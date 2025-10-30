@@ -14,8 +14,7 @@ import { Logger } from '../../../../logging/logger.js';
 import fs from 'fs';
 import {
   resolveFeatureDirectoryFromIds,
-  getPrdWorkspacePath,
-  getMagiPath,
+  readMagiArtifact,
   MAGI_ARTIFACTS,
 } from '../../../../utils/wellKnownDirectory.js';
 
@@ -32,9 +31,13 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
     if (!state.featureId) {
       throw new Error('featureId is required for feature brief update (iteration scenario)');
     }
-    
+
     // Get feature brief content - prefer state, fallback to reading from file if needed
-    const featureBriefContent = state.featureBriefContent || this.getFeatureBriefContent(state);
+    const featureBriefContent =
+      state.featureBriefContent ||
+      (state.projectPath && state.featureId
+        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
+        : '');
     if (!featureBriefContent) {
       throw new Error(
         'Feature brief content is required for feature brief update (iteration scenario). ' +
@@ -43,8 +46,10 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
     }
 
     // Resolve the feature directory from projectPath and featureId
-    const prdWorkspacePath = getPrdWorkspacePath(state.projectPath);
-    const existingFeatureDirectory = resolveFeatureDirectoryFromIds(state.projectPath, state.featureId);
+    const existingFeatureDirectory = resolveFeatureDirectoryFromIds(
+      state.projectPath,
+      state.featureId
+    );
 
     // Validate that the directory exists - it should have been created by Generation Node
     // Note: The file may not exist yet (first iteration), but the directory should exist
@@ -101,29 +106,4 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
       featureBriefModifications: undefined,
     };
   };
-
-  private getFeatureBriefContent(state: PRDState): string {
-    if (state.featureBriefContent) {
-      return state.featureBriefContent;
-    }
-
-    if (state.projectPath && state.featureId) {
-      try {
-        const featureBriefPath = getMagiPath(
-          state.projectPath,
-          state.featureId,
-          MAGI_ARTIFACTS.FEATURE_BRIEF
-        );
-        if (fs.existsSync(featureBriefPath)) {
-          return fs.readFileSync(featureBriefPath, 'utf8');
-        }
-      } catch (error) {
-        this.logger?.warn(
-          `Could not read feature brief: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-    }
-
-    return '';
-  }
 }

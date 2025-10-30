@@ -13,7 +13,12 @@ import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import { resolveFeatureDirectory, resolveRequirementsArtifactPath } from '../../../../utils/wellKnownDirectory.js';
+import {
+  resolveFeatureDirectory,
+  readMagiArtifact,
+  writeMagiArtifact,
+  MAGI_ARTIFACTS,
+} from '../../../../utils/wellKnownDirectory.js';
 import z from 'zod';
 
 // Local type definitions to align with PRDState
@@ -92,28 +97,28 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
     validatedResult: z.infer<typeof REQUIREMENTS_REVIEW_TOOL.resultSchema>,
     state: PRDState
   ): Partial<PRDState> {
-    // Resolve feature directory using utility function
-    const featureDirectory = resolveFeatureDirectory(state);
-    if (!featureDirectory) {
-      throw new Error(
-        'Cannot determine feature directory: projectPath and featureId are missing'
-      );
+    // Validate required state
+    if (!state.projectPath || !state.featureId) {
+      throw new Error('Cannot determine feature directory: projectPath and featureId are missing');
     }
 
-    // Resolve requirements artifact path
-    const artifactPath = resolveRequirementsArtifactPath(featureDirectory);
-
-    // Ensure the directory exists before writing the file
-    if (!fs.existsSync(featureDirectory)) {
-      fs.mkdirSync(featureDirectory, { recursive: true });
-      this.logger?.info(`Created feature directory: ${featureDirectory}`);
+    // Resolve feature directory for legacy JSON migration support
+    const featureDirectory = resolveFeatureDirectory(state);
+    if (!featureDirectory) {
+      throw new Error('Cannot determine feature directory: projectPath and featureId are missing');
     }
 
     let artifact: RequirementsArtifact;
     // Try to read existing markdown, fall back to JSON for backward compatibility
     const jsonPath = path.join(featureDirectory, 'requirements.json');
-    if (fs.existsSync(artifactPath)) {
-      artifact = this.parseMarkdownArtifact(fs.readFileSync(artifactPath, 'utf-8'), state.featureId);
+    const requirementsContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS
+    );
+
+    if (requirementsContent) {
+      artifact = this.parseMarkdownArtifact(requirementsContent, state.featureId);
     } else if (fs.existsSync(jsonPath)) {
       // Migrate from JSON to markdown
       artifact = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as RequirementsArtifact;
@@ -142,7 +147,12 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
 
     // Write markdown file
     const markdownContent = this.generateMarkdownArtifact(artifact);
-    fs.writeFileSync(artifactPath, markdownContent);
+    writeMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS,
+      markdownContent
+    );
 
     // If JSON exists, remove it after migration
     if (fs.existsSync(jsonPath)) {
@@ -181,12 +191,7 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
   }
 
   private generateMarkdownArtifact(artifact: RequirementsArtifact): string {
-    const lines: string[] = [
-      '# Requirements',
-      '',
-      `**Feature ID:** ${artifact.featureId}`,
-      '',
-    ];
+    const lines: string[] = ['# Requirements', '', `**Feature ID:** ${artifact.featureId}`, ''];
 
     // Approved Requirements
     if (artifact.approvedRequirements.length > 0) {
@@ -268,7 +273,7 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
 
     // Split into sections
     const sections = markdownContent.split(/^## /gm);
-    
+
     for (const section of sections) {
       if (section.startsWith('Approved Requirements')) {
         artifact.approvedRequirements = this.parseRequirementSection(section);
@@ -397,7 +402,7 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
     for (const block of historyBlocks) {
       const lines = block.split('\n');
       const timestamp = lines[0].trim();
-      
+
       const entry: RequirementsArtifact['reviewHistory'][0] = {
         timestamp: new Date(timestamp).toISOString(),
         summary: '',
@@ -415,24 +420,38 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
 
         const approvedMatch = line.match(/- \*\*Approved IDs\*\*:\s*(.+)$/);
         if (approvedMatch) {
-          entry.approvedIds = approvedMatch[1].split(',').map(id => id.trim()).filter(Boolean);
+          entry.approvedIds = approvedMatch[1]
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
           continue;
         }
 
         const rejectedMatch = line.match(/- \*\*Rejected IDs\*\*:\s*(.+)$/);
         if (rejectedMatch) {
-          entry.rejectedIds = rejectedMatch[1].split(',').map(id => id.trim()).filter(Boolean);
+          entry.rejectedIds = rejectedMatch[1]
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
           continue;
         }
 
         const modifiedMatch = line.match(/- \*\*Modified IDs\*\*:\s*(.+)$/);
         if (modifiedMatch) {
-          entry.modifiedIds = modifiedMatch[1].split(',').map(id => id.trim()).filter(Boolean);
+          entry.modifiedIds = modifiedMatch[1]
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
           continue;
         }
       }
 
-      if (entry.summary || entry.approvedIds.length > 0 || entry.rejectedIds.length > 0 || entry.modifiedIds.length > 0) {
+      if (
+        entry.summary ||
+        entry.approvedIds.length > 0 ||
+        entry.rejectedIds.length > 0 ||
+        entry.modifiedIds.length > 0
+      ) {
         history.push(entry);
       }
     }

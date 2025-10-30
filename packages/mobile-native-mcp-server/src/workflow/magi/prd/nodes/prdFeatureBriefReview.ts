@@ -11,9 +11,11 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { FEATURE_BRIEF_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-feature-brief-review/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import fs from 'fs';
-import path from 'path';
-import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
+import {
+  MAGI_ARTIFACTS,
+  readMagiArtifact,
+  writeMagiArtifact,
+} from '../../../../utils/wellKnownDirectory.js';
 import z from 'zod';
 
 export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
@@ -45,7 +47,11 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
           inputSchema: FEATURE_BRIEF_REVIEW_TOOL.inputSchema,
         },
         input: {
-          featureBrief: state.featureBriefContent || this.getFeatureBriefContent(state),
+          featureBrief:
+            state.featureBriefContent ||
+            (state.projectPath && state.featureId
+              ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
+              : ''),
         },
       };
 
@@ -78,23 +84,13 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
       state.projectPath &&
       state.featureId
     ) {
-      // Calculate the feature brief path
-      const featureBriefPath = getMagiPath(
+      // Write the approved feature brief to disk
+      const featureBriefPath = writeMagiArtifact(
         state.projectPath,
         state.featureId,
-        MAGI_ARTIFACTS.FEATURE_BRIEF
+        MAGI_ARTIFACTS.FEATURE_BRIEF,
+        state.featureBriefContent
       );
-
-      // Ensure directory exists
-      const featureDirectory = path.dirname(featureBriefPath);
-      if (!fs.existsSync(featureDirectory)) {
-        throw new Error(
-          `Cannot write feature brief: directory does not exist at ${featureDirectory}`
-        );
-      }
-
-      // Write the approved feature brief to disk
-      fs.writeFileSync(featureBriefPath, state.featureBriefContent);
       this.logger?.info(`Feature brief approved and written to file: ${featureBriefPath}`);
     }
 
@@ -103,30 +99,5 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
       featureBriefUserFeedback: validatedResult.userFeedback,
       featureBriefModifications: validatedResult.modifications,
     };
-  }
-
-  private getFeatureBriefContent(state: PRDState): string {
-    if (state.featureBriefContent) {
-      return state.featureBriefContent;
-    }
-
-    if (state.projectPath && state.featureId) {
-      try {
-        const featureBriefPath = getMagiPath(
-          state.projectPath,
-          state.featureId,
-          MAGI_ARTIFACTS.FEATURE_BRIEF
-        );
-        if (fs.existsSync(featureBriefPath)) {
-          return fs.readFileSync(featureBriefPath, 'utf8');
-        }
-      } catch (error) {
-        this.logger?.warn(
-          `Could not read feature brief: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-    }
-
-    return '';
   }
 }

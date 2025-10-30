@@ -364,6 +364,7 @@ export function resolveFeatureDirectory(state: {
 export const MAGI_ARTIFACTS = {
   PRD: 'prd',
   FEATURE_BRIEF: 'feature-brief',
+  REQUIREMENTS: 'requirements',
 } as const;
 
 export type MagiArtifact = (typeof MAGI_ARTIFACTS)[keyof typeof MAGI_ARTIFACTS];
@@ -374,6 +375,7 @@ export type MagiArtifact = (typeof MAGI_ARTIFACTS)[keyof typeof MAGI_ARTIFACTS];
 const ARTIFACT_FILENAMES: Record<MagiArtifact, string> = {
   [MAGI_ARTIFACTS.PRD]: 'PRD.md',
   [MAGI_ARTIFACTS.FEATURE_BRIEF]: 'feature-brief.md',
+  [MAGI_ARTIFACTS.REQUIREMENTS]: 'requirements.md',
 };
 
 /**
@@ -408,4 +410,61 @@ export function getMagiPath(
  */
 export function resolveRequirementsArtifactPath(featureDirectory: string): string {
   return path.join(featureDirectory, 'requirements.md');
+}
+
+/**
+ * Read a Magi artifact file content
+ * Uses getMagiPath to resolve the artifact path, then reads the file if it exists
+ *
+ * @param projectPath - The project root path
+ * @param featureId - The feature ID (without number prefix)
+ * @param artifact - The artifact type to read
+ * @returns Artifact content, or empty string if file doesn't exist or cannot be resolved
+ */
+export function readMagiArtifact(
+  projectPath: string,
+  featureId: string,
+  artifact: MagiArtifact
+): string {
+  try {
+    const artifactPath = getMagiPath(projectPath, featureId, artifact);
+    if (fs.existsSync(artifactPath)) {
+      return fs.readFileSync(artifactPath, 'utf8');
+    }
+  } catch {
+    // Artifact may not exist yet or feature directory may not be resolved
+  }
+
+  return '';
+}
+
+/**
+ * Write a Magi artifact file content
+ * Uses getMagiPath to resolve the artifact path, ensures directory exists, then writes the file
+ *
+ * @param projectPath - The project root path
+ * @param featureId - The feature ID (without number prefix)
+ * @param artifact - The artifact type to write
+ * @param content - The content to write to the file
+ * @returns The path to the written file
+ * @throws Error if the feature directory cannot be resolved
+ */
+export function writeMagiArtifact(
+  projectPath: string,
+  featureId: string,
+  artifact: MagiArtifact,
+  content: string
+): string {
+  const artifactPath = getMagiPath(projectPath, featureId, artifact);
+
+  // Ensure the directory exists before writing the file
+  const artifactDirectory = path.dirname(artifactPath);
+  if (!fs.existsSync(artifactDirectory)) {
+    fs.mkdirSync(artifactDirectory, { recursive: true });
+  }
+
+  // Write the file
+  fs.writeFileSync(artifactPath, content, 'utf8');
+
+  return artifactPath;
 }
