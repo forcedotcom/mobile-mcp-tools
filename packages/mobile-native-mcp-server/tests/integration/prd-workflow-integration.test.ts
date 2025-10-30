@@ -6,17 +6,18 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import fs from 'fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PRDGenerationOrchestrator } from '../../src/tools/magi/prd/magi-prd-orchestrator/tool.js';
 import { MagiFeatureBriefGenerationTool } from '../../src/tools/magi/prd/magi-prd-feature-brief/tool.js';
-import { SFMobileNativeFunctionalRequirementsTool } from '../../src/tools/magi/prd/magi-prd-functional-requirements/tool.js';
+import { SFMobileNativeInitialRequirementsTool } from '../../src/tools/magi/prd/magi-prd-initial-requirements/tool.js';
 import { SFMobileNativeRequirementsReviewTool } from '../../src/tools/magi/prd/magi-prd-requirements-review/tool.js';
 import { SFMobileNativeGapAnalysisTool } from '../../src/tools/magi/prd/magi-prd-gap-analysis/tool.js';
 import { SFMobileNativePRDGenerationTool } from '../../src/tools/magi/prd/magi-prd-generation/tool.js';
 import { SFMobileNativePRDReviewTool } from '../../src/tools/magi/prd/magi-prd-review/tool.js';
 import { PRDOrchestratorInput } from '../../src/tools/magi/prd/magi-prd-orchestrator/metadata.js';
 import { FeatureBriefWorkflowInput } from '../../src/tools/magi/prd/magi-prd-feature-brief/metadata.js';
-import { FunctionalRequirementsInput } from '../../src/tools/magi/prd/magi-prd-functional-requirements/metadata.js';
+import { InitialRequirementsInput } from '../../src/tools/magi/prd/magi-prd-initial-requirements/metadata.js';
 import { RequirementsReviewInput } from '../../src/tools/magi/prd/magi-prd-requirements-review/metadata.js';
 import { GapAnalysisInput } from '../../src/tools/magi/prd/magi-prd-gap-analysis/metadata.js';
 import { PRDGenerationInput } from '../../src/tools/magi/prd/magi-prd-generation/metadata.js';
@@ -26,7 +27,7 @@ describe('PRD Workflow Integration Test', () => {
   let server: McpServer;
   let prdOrchestrator: PRDGenerationOrchestrator;
   let featureBriefTool: MagiFeatureBriefGenerationTool;
-  let functionalRequirementsTool: SFMobileNativeFunctionalRequirementsTool;
+  let initialRequirementsTool: SFMobileNativeInitialRequirementsTool;
   let requirementsReviewTool: SFMobileNativeRequirementsReviewTool;
   let gapAnalysisTool: SFMobileNativeGapAnalysisTool;
   let prdGenerationTool: SFMobileNativePRDGenerationTool;
@@ -36,7 +37,7 @@ describe('PRD Workflow Integration Test', () => {
     server = new McpServer({ name: 'test-server', version: '1.0.0' });
     prdOrchestrator = new PRDGenerationOrchestrator(server, undefined, true); // Use memory for testing
     featureBriefTool = new MagiFeatureBriefGenerationTool(server);
-    functionalRequirementsTool = new SFMobileNativeFunctionalRequirementsTool(server);
+    initialRequirementsTool = new SFMobileNativeInitialRequirementsTool(server);
     requirementsReviewTool = new SFMobileNativeRequirementsReviewTool(server);
     gapAnalysisTool = new SFMobileNativeGapAnalysisTool(server);
     prdGenerationTool = new SFMobileNativePRDGenerationTool(server);
@@ -44,16 +45,18 @@ describe('PRD Workflow Integration Test', () => {
   });
 
   it('should complete the entire PRD workflow from start to finish', async () => {
-    const originalUserUtterance = 'Create a mobile app for managing customer contacts';
+    const userUtterance = 'Create a mobile app for managing customer contacts';
     const projectPath = '/tmp/test-prd-project';
 
     // Step 1: Start the PRD workflow
     console.log('🚀 Starting PRD workflow...');
     const initialInput: PRDOrchestratorInput = {
       userInput: {
-        originalUserUtterance,
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
+      workflowStateData: { thread_id: '' }, // Empty thread_id for initial call
     };
 
     const orchestratorResponse1 = await prdOrchestrator.handleRequest(initialInput);
@@ -79,15 +82,16 @@ describe('PRD Workflow Integration Test', () => {
     // Step 2: Call magi-prd-feature-brief tool
     console.log('📝 Calling magi-prd-feature-brief tool...');
     const featureBriefInput: FeatureBriefWorkflowInput = {
-      userUtterance: originalUserUtterance,
+      userUtterance: userUtterance,
+      currentFeatureIds: [], // No existing features in test
       workflowStateData: { thread_id: threadId },
     };
 
     const featureBriefResponse = await featureBriefTool.handleRequest(featureBriefInput);
-    console.log('📝 Feature Brief Response:', featureBriefResponse.structuredContent.promptForLLM);
+    console.log('📝 Feature Brief Response:', featureBriefResponse.structuredContent?.promptForLLM);
 
     // Verify the feature brief tool instructs to call the orchestrator back
-    expect(featureBriefResponse.structuredContent.promptForLLM).toContain('magi-prd-orchestrator');
+    expect(featureBriefResponse.structuredContent?.promptForLLM).toContain('magi-prd-orchestrator');
 
     // Step 3: Call orchestrator back with feature brief result
     console.log('🔄 Calling orchestrator back with feature brief result...');
@@ -95,8 +99,10 @@ describe('PRD Workflow Integration Test', () => {
       userInput: {
         featureBriefMarkdown:
           '# Customer Contact Management App\n\nA mobile application for managing customer contacts...',
-        originalUserUtterance,
+        recommendedFeatureId: 'customer-contact-management',
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
       workflowStateData: { thread_id: threadId },
     };
@@ -107,31 +113,75 @@ describe('PRD Workflow Integration Test', () => {
       orchestratorResponse2.structuredContent.orchestrationInstructionsPrompt
     );
 
-    // Verify we get instructions to call the next tool (functional requirements)
+    // Verify we get instructions to call the feature brief review tool (not initial requirements yet)
     expect(orchestratorResponse2.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-prd-functional-requirements'
+      'magi-prd-feature-brief-review'
     );
 
-    // Step 4: Call magi-prd-functional-requirements tool
-    console.log('⚙️ Calling magi-prd-functional-requirements tool...');
-    const functionalRequirementsInput: FunctionalRequirementsInput = {
-      projectPath,
-      featureBrief:
-        '# Customer Contact Management App\n\nA mobile application for managing customer contacts...',
+    // Step 4: Call orchestrator - it will route to feature brief review node
+    // The workflow will execute the feature brief review node, which will call interrupt()
+    // We need to call the feature brief review tool and then resume with its result
+    console.log('📝 Feature Brief Review step...');
+    // Determine the feature directory path (matching actual workflow structure)
+    const mockPrdWorkspacePath = `${projectPath}/magi-sdd`;
+    const mockFeatureDirectory = `${mockPrdWorkspacePath}/001-customer-contact-management`;
+    const mockFeatureBriefPath = `${mockFeatureDirectory}/feature-brief.md`;
+    // Ensure directory exists
+    await fs.promises.mkdir(mockFeatureDirectory, { recursive: true });
+
+    // Resume workflow - this will hit the feature brief review node which calls interrupt()
+    // We need to provide tool results in userInput with the format the tool would return
+    console.log('🔄 Resuming workflow with feature brief review result...');
+    const orchestratorInput3: PRDOrchestratorInput = {
+      userInput: {
+        // Tool result format (what the feature brief review tool returns)
+        approved: true,
+        userFeedback: 'Looks good, proceed with requirements',
+        reviewSummary: 'Feature brief approved as-is',
+        modifications: [],
+        // State fields needed for workflow continuation
+        userUtterance,
+        projectPath,
+        featureId: 'customer-contact-management',
+        featureBriefPath: mockFeatureBriefPath,
+        featureBriefContent:
+          '# Customer Contact Management App\n\nA mobile application for managing customer contacts...',
+      },
       workflowStateData: { thread_id: threadId },
     };
 
-    const functionalRequirementsResponse = await functionalRequirementsTool.handleRequest(
-      functionalRequirementsInput
-    );
+    const orchestratorResponse3 = await prdOrchestrator.handleRequest(orchestratorInput3);
     console.log(
-      '⚙️ Functional Requirements Response:',
-      functionalRequirementsResponse.structuredContent.promptForLLM
+      '📋 Orchestrator Response 3:',
+      orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt
     );
 
-    // Step 5: Call orchestrator back with functional requirements result
-    console.log('🔄 Calling orchestrator back with functional requirements result...');
-    const orchestratorInput3: PRDOrchestratorInput = {
+    // Verify we get instructions to call the next tool (initial requirements)
+    expect(orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt).toContain(
+      'magi-prd-initial-requirements'
+    );
+
+    // Step 6: Call magi-prd-initial-requirements tool
+    console.log('⚙️ Calling magi-prd-initial-requirements tool...');
+    // The feature brief file should now exist (written by review node when approved)
+    // The initial requirements tool reads the file content from the path
+
+    const initialRequirementsInput: InitialRequirementsInput = {
+      projectPath,
+      featureBrief: mockFeatureBriefPath,
+      workflowStateData: { thread_id: threadId },
+    };
+
+    const functionalRequirementsResponse =
+      await initialRequirementsTool.handleRequest(initialRequirementsInput);
+    console.log(
+      '⚙️ Functional Requirements Response:',
+      functionalRequirementsResponse.structuredContent?.promptForLLM
+    );
+
+    // Step 7: Call orchestrator back with initial requirements result
+    console.log('🔄 Calling orchestrator back with initial requirements result...');
+    const orchestratorInput4: PRDOrchestratorInput = {
       userInput: {
         functionalRequirements: [
           {
@@ -175,25 +225,25 @@ describe('PRD Workflow Integration Test', () => {
         ],
         summary:
           'Generated 5 functional requirements covering authentication, contact management, and user interface components for the customer contact management mobile app.',
-        generationType: 'initial',
-        originalUserUtterance,
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
       workflowStateData: { thread_id: threadId },
     };
 
-    const orchestratorResponse3 = await prdOrchestrator.handleRequest(orchestratorInput3);
+    const orchestratorResponse4 = await prdOrchestrator.handleRequest(orchestratorInput4);
     console.log(
-      '📋 Orchestrator Response 3:',
-      orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt
+      '📋 Orchestrator Response 4:',
+      orchestratorResponse4.structuredContent.orchestrationInstructionsPrompt
     );
 
     // Verify we get instructions to call requirements review
-    expect(orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt).toContain(
+    expect(orchestratorResponse4.structuredContent.orchestrationInstructionsPrompt).toContain(
       'magi-prd-requirements-review'
     );
 
-    // Step 6: Call magi-prd-requirements-review tool
+    // Step 8: Call magi-prd-requirements-review tool
     console.log('📋 Calling magi-prd-requirements-review tool...');
     const requirementsReviewInput: RequirementsReviewInput = {
       projectPath,
@@ -237,13 +287,14 @@ describe('PRD Workflow Integration Test', () => {
       await requirementsReviewTool.handleRequest(requirementsReviewInput);
     console.log(
       '📋 Requirements Review Response:',
-      requirementsReviewResponse.structuredContent.promptForLLM
+      requirementsReviewResponse.structuredContent?.promptForLLM
     );
 
-    // Step 7: Call orchestrator back with requirements review result
+    // Step 9: Call orchestrator back with requirements review result
     console.log('🔄 Calling orchestrator back with requirements review result...');
-    const orchestratorInput4: PRDOrchestratorInput = {
+    const orchestratorInput5: PRDOrchestratorInput = {
       userInput: {
+        // Tool result format (what the requirements review tool returns)
         approvedRequirements: [
           {
             id: 'REQ-001',
@@ -284,29 +335,30 @@ describe('PRD Workflow Integration Test', () => {
           'User approved 3 high-priority requirements for core contact management functionality. Rejected the edit contact feature as it was deemed unnecessary for the initial version.',
         userFeedback:
           'Focus on core functionality first, can add editing features in future iterations.',
-        originalUserUtterance,
+        // State fields needed for workflow continuation
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
       workflowStateData: { thread_id: threadId },
     };
 
-    const orchestratorResponse4 = await prdOrchestrator.handleRequest(orchestratorInput4);
+    const orchestratorResponse5 = await prdOrchestrator.handleRequest(orchestratorInput5);
     console.log(
-      '📋 Orchestrator Response 4:',
-      orchestratorResponse4.structuredContent.orchestrationInstructionsPrompt
+      '📋 Orchestrator Response 5:',
+      orchestratorResponse5.structuredContent.orchestrationInstructionsPrompt
     );
 
     // Verify we get instructions to call gap analysis
-    expect(orchestratorResponse4.structuredContent.orchestrationInstructionsPrompt).toContain(
+    expect(orchestratorResponse5.structuredContent.orchestrationInstructionsPrompt).toContain(
       'magi-prd-gap-analysis'
     );
 
-    // Step 8: Call magi-prd-gap-analysis tool
+    // Step 10: Call magi-prd-gap-analysis tool
     console.log('🔍 Calling magi-prd-gap-analysis tool...');
     const gapAnalysisInput: GapAnalysisInput = {
       projectPath,
-      featureBrief:
-        '# Customer Contact Management App\n\nA mobile application for managing customer contacts...',
+      featureBrief: mockFeatureBriefPath,
       functionalRequirements: [
         {
           id: 'REQ-001',
@@ -337,12 +389,13 @@ describe('PRD Workflow Integration Test', () => {
     };
 
     const gapAnalysisResponse = await gapAnalysisTool.handleRequest(gapAnalysisInput);
-    console.log('🔍 Gap Analysis Response:', gapAnalysisResponse.structuredContent.promptForLLM);
+    console.log('🔍 Gap Analysis Response:', gapAnalysisResponse.structuredContent?.promptForLLM);
 
-    // Step 9: Call orchestrator back with gap analysis result
+    // Step 11: Call orchestrator back with gap analysis result
     console.log('🔄 Calling orchestrator back with gap analysis result...');
-    const orchestratorInput5: PRDOrchestratorInput = {
+    const orchestratorInput6: PRDOrchestratorInput = {
       userInput: {
+        // Tool result format (what the gap analysis tool returns)
         gapAnalysisScore: 85,
         identifiedGaps: [
           {
@@ -391,65 +444,39 @@ describe('PRD Workflow Integration Test', () => {
             ],
             weaknesses: ['Missing error handling details'],
           },
-          {
-            requirementId: 'REQ-002',
-            strengthScore: 8,
-            strengths: [
-              'Clear UI requirements',
-              'Good priority level',
-              'Specific functionality described',
-            ],
-            weaknesses: ['Missing performance criteria'],
-          },
-          {
-            requirementId: 'REQ-003',
-            strengthScore: 8,
-            strengths: [
-              'Clear user interaction flow',
-              'Validation requirements specified',
-              'Appropriate priority',
-            ],
-            weaknesses: ['Missing field validation details'],
-          },
         ],
-        overallAssessment: {
-          coverageScore: 80,
-          completenessScore: 85,
-          clarityScore: 90,
-          feasibilityScore: 85,
-        },
         recommendations: [
           'Add search functionality requirements',
           'Implement contact categorization features',
-          'Include error handling specifications',
-          'Add performance benchmarks for data operations',
         ],
         summary:
           'Good foundation with clear core functionality. Main gaps identified in search capabilities and contact organization features.',
-        originalUserUtterance,
+        userWantsToContinueDespiteGaps: false, // User wants to proceed despite gaps
+        // State fields needed for workflow continuation
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
       workflowStateData: { thread_id: threadId },
     };
 
-    const orchestratorResponse5 = await prdOrchestrator.handleRequest(orchestratorInput5);
+    const orchestratorResponse6 = await prdOrchestrator.handleRequest(orchestratorInput6);
     console.log(
-      '📋 Orchestrator Response 5:',
-      orchestratorResponse5.structuredContent.orchestrationInstructionsPrompt
+      '📋 Orchestrator Response 6:',
+      orchestratorResponse6.structuredContent.orchestrationInstructionsPrompt
     );
 
     // Verify we get instructions to call PRD generation
-    expect(orchestratorResponse5.structuredContent.orchestrationInstructionsPrompt).toContain(
+    expect(orchestratorResponse6.structuredContent.orchestrationInstructionsPrompt).toContain(
       'magi-prd-generation'
     );
 
-    // Step 10: Call magi-prd-generation tool
+    // Step 12: Call magi-prd-generation tool
     console.log('📄 Calling magi-prd-generation tool...');
     const prdGenerationInput: PRDGenerationInput = {
       projectPath,
-      originalUserUtterance,
-      featureBrief:
-        '# Customer Contact Management App\n\nA mobile application for managing customer contacts...',
+      originalUserUtterance: userUtterance,
+      featureBrief: mockFeatureBriefPath,
       approvedRequirements: [
         {
           id: 'REQ-001',
@@ -483,16 +510,17 @@ describe('PRD Workflow Integration Test', () => {
     const prdGenerationResponse = await prdGenerationTool.handleRequest(prdGenerationInput);
     console.log(
       '📄 PRD Generation Response:',
-      prdGenerationResponse.structuredContent.promptForLLM
+      prdGenerationResponse.structuredContent?.promptForLLM
     );
 
-    // Step 11: Call orchestrator back with PRD generation result
+    // Step 13: Call orchestrator back with PRD generation result
     console.log('🔄 Calling orchestrator back with PRD generation result...');
-    const orchestratorInput6: PRDOrchestratorInput = {
+    const orchestratorInput7: PRDOrchestratorInput = {
       userInput: {
+        // Tool result format (what the PRD generation tool returns)
         prdContent:
           '# Product Requirements Document\n\n## Customer Contact Management App\n\n### Overview\nA mobile application for managing customer contacts...',
-        prdFilePath: `${projectPath}/PRD.md`,
+        prdFilePath: `${mockFeatureDirectory}/PRD.md`,
         documentStatus: {
           author: 'AI Assistant (Mobile MCP Tools)',
           lastModified: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
@@ -516,30 +544,32 @@ describe('PRD Workflow Integration Test', () => {
             userStoryIds: 'TBD (populated later)',
           },
         ],
-        originalUserUtterance,
+        // State fields needed for workflow continuation
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
       workflowStateData: { thread_id: threadId },
     };
 
-    const orchestratorResponse6 = await prdOrchestrator.handleRequest(orchestratorInput6);
+    const orchestratorResponse7 = await prdOrchestrator.handleRequest(orchestratorInput7);
     console.log(
-      '📋 Orchestrator Response 6:',
-      orchestratorResponse6.structuredContent.orchestrationInstructionsPrompt
+      '📋 Orchestrator Response 7:',
+      orchestratorResponse7.structuredContent.orchestrationInstructionsPrompt
     );
 
     // Verify we get instructions to call PRD review
-    expect(orchestratorResponse6.structuredContent.orchestrationInstructionsPrompt).toContain(
+    expect(orchestratorResponse7.structuredContent.orchestrationInstructionsPrompt).toContain(
       'magi-prd-review'
     );
 
-    // Step 12: Call magi-prd-review tool
+    // Step 14: Call magi-prd-review tool
     console.log('✅ Calling magi-prd-review tool...');
     const prdReviewInput: PRDReviewInput = {
       projectPath,
       prdContent:
         '# Product Requirements Document\n\n## Customer Contact Management App\n\n### Overview\nA mobile application for managing customer contacts...',
-      prdFilePath: `${projectPath}/PRD.md`,
+      prdFilePath: `${mockFeatureDirectory}/PRD.md`,
       documentStatus: {
         author: 'AI Assistant (Mobile MCP Tools)',
         lastModified: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
@@ -549,35 +579,38 @@ describe('PRD Workflow Integration Test', () => {
     };
 
     const prdReviewResponse = await prdReviewTool.handleRequest(prdReviewInput);
-    console.log('✅ PRD Review Response:', prdReviewResponse.structuredContent.promptForLLM);
+    console.log('✅ PRD Review Response:', prdReviewResponse.structuredContent?.promptForLLM);
 
-    // Step 13: Call orchestrator back with PRD review result (final step)
+    // Step 15: Call orchestrator back with PRD review result (final step)
     console.log('🏁 Calling orchestrator back with PRD review result (final step)...');
-    const orchestratorInput7: PRDOrchestratorInput = {
+    const orchestratorInput8: PRDOrchestratorInput = {
       userInput: {
+        // Tool result format (what the PRD review tool returns)
         prdApproved: true,
         prdModifications: [],
         userFeedback:
           'The PRD looks comprehensive and well-structured. Ready to proceed with development.',
         reviewSummary:
           'PRD approved without modifications. All requirements are clear and comprehensive.',
-        originalUserUtterance,
+        // State fields needed for workflow continuation
+        userUtterance,
         projectPath,
+        featureId: 'customer-contact-management',
       },
       workflowStateData: { thread_id: threadId },
     };
 
-    const orchestratorResponse7 = await prdOrchestrator.handleRequest(orchestratorInput7);
+    const orchestratorResponse8 = await prdOrchestrator.handleRequest(orchestratorInput8);
     console.log(
       '🏁 Final Orchestrator Response:',
-      orchestratorResponse7.structuredContent.orchestrationInstructionsPrompt
+      orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt
     );
 
     // Verify the workflow has concluded
-    expect(orchestratorResponse7.structuredContent.orchestrationInstructionsPrompt).toContain(
+    expect(orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt).toContain(
       'workflow has concluded'
     );
-    expect(orchestratorResponse7.structuredContent.orchestrationInstructionsPrompt).toContain(
+    expect(orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt).toContain(
       'No further workflow actions'
     );
 

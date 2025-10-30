@@ -10,14 +10,12 @@ import { PRDBaseNode } from './prdBaseNode.js';
 import { Logger } from '../../../../logging/logger.js';
 
 export class PRDFinalizationNode extends PRDBaseNode {
-  constructor() {
+  constructor(private readonly logger?: Logger) {
     super('prdFinalization');
   }
 
-  execute = (state: PRDState): Partial<PRDState> => {
-    // Mark the workflow as complete
-    return {
-      workflowComplete: true,
-    };
+  execute = (_state: PRDState): Partial<PRDState> => {
+    this.logger?.info('PRD workflow completed');
+    return {};
   };
 }

@@ -6,7 +6,6 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
@@ -17,7 +16,6 @@ import {
  * PRD Review Tool Input Schema
  */
 export const PRD_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  projectPath: PROJECT_PATH_FIELD,
   prdContent: z.string().describe('The complete PRD.md file content to review'),
   prdFilePath: z.string().describe('The file path where the PRD is located'),
   documentStatus: z

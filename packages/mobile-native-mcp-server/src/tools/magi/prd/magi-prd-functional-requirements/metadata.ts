@@ -6,7 +6,6 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
@@ -52,7 +51,6 @@ export const GAP_SCHEMA = z.object({
  * Functional Requirements Tool Input Schema
  */
 export const FUNCTIONAL_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  projectPath: PROJECT_PATH_FIELD,
   featureBrief: z.string().describe('The feature brief generated from the previous step'),
   existingRequirements: z
     .array(FUNCTIONAL_REQUIREMENT_SCHEMA)

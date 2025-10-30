@@ -58,46 +58,6 @@ Present each requirement clearly and ask the user to make a decision. For each r
 3. **If modifying**, ask what specific changes they want to make
 4. **Record the decision** and any modification notes
 
-## Output Format
-
-After completing the review, you must return a JSON object with the following structure:
-
-\`\`\`json
-{
-  "approvedRequirements": [
-    {
-      "id": "REQ-001",
-      "title": "User Authentication",
-      "description": "Implement secure user login using Salesforce OAuth 2.0",
-      "priority": "high",
-      "category": "Security"
-    }
-  ],
-  "rejectedRequirements": [
-    {
-      "id": "REQ-002", 
-      "title": "Advanced Analytics",
-      "description": "Implement detailed user analytics tracking",
-      "priority": "low",
-      "category": "Data"
-    }
-  ],
-  "modifiedRequirements": [
-    {
-      "id": "REQ-003",
-      "title": "Push Notifications",
-      "description": "Implement basic push notifications for important updates only",
-      "priority": "medium",
-      "category": "Platform",
-      "originalId": "REQ-003",
-      "modificationNotes": "User requested to limit notifications to important updates only, not all events"
-    }
-  ],
-  "reviewSummary": "Summary of the review process and key decisions made",
-  "userFeedback": "Any additional feedback or comments from the user"
-}
-\`\`\`
-
 ## Guidelines
 
 - Present requirements in a clear, organized manner

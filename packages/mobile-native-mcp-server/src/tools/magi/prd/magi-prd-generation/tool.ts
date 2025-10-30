@@ -25,40 +25,6 @@ export class SFMobileNativePRDGenerationTool extends PRDAbstractWorkflowTool<
   };
 
   private generatePRDGenerationGuidance(input: PRDGenerationInput) {
-    const requirementsList = input.approvedRequirements
-      .map(
-        (req, index) => `${index + 1}. **${req.title}** (${req.priority} priority)
-   - ID: ${req.id}
-   - Category: ${req.category}
-   - Description: ${req.description}`
-      )
-      .join('\n\n');
-
-    const modifiedRequirementsList =
-      input.modifiedRequirements
-        ?.map(
-          (req, index) => `${index + 1}. **${req.title}** (${req.priority} priority) - MODIFIED
-   - ID: ${req.id}
-   - Original ID: ${req.originalId}
-   - Category: ${req.category}
-   - Description: ${req.description}
-   - Modification Notes: ${req.modificationNotes}`
-        )
-        .join('\n\n') || 'None';
-
-    const traceabilityRows = [
-      ...input.approvedRequirements.map(req => ({
-        requirementId: req.id,
-        technicalRequirementIds: 'TBD (populated later)',
-        userStoryIds: 'TBD (populated later)',
-      })),
-      ...(input.modifiedRequirements || []).map(req => ({
-        requirementId: req.id,
-        technicalRequirementIds: 'TBD (populated later)',
-        userStoryIds: 'TBD (populated later)',
-      })),
-    ];
-
     return `
 You are a technical writer tasked with creating a comprehensive Product Requirements Document (PRD) for a Salesforce mobile native app feature.
 
@@ -70,11 +36,11 @@ ${input.originalUserUtterance}
 ### Feature Brief
 ${input.featureBrief}
 
-### Approved Functional Requirements
-${requirementsList}
+### Current Functional Requirements
 
-### Modified Requirements
-${modifiedRequirementsList}
+${input.requirementsContent}
+
+**Important**: When generating the PRD, focus on **approved requirements** and **modified requirements**. Ignore **rejected requirements** and **out-of-scope requirements** as they have been explicitly excluded from the feature scope.
 
 ## Your Task
 
@@ -108,31 +74,11 @@ Create a traceability table with the following structure:
 
 | Requirement ID | Technical Requirement IDs | User Story IDs |
 | --------- | -------------- | --------- |
-${traceabilityRows.map(row => `| ${row.requirementId} | ${row.technicalRequirementIds} | ${row.userStoryIds} |`).join('\n')}
 
-## Output Format
-
-You must return a JSON object with the following structure:
-
-\`\`\`json
-{
-  "prdContent": "# Product Requirements Document\\n\\n## Document Status\\n...",
-  "prdFilePath": "${input.projectPath}/PRD.md",
-  "documentStatus": {
-    "author": "AI Assistant (Mobile MCP Tools)",
-    "lastModified": "2025-01-27",
-    "status": "draft"
-  },
-  "requirementsCount": ${input.approvedRequirements.length + (input.modifiedRequirements?.length || 0)},
-  "traceabilityTableRows": [
-    {
-      "requirementId": "REQ-001",
-      "technicalRequirementIds": "TBD (populated later)",
-      "userStoryIds": "TBD (populated later)"
-    }
-  ]
-}
-\`\`\`
+For each approved and modified requirement found in the requirements content, add a row with:
+- Requirement ID: The requirement ID from the requirements document
+- Technical Requirement IDs: "TBD (populated later)"
+- User Story IDs: "TBD (populated later)"
 
 ## PRD Content Guidelines
 
@@ -149,13 +95,10 @@ You must return a JSON object with the following structure:
 - Maintain consistency in formatting and terminology
 
 ### Traceability Table
-- Include ALL requirements (approved + modified)
+- Include ALL requirements (approved + modified) from the requirements content
+- Parse requirement IDs from the markdown content
 - Use "TBD (populated later)" for Technical Requirement IDs and User Story IDs
-- Ensure Requirement IDs match exactly with the input requirements
-
-### File Path
-- Generate the PRD.md file in the project directory
-- Use the projectPath from the input
+- Ensure Requirement IDs match exactly with the requirements found in the requirements content
 
 Generate a comprehensive, well-structured PRD that serves as the definitive source of truth for this feature's requirements.
     `;

@@ -131,52 +131,21 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
       // Start new PRD workflow session
       this.logger.info('Starting new PRD workflow execution');
 
-      // Initialize state with default values to prevent EmptyChannelError
-      const originalUserUtterance = input.userInput?.originalUserUtterance as string;
-      this.logger.debug('Initializing PRD workflow state', {
-        originalUserUtterance,
-        projectPath: input.userInput?.projectPath,
-      });
-
+      // Initialize state with user input - validation will be handled by workflow nodes
       const initialState: Partial<PRDState> = {
-        originalUserUtterance,
-        projectPath: (input.userInput?.projectPath as string) || '/tmp/prd-project',
-        featureBrief: '',
+        userInput: input.userInput,
         functionalRequirements: [],
-        approvedRequirements: [],
-        rejectedRequirements: [],
-        modifiedRequirements: [],
-        requirementsReviewSummary: '',
         gapAnalysisScore: 0,
         identifiedGaps: [],
-        requirementStrengths: [],
-        overallAssessment: {
-          coverageScore: 0,
-          completenessScore: 0,
-          clarityScore: 0,
-          feasibilityScore: 0,
-        },
-        gapAnalysisRecommendations: [],
-        gapAnalysisSummary: '',
-        requirementsIterationCount: 0,
-        shouldContinueIteration: false,
-        iterationComplete: false,
-        userWantsToContinueDespiteGaps: false,
+        shouldIterate: false,
+        userIterationOverride: undefined,
         prdContent: '',
-        prdFilePath: '',
-        prdDocumentStatus: {
+        prdStatus: {
           author: 'PRD Generator',
           lastModified: new Date().toISOString(),
           status: 'draft' as const,
         },
-        prdRequirementsCount: 0,
-        prdTraceabilityTableRows: [],
-        prdApproved: false,
-        prdModifications: [],
-        prdUserFeedback: '',
-        prdReviewSummary: '',
-        prdFinalized: false,
-        workflowComplete: false,
+        isPrdApproved: false,
       };
 
       result = await compiledWorkflow.invoke(initialState, threadConfig);
@@ -222,7 +191,6 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
     // Workflow completed or no interruption
     this.logger.info('PRD workflow completed', {
       threadId,
-      workflowComplete: result.workflowComplete,
     });
 
     return {

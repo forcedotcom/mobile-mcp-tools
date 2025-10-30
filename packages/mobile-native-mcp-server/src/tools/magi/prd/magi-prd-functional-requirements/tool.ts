@@ -117,27 +117,6 @@ ${contextSection}
 
 ${analysisInstructions}
 
-## Output Format
-
-You must return a JSON object with the following structure:
-
-\`\`\`json
-{
-  "functionalRequirements": [
-    {
-      "id": "REQ-001",
-      "title": "User Authentication",
-      "description": "Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO",
-      "priority": "high",
-      "category": "Security"
-    }
-  ],
-  "summary": "Brief summary of the proposed requirements and their overall scope",
-  "generationType": "${isGapBased ? 'gap-based' : 'initial'}",
-  "gapsAddressed": ${isGapBased ? '["GAP-001", "GAP-002"]' : 'null'}
-}
-\`\`\`
-
 ## Categories to Consider
 
 - **UI/UX**: User interface, navigation, user experience flows

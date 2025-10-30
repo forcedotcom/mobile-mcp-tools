@@ -22,11 +22,15 @@ import { SFMobileNativeCompletionTool } from './tools/workflow/sfmobile-native-c
 import { SFMobileNativeFailureTool } from './tools/workflow/sfmobile-native-failure/tool.js';
 import { PRDGenerationOrchestrator } from './tools/magi/prd/magi-prd-orchestrator/tool.js';
 import { MagiFeatureBriefGenerationTool } from './tools/magi/prd/magi-prd-feature-brief/tool.js';
-import { SFMobileNativeFunctionalRequirementsTool } from './tools/magi/prd/magi-prd-functional-requirements/tool.js';
+import { MagiFeatureBriefUpdateTool } from './tools/magi/prd/magi-prd-feature-brief-update/tool.js';
+import { MagiFeatureBriefReviewTool } from './tools/magi/prd/magi-prd-feature-brief-review/tool.js';
+import { SFMobileNativeInitialRequirementsTool } from './tools/magi/prd/magi-prd-initial-requirements/tool.js';
+import { SFMobileNativeGapRequirementsTool } from './tools/magi/prd/magi-prd-gap-requirements/tool.js';
 import { SFMobileNativeRequirementsReviewTool } from './tools/magi/prd/magi-prd-requirements-review/tool.js';
 import { SFMobileNativeGapAnalysisTool } from './tools/magi/prd/magi-prd-gap-analysis/tool.js';
 import { SFMobileNativePRDGenerationTool } from './tools/magi/prd/magi-prd-generation/tool.js';
 import { SFMobileNativePRDReviewTool } from './tools/magi/prd/magi-prd-review/tool.js';
+import { PRDFailureTool } from './tools/magi/prd/magi-prd-failure/tool.js';
 
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
@@ -67,11 +71,15 @@ const xcodeAddFilesTool = new UtilsXcodeAddFilesTool(server);
 const completionTool = new SFMobileNativeCompletionTool(server);
 const failureTool = new SFMobileNativeFailureTool(server);
 const featureBriefTool = new MagiFeatureBriefGenerationTool(server);
-const functionalRequirementsTool = new SFMobileNativeFunctionalRequirementsTool(server);
+const featureBriefUpdateTool = new MagiFeatureBriefUpdateTool(server);
+const featureBriefReviewTool = new MagiFeatureBriefReviewTool(server);
+const initialRequirementsTool = new SFMobileNativeInitialRequirementsTool(server);
+const gapRequirementsTool = new SFMobileNativeGapRequirementsTool(server);
 const requirementsReviewTool = new SFMobileNativeRequirementsReviewTool(server);
 const gapAnalysisTool = new SFMobileNativeGapAnalysisTool(server);
 const prdGenerationTool = new SFMobileNativePRDGenerationTool(server);
 const prdReviewTool = new SFMobileNativePRDReviewTool(server);
+const prdFailureTool = new PRDFailureTool(server);
 
 // Initialize prompts
 const mobileAppProjectPrompt = new MobileAppProjectPrompt(server);
@@ -92,11 +100,15 @@ xcodeAddFilesTool.register(readOnlyAnnotations);
 completionTool.register(readOnlyAnnotations);
 failureTool.register(readOnlyAnnotations);
 featureBriefTool.register(readOnlyAnnotations);
-functionalRequirementsTool.register(readOnlyAnnotations);
+featureBriefUpdateTool.register(readOnlyAnnotations);
+featureBriefReviewTool.register(readOnlyAnnotations);
+initialRequirementsTool.register(readOnlyAnnotations);
+gapRequirementsTool.register(readOnlyAnnotations);
 requirementsReviewTool.register(readOnlyAnnotations);
 gapAnalysisTool.register(readOnlyAnnotations);
 prdGenerationTool.register(readOnlyAnnotations);
 prdReviewTool.register(readOnlyAnnotations);
+prdFailureTool.register(readOnlyAnnotations);
 
 // Register prompts
 mobileAppProjectPrompt.register();

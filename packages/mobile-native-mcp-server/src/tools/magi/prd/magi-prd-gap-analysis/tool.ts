@@ -10,6 +10,9 @@ import { Logger } from '../../../../logging/logger.js';
 import { GAP_ANALYSIS_TOOL, GapAnalysisInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
+/**
+ * Tool for analyzing requirements against a feature brief to identify gaps.
+ */
 export class SFMobileNativeGapAnalysisTool extends PRDAbstractWorkflowTool<
   typeof GAP_ANALYSIS_TOOL
 > {
@@ -19,23 +22,13 @@ export class SFMobileNativeGapAnalysisTool extends PRDAbstractWorkflowTool<
 
   public handleRequest = async (input: GapAnalysisInput) => {
     const guidance = this.generateGapAnalysisGuidance(input);
-
     const finalOutput = this.finalizeWorkflowToolOutput(guidance, input.workflowStateData);
     return finalOutput;
   };
 
   private generateGapAnalysisGuidance(input: GapAnalysisInput) {
-    const requirementsList = input.functionalRequirements
-      .map(
-        (req, index) => `${index + 1}. **${req.title}** (${req.priority} priority)
-   - ID: ${req.id}
-   - Category: ${req.category}
-   - Description: ${req.description}`
-      )
-      .join('\n\n');
-
     return `
-You are a requirements analysis expert conducting a comprehensive gap analysis for a Salesforce mobile native app. Your task is to analyze the current functional requirements against the original feature brief to identify gaps, assess requirement strengths, and provide actionable recommendations.
+You are a requirements analysis expert conducting a gap analysis for a Salesforce mobile native app. Analyze the current functional requirements against the feature brief to identify gaps, assess requirement strengths, and provide recommendations.
 
 ## Feature Brief
 
@@ -43,107 +36,73 @@ ${input.featureBrief}
 
 ## Current Functional Requirements
 
-${requirementsList}
+${input.requirementsContent}
 
-## Gap Analysis Process
+## Your Task
 
-Conduct a thorough analysis by examining:
+Conduct a comprehensive gap analysis examining:
 
-1. **Coverage Analysis**: Does each aspect of the feature brief have corresponding requirements?
-2. **Completeness Analysis**: Are all necessary components, flows, and edge cases covered?
-3. **Clarity Analysis**: Are requirements specific, measurable, and actionable?
-4. **Feasibility Analysis**: Are requirements realistic and implementable for a mobile native app?
-5. **Integration Analysis**: Are Salesforce-specific capabilities properly addressed?
-6. **User Experience Analysis**: Are user flows and interactions properly defined?
+1. **Coverage**: Does each aspect of the feature brief have corresponding requirements?
+2. **Completeness**: Are all necessary components, flows, and edge cases covered?
+3. **Clarity**: Are requirements specific, measurable, and actionable?
+4. **Feasibility**: Are requirements realistic for a mobile native app?
+5. **Salesforce Integration**: Are Salesforce-specific capabilities properly addressed?
+6. **User Experience**: Are user flows and interactions properly defined?
 
-## Output Format
+**Important**: When analyzing requirements, focus on **approved requirements** and **modified requirements**. Ignore **rejected requirements** and **out-of-scope requirements** as they have been explicitly excluded from the feature scope.
 
-You must return a JSON object with the following structure:
+After presenting the gap analysis results, **ASK THE USER** if they want to:
+- Continue refining requirements to address the identified gaps, OR
+- Proceed to PRD generation despite the gaps (useful when gaps are minor or acceptable)
 
-\`\`\`json
-{
-  "gapAnalysisScore": 75,
-  "identifiedGaps": [
-    {
-      "id": "GAP-001",
-      "title": "Missing Offline Data Synchronization",
-      "description": "The feature brief mentions offline capabilities, but no requirements address data synchronization when the app comes back online",
-      "severity": "high",
-      "category": "Data",
-      "impact": "Users may lose data or experience inconsistent states when switching between online/offline modes",
-      "suggestedRequirements": [
-        {
-          "title": "Offline Data Sync Strategy",
-          "description": "Implement conflict resolution and data synchronization when the app reconnects to the network",
-          "priority": "high",
-          "category": "Data"
-        }
-      ]
-    }
-  ],
-  "requirementStrengths": [
-    {
-      "requirementId": "REQ-001",
-      "strengthScore": 8,
-      "strengths": ["Clear and specific", "Properly prioritized", "Includes security considerations"],
-      "weaknesses": ["Missing error handling details", "No performance criteria specified"]
-    }
-  ],
-  "overallAssessment": {
-    "coverageScore": 80,
-    "completenessScore": 70,
-    "clarityScore": 85,
-    "feasibilityScore": 90
-  },
-  "recommendations": [
-    "Add more specific error handling requirements",
-    "Include performance benchmarks for data operations",
-    "Define offline-first data strategy"
-  ],
-  "summary": "The requirements provide good coverage of core functionality but lack detail in offline capabilities and error handling scenarios."
-}
-\`\`\`
+The user should make an informed decision based on the gap analysis findings.
+
+## Field Requirements and Guidance
+
+**IMPORTANT**: The output schema will be provided to you separately. Ensure ALL required fields are included in your response. Pay special attention to the following:
+
+### Gap Objects (\`identifiedGaps\` array)
+
+Each gap object **MUST** include ALL required fields. Key guidance:
+- **id**: Use format "GAP-001", "GAP-002", etc. for unique identifiers
+- **title**: Provide a clear, concise title summarizing the gap (REQUIRED - do not omit this field)
+- **description**: Explain what functionality or requirement is missing
+- **severity**: Choose appropriate severity level based on impact
+- **category**: Categorize the gap (e.g., "Data", "UI/UX", "Security", "Performance")
+- **impact**: Explain the consequences if this gap is not addressed
+- **suggestedRequirements**: Provide actionable suggestions, each with:
+  - **title**: Clear title for the suggested requirement
+  - **description**: Detailed description of what should be implemented
+  - **priority**: Appropriate priority level
+  - **category**: Relevant category
+
+### Other Required Fields
+
+- **gapAnalysisScore**: Overall score from 0-100 (higher is better)
+- **requirementStrengths**: Analysis of individual requirement quality
+- **recommendations**: High-level improvement recommendations
+- **summary**: Comprehensive summary of findings
+- **userWantsToContinueDespiteGaps**: Set to:
+- **true** if the user wants to continue refining requirements to address gaps
+- **false** if the user wants to proceed to PRD generation despite the gaps
+- **Leave it out** if you couldn't get a clear user decision (will default to false)
 
 ## Analysis Guidelines
 
-### Gap Identification
-- Look for missing functionality mentioned in the feature brief
-- Identify incomplete user flows or edge cases
-- Check for missing technical requirements (security, performance, etc.)
-- Look for gaps in Salesforce-specific capabilities
-- Consider mobile-specific requirements (offline, notifications, device features)
-
 ### Severity Assessment
-- **Critical**: Fundamental functionality missing that would prevent feature from working
-- **High**: Important functionality missing that would significantly impact user experience
-- **Medium**: Nice-to-have functionality missing that would improve user experience
-- **Low**: Minor enhancements or optimizations missing
+- **Critical**: Fundamental functionality missing
+- **High**: Important functionality missing that significantly impacts user experience
+- **Medium**: Nice-to-have functionality missing
+- **Low**: Minor enhancements missing
 
 ### Requirement Strength Scoring (0-10)
 - **9-10**: Excellent - Clear, complete, actionable, well-prioritized
-- **7-8**: Good - Mostly clear with minor gaps or ambiguities
-- **5-6**: Fair - Adequate but needs improvement in clarity or completeness
-- **3-4**: Poor - Significant gaps or ambiguities
+- **7-8**: Good - Mostly clear with minor gaps
+- **5-6**: Fair - Adequate but needs improvement
+- **3-4**: Poor - Significant gaps
 - **0-2**: Very Poor - Unclear, incomplete, or not actionable
 
-### Assessment Categories
-- **Coverage Score**: How well requirements cover the feature brief (0-100)
-- **Completeness Score**: How complete and thorough the requirements are (0-100)
-- **Clarity Score**: How clear, specific, and actionable the requirements are (0-100)
-- **Feasibility Score**: How realistic and implementable the requirements are (0-100)
-
-## Key Areas to Analyze
-
-1. **User Experience**: Login flows, navigation, user interactions, accessibility
-2. **Data Management**: Data models, API integration, persistence, synchronization
-3. **Security**: Authentication, authorization, data protection, compliance
-4. **Performance**: Loading times, memory usage, battery optimization, scalability
-5. **Platform Integration**: Salesforce APIs, device capabilities, platform guidelines
-6. **Offline Capabilities**: Offline functionality, data sync, conflict resolution
-7. **Error Handling**: Error scenarios, recovery mechanisms, user feedback
-8. **Testing**: Test scenarios, validation criteria, acceptance criteria
-
-Conduct a comprehensive analysis and provide detailed, actionable feedback that will help improve the requirements quality and completeness.
-    `;
+Provide detailed, actionable feedback to improve requirements quality and completeness.
+`;
   }
 }

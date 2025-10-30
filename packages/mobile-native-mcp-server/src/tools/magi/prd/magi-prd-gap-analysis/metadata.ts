@@ -6,7 +6,6 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
@@ -30,11 +29,12 @@ export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
  * Gap Analysis Tool Input Schema
  */
 export const GAP_ANALYSIS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  projectPath: PROJECT_PATH_FIELD,
   featureBrief: z.string().describe('The original feature brief'),
-  functionalRequirements: z
-    .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
-    .describe('Current functional requirements to analyze'),
+  requirementsContent: z
+    .string()
+    .describe(
+      'The content of the requirements.md file containing all requirements (approved, rejected, modified, out-of-scope)'
+    ),
 });
 
 export type GapAnalysisInput = z.infer<typeof GAP_ANALYSIS_INPUT_SCHEMA>;
@@ -85,34 +85,16 @@ export const GAP_ANALYSIS_RESULT_SCHEMA = z.object({
       })
     )
     .describe('Analysis of individual requirement strengths'),
-  overallAssessment: z
-    .object({
-      coverageScore: z
-        .number()
-        .min(0)
-        .max(100)
-        .describe('How well the requirements cover the feature brief (0-100)'),
-      completenessScore: z
-        .number()
-        .min(0)
-        .max(100)
-        .describe('Completeness of the requirements (0-100)'),
-      clarityScore: z
-        .number()
-        .min(0)
-        .max(100)
-        .describe('Clarity and specificity of the requirements (0-100)'),
-      feasibilityScore: z
-        .number()
-        .min(0)
-        .max(100)
-        .describe('Feasibility of implementing the requirements (0-100)'),
-    })
-    .describe('Overall assessment scores'),
   recommendations: z
     .array(z.string())
     .describe('High-level recommendations for improving the requirements'),
   summary: z.string().describe('Summary of the gap analysis findings'),
+  userWantsToContinueDespiteGaps: z
+    .boolean()
+    .optional()
+    .describe(
+      'User decision to continue refining requirements despite gaps. If not provided, defaults to false.'
+    ),
 });
 
 /**

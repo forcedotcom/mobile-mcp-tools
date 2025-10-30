@@ -11,6 +11,8 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { PRD_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-review/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
+import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
+import z from 'zod';
 
 export class PRDReviewNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -18,6 +20,27 @@ export class PRDReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
+    // Check if tool result is already provided in userInput (resume scenario)
+    const userInput = state.userInput || {};
+    if (typeof userInput.prdApproved === 'boolean' && typeof userInput.reviewSummary === 'string') {
+      // Tool result already provided - use it directly (resume scenario)
+      const validatedResult = PRD_REVIEW_TOOL.resultSchema.parse({
+        prdApproved: userInput.prdApproved,
+        prdModifications: userInput.prdModifications || [],
+        userFeedback: userInput.userFeedback,
+        reviewSummary: userInput.reviewSummary,
+      });
+
+      return {
+        isPrdApproved: validatedResult.prdApproved,
+      };
+    }
+
+    // Tool result not provided - need to call the tool
+    const prdFilePath = state.projectPath && state.featureId 
+      ? getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.PRD)
+      : '';
+
     const toolInvocationData: MCPToolInvocationData<typeof PRD_REVIEW_TOOL.inputSchema> = {
       llmMetadata: {
         name: PRD_REVIEW_TOOL.toolId,
@@ -25,10 +48,9 @@ export class PRDReviewNode extends PRDAbstractToolNode {
         inputSchema: PRD_REVIEW_TOOL.inputSchema,
       },
       input: {
-        projectPath: state.projectPath,
         prdContent: state.prdContent || '',
-        prdFilePath: state.prdFilePath || `${state.projectPath}/PRD.md`,
-        documentStatus: state.prdDocumentStatus || {
+        prdFilePath: prdFilePath,
+        documentStatus: state.prdStatus || {
           author: 'PRD Generator',
           lastModified: new Date().toISOString(),
           status: 'draft' as const,
@@ -40,6 +62,8 @@ export class PRDReviewNode extends PRDAbstractToolNode {
       toolInvocationData,
       PRD_REVIEW_TOOL.resultSchema
     );
-    return validatedResult;
+    return {
+      isPrdApproved: validatedResult.prdApproved,
+    };
   };
 }

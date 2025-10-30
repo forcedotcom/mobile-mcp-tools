@@ -6,7 +6,6 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
@@ -30,23 +29,15 @@ export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
  * PRD Generation Tool Input Schema
  */
 export const PRD_GENERATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  projectPath: PROJECT_PATH_FIELD,
   originalUserUtterance: z
     .string()
     .describe('The original user request or utterance that initiated this feature'),
   featureBrief: z.string().describe('The approved feature brief'),
-  approvedRequirements: z
-    .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
-    .describe('The approved functional requirements'),
-  modifiedRequirements: z
-    .array(
-      FUNCTIONAL_REQUIREMENT_SCHEMA.extend({
-        originalId: z.string().describe('ID of the original requirement that was modified'),
-        modificationNotes: z.string().describe('Notes about what was modified'),
-      })
-    )
-    .optional()
-    .describe('Requirements that were modified during the review process'),
+  requirementsContent: z
+    .string()
+    .describe(
+      'The content of the requirements.md file containing all requirements (approved, rejected, modified, out-of-scope)'
+    ),
 });
 
 export type PRDGenerationInput = z.infer<typeof PRD_GENERATION_INPUT_SCHEMA>;

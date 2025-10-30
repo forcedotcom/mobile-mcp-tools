@@ -6,7 +6,6 @@
  */
 
 import z from 'zod';
-import { PROJECT_PATH_FIELD } from '../../../../common/schemas.js';
 import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
@@ -30,7 +29,6 @@ export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
  * Requirements Review Tool Input Schema
  */
 export const REQUIREMENTS_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  projectPath: PROJECT_PATH_FIELD,
   functionalRequirements: z
     .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
     .describe('Array of functional requirements to review'),

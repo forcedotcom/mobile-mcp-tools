@@ -56,26 +56,6 @@ The user should consider:
 - **Traceability**: Is the traceability table properly structured?
 - **Formatting**: Is the document well-formatted and professional?
 
-## Output Format
-
-After completing the review, you must return a JSON object with the following structure:
-
-\`\`\`json
-{
-  "prdApproved": true,
-  "prdModifications": [
-    {
-      "section": "Functional Requirements",
-      "originalContent": "Original requirement text",
-      "modifiedContent": "Modified requirement text",
-      "modificationReason": "User requested more specific details about error handling"
-    }
-  ],
-  "userFeedback": "The PRD looks good overall, but I'd like more detail on error handling scenarios",
-  "reviewSummary": "PRD approved with minor modifications to error handling requirements"
-}
-\`\`\`
-
 ## Decision Options
 
 1. **APPROVE**: Accept the PRD as-is and proceed to finalization
