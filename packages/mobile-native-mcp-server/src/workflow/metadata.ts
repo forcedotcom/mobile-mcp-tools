@@ -52,7 +52,6 @@ export type WorkflowUserInputProperties = typeof WORKFLOW_USER_INPUT_PROPERTIES;
  * Defines the structure of state that flows through the workflow nodes
  */
 export const MobileNativeWorkflowState = Annotation.Root({
-  projectDirectory: Annotation<string>,
   // Core workflow data
   userInput: Annotation<unknown>,
   platform: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.platform.zodType>>,

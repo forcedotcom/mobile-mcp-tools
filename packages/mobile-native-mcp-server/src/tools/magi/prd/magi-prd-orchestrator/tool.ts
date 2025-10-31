@@ -13,7 +13,11 @@ import { getWorkflowStateStorePath } from '../../../../utils/wellKnownDirectory.
 import { PRD_ORCHESTRATOR_TOOL, PRDOrchestratorInput, PRDOrchestratorOutput } from './metadata.js';
 import { Logger, createWorkflowLogger } from '../../../../logging/logger.js';
 import { AbstractTool } from '../../../base/abstractTool.js';
-import { MCPToolInvocationData, WORKFLOW_PROPERTY_NAMES } from '../../../../common/metadata.js';
+import {
+  MCPToolInvocationData,
+  WORKFLOW_PROPERTY_NAMES,
+  WorkflowStateData,
+} from '../../../../common/metadata.js';
 import { PRDState } from '../../../../workflow/magi/prd/metadata.js';
 import { JsonCheckpointSaver } from '../../../../workflow/jsonCheckpointer.js';
 import { WorkflowStatePersistence } from '../../../../workflow/workflowStatePersistence.js';
@@ -35,7 +39,7 @@ function generateUniquePRDThreadId(): string {
  */
 export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRATOR_TOOL> {
   private readonly useMemoryForTesting: boolean;
-  private checkpointer?: BaseCheckpointSaver;
+  private checkpointer?: BaseCheckpointSaver; // Cache checkpointer for MemorySaver to persist state across calls
 
   constructor(server: McpServer, logger?: Logger, useMemoryForTesting = false) {
     // Use provided logger (for testing) or create workflow logger (for production)
@@ -45,7 +49,7 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
   }
 
   /**
-   * Handle PRD orchestrator requests
+   * Handle PRD orchestrator requests - manages workflow state and execution
    */
   public handleRequest = async (input: PRDOrchestratorInput) => {
     this.logger.debug('PRD Orchestrator tool called with input', input);
@@ -86,6 +90,7 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
     if (threadId === '') {
       threadId = generateUniquePRDThreadId();
     }
+    const workflowStateData: WorkflowStateData = { thread_id: threadId };
 
     this.logger.info('Processing PRD orchestrator request', {
       threadId,
@@ -97,19 +102,16 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
     const threadConfig = { configurable: { thread_id: threadId } };
 
     // Initialize checkpointer for state persistence
+    // For MemorySaver (testing), we need to cache the instance to persist state across calls
+    // For JsonCheckpointSaver (production), we load state from disk each time
     const checkpointer = await this.getOrCreateCheckpointer();
 
     // Compile PRD workflow with checkpointer
     const compiledWorkflow = prdGenerationWorkflow.compile({ checkpointer });
 
     // Check for interrupted workflow state
-    this.logger.info('Checking for interrupted PRD workflow state');
+    this.logger.debug('Checking for interrupted PRD workflow state');
     let graphState = await compiledWorkflow.getState(threadConfig);
-    this.logger.info('Current graph state', {
-      tasks: graphState.tasks.length,
-      next: graphState.next.length,
-      tasksWithInterrupts: graphState.tasks.filter(task => task.interrupts.length > 0).length,
-    });
     const interruptedTask = graphState.tasks.find(task => task.interrupts.length > 0);
 
     let result: PRDState;
@@ -117,7 +119,6 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
       this.logger.info('Resuming interrupted PRD workflow', {
         taskId: interruptedTask.id,
         interrupts: interruptedTask.interrupts.length,
-        userInput: input.userInput,
       });
 
       // Resume workflow with user input from previous tool execution
@@ -125,30 +126,15 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
         new Command({ resume: input.userInput }),
         threadConfig
       );
-
-      this.logger.info('Resumed workflow result', { result });
     } else {
       // Start new PRD workflow session
       this.logger.info('Starting new PRD workflow execution');
-
-      // Initialize state with user input - validation will be handled by workflow nodes
-      const initialState: Partial<PRDState> = {
-        userInput: input.userInput,
-        functionalRequirements: [],
-        gapAnalysisScore: 0,
-        identifiedGaps: [],
-        shouldIterate: false,
-        userIterationOverride: undefined,
-        prdContent: '',
-        prdStatus: {
-          author: 'PRD Generator',
-          lastModified: new Date().toISOString(),
-          status: 'draft' as const,
+      result = await compiledWorkflow.invoke(
+        {
+          userInput: input.userInput,
         },
-        isPrdApproved: false,
-      };
-
-      result = await compiledWorkflow.invoke(initialState, threadConfig);
+        threadConfig
+      );
     }
 
     this.logger.debug('Processing PRD workflow result');
@@ -169,30 +155,25 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
         throw new Error('FATAL: Unexpected PRD workflow state without an interrupt');
       }
 
-      if (mcpToolInvocationData) {
-        this.logger.info('PRD workflow interrupted for tool execution', {
-          toolName: mcpToolInvocationData.llmMetadata.name,
-        });
+      this.logger.info('Invoking next MCP tool', {
+        toolName: mcpToolInvocationData.llmMetadata?.name,
+      });
 
-        // Save workflow state for resumption
-        await this.saveCheckpointerState(checkpointer, threadId);
+      // Create orchestration prompt
+      const orchestrationPrompt = this.createOrchestrationPrompt(
+        mcpToolInvocationData,
+        workflowStateData
+      );
 
-        // Create orchestration prompt
-        const orchestrationPrompt = this.createOrchestrationPrompt(mcpToolInvocationData, {
-          thread_id: threadId,
-        });
+      // Save our workflow state to disk
+      await this.saveCheckpointerState(checkpointer);
 
-        return {
-          orchestrationInstructionsPrompt: orchestrationPrompt,
-        };
-      }
+      return {
+        orchestrationInstructionsPrompt: orchestrationPrompt,
+      };
     }
 
-    // Workflow completed or no interruption
-    this.logger.info('PRD workflow completed', {
-      threadId,
-    });
-
+    // Workflow completed.
     return {
       orchestrationInstructionsPrompt:
         'The PRD generation workflow has concluded. No further workflow actions are forthcoming.',
@@ -200,29 +181,9 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
   }
 
   /**
-   * Save checkpointer state for resumption
-   */
-  private async saveCheckpointerState(
-    checkpointer: BaseCheckpointSaver,
-    threadId: string
-  ): Promise<void> {
-    try {
-      // If we have a JSONCheckpointSaver (standard, non-test-env case), we need to persist
-      // our state to disk.
-      if (checkpointer instanceof JsonCheckpointSaver) {
-        const exportedState = await checkpointer.exportState();
-        const workflowStateStorePath = getWorkflowStateStorePath();
-        const statePersistence = new WorkflowStatePersistence(workflowStateStorePath);
-        await statePersistence.writeState(exportedState);
-        this.logger.info('PRD checkpointer state successfully persisted', { threadId });
-      }
-    } catch (error) {
-      this.logger.error('Failed to save PRD workflow state', error as Error);
-    }
-  }
-
-  /**
    * Get or create checkpointer for state persistence
+   * For MemorySaver (testing), we cache the instance to persist state across calls
+   * For JsonCheckpointSaver (production), we load state from disk each time
    */
   private async getOrCreateCheckpointer(): Promise<BaseCheckpointSaver> {
     if (!this.checkpointer) {
@@ -232,9 +193,12 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
   }
 
   /**
-   * Create checkpointer for state persistence
+   * Create and configure workflow checkpointer for state persistence
+   *
+   * @param useMemoryForTesting - If true, uses MemorySaver for test isolation
+   *
    */
-  private async createCheckpointer(useMemoryForTesting: boolean): Promise<BaseCheckpointSaver> {
+  private async createCheckpointer(useMemoryForTesting = false): Promise<BaseCheckpointSaver> {
     if (useMemoryForTesting) {
       // Use MemorySaver for testing
       return new MemorySaver();
@@ -258,11 +222,29 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
   }
 
   /**
+   * Save the checkpointer state to disk
+   *
+   * Note: Only applies to our JsonCheckpointSaver.
+   * @param checkpointer The checkpointer being used to manage workflow state
+   */
+  private async saveCheckpointerState(checkpointer: BaseCheckpointSaver): Promise<void> {
+    // If we have a JSONCheckpointSaver (standard, non-test-env case), we need to persist
+    // our state to disk.
+    if (checkpointer instanceof JsonCheckpointSaver) {
+      const exportedState = await checkpointer.exportState();
+      const workflowStateStorePath = getWorkflowStateStorePath();
+      const statePersistence = new WorkflowStatePersistence(workflowStateStorePath);
+      await statePersistence.writeState(exportedState);
+      this.logger.info('PRD checkpointer state successfully persisted');
+    }
+  }
+
+  /**
    * Create orchestration prompt for LLM with embedded tool invocation data and workflow state
    */
   private createOrchestrationPrompt(
     mcpToolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
-    workflowStateData: { thread_id: string }
+    workflowStateData: WorkflowStateData
   ): string {
     return `
 # Your Role

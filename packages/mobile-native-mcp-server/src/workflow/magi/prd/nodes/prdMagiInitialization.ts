@@ -17,6 +17,27 @@ export class PRDMagiInitializationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
+    // Initialize state with user input and default values
+    // Only set defaults for fields that don't already exist (to avoid overwriting existing state)
+    const initializedState: Partial<PRDState> = {
+      userInput: state.userInput || {},
+      // Only initialize these if they're not already set
+      ...(state.functionalRequirements === undefined && { functionalRequirements: [] }),
+      ...(state.gapAnalysisScore === undefined && { gapAnalysisScore: 0 }),
+      ...(state.identifiedGaps === undefined && { identifiedGaps: [] }),
+      ...(state.shouldIterate === undefined && { shouldIterate: false }),
+      ...(state.userIterationOverride === undefined && { userIterationOverride: undefined }),
+      ...(state.prdContent === undefined && { prdContent: '' }),
+      ...(state.prdStatus === undefined && {
+        prdStatus: {
+          author: 'PRD Generator',
+          lastModified: new Date().toISOString(),
+          status: 'draft' as const,
+        },
+      }),
+      ...(state.isPrdApproved === undefined && { isPrdApproved: false }),
+    };
+
     // Extract required values from userInput
     const projectPath = state.userInput?.projectPath as string;
     const userUtterance = state.userInput?.userUtterance as string;
@@ -35,9 +56,10 @@ export class PRDMagiInitializationNode extends PRDAbstractToolNode {
       const prdWorkspacePath = ensureMagiSddDirectory(projectPath);
       this.logger?.info(`Verified/created magi-sdd directory at: ${prdWorkspacePath}`);
 
-      // Return the validated projectPath and originalUserUtterance
+      // Return the initialized state with validated projectPath and userUtterance
       // Paths are now calculated from projectPath and featureId as needed
       return {
+        ...initializedState,
         projectPath: projectPath,
         userUtterance: userUtterance,
       };
@@ -45,6 +67,7 @@ export class PRDMagiInitializationNode extends PRDAbstractToolNode {
       const errorMessage = `Failed to initialize magi-sdd directory in project path ${projectPath}: ${error instanceof Error ? error.message : String(error)}`;
       this.logger?.error(errorMessage);
       return {
+        ...initializedState,
         prdWorkflowFatalErrorMessages: [errorMessage],
       };
     }
