@@ -39,7 +39,7 @@ function generateUniquePRDThreadId(): string {
  */
 export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRATOR_TOOL> {
   private readonly useMemoryForTesting: boolean;
-  private checkpointer?: BaseCheckpointSaver; // Cache checkpointer for MemorySaver to persist state across calls
+  private checkpointer?: BaseCheckpointSaver; // Only cached when useMemoryForTesting=true (for MemorySaver persistence)
 
   constructor(server: McpServer, logger?: Logger, useMemoryForTesting = false) {
     // Use provided logger (for testing) or create workflow logger (for production)
@@ -102,8 +102,8 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
     const threadConfig = { configurable: { thread_id: threadId } };
 
     // Initialize checkpointer for state persistence
-    // For MemorySaver (testing), we need to cache the instance to persist state across calls
-    // For JsonCheckpointSaver (production), we load state from disk each time
+    // For MemorySaver (testing), we cache the instance to persist state across calls
+    // For JsonCheckpointSaver (production), we create a new one each time (loads from disk)
     const checkpointer = await this.getOrCreateCheckpointer();
 
     // Compile PRD workflow with checkpointer
@@ -182,14 +182,20 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
 
   /**
    * Get or create checkpointer for state persistence
-   * For MemorySaver (testing), we cache the instance to persist state across calls
-   * For JsonCheckpointSaver (production), we load state from disk each time
+   * Only caches when useMemoryForTesting=true (MemorySaver needs instance persistence)
+   * For production (JsonCheckpointSaver), creates new instance each time (loads from disk)
    */
   private async getOrCreateCheckpointer(): Promise<BaseCheckpointSaver> {
-    if (!this.checkpointer) {
-      this.checkpointer = await this.createCheckpointer(this.useMemoryForTesting);
+    // Only cache for MemorySaver (testing) - JsonCheckpointSaver loads from disk each time
+    if (this.useMemoryForTesting) {
+      if (!this.checkpointer) {
+        this.checkpointer = await this.createCheckpointer(this.useMemoryForTesting);
+      }
+      return this.checkpointer;
     }
-    return this.checkpointer;
+
+    // For production, create new checkpointer each time (loads state from disk)
+    return await this.createCheckpointer(this.useMemoryForTesting);
   }
 
   /**
@@ -235,7 +241,7 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
       const workflowStateStorePath = getWorkflowStateStorePath();
       const statePersistence = new WorkflowStatePersistence(workflowStateStorePath);
       await statePersistence.writeState(exportedState);
-      this.logger.info('PRD checkpointer state successfully persisted');
+      this.logger.info('Checkpointer state successfully persisted');
     }
   }
 
