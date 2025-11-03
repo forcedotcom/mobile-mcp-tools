@@ -24,20 +24,6 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Check if tool result is already provided in userInput (resume scenario)
-    const userInput = state.userInput || {};
-    if (typeof userInput.approved === 'boolean' && typeof userInput.reviewSummary === 'string') {
-      // Tool result already provided - use it directly (resume scenario)
-      const validatedResult = FEATURE_BRIEF_REVIEW_TOOL.resultSchema.parse({
-        approved: userInput.approved,
-        userFeedback: userInput.userFeedback,
-        reviewSummary: userInput.reviewSummary,
-        modifications: userInput.modifications || [],
-      });
-
-      return this.processReviewResult(validatedResult, state);
-    }
-
     // Tool result not provided - need to call the tool
     const toolInvocationData: MCPToolInvocationData<typeof FEATURE_BRIEF_REVIEW_TOOL.inputSchema> =
       {

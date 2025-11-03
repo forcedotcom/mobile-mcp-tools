@@ -24,26 +24,12 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Validate required state
-    if (!state.projectPath) {
-      throw new Error('projectPath is required but not provided in PRD state');
-    }
-    if (!state.featureId) {
-      throw new Error('featureId is required for feature brief update (iteration scenario)');
-    }
-
     // Get feature brief content - prefer state, fallback to reading from file if needed
-    const featureBriefContent =
-      state.featureBriefContent ||
-      (state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-        : '');
-    if (!featureBriefContent) {
-      throw new Error(
-        'Feature brief content is required for feature brief update (iteration scenario). ' +
-          'Content not found in state or on disk.'
-      );
-    }
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
 
     // Resolve the feature directory from projectPath and featureId
     const existingFeatureDirectory = resolveFeatureDirectoryFromIds(

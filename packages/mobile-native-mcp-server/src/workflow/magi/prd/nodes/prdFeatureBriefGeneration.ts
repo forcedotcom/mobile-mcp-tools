@@ -25,21 +25,6 @@ export class PRDFeatureBriefGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Validate that projectPath is provided (should be set by initialization node)
-    if (!state.projectPath) {
-      throw new Error('projectPath is required but not provided in PRD state');
-    }
-
-    // This node is ONLY for initial generation
-    // If we already have a feature brief, this node should not be called
-    // (use PRDFeatureBriefUpdateNode for iterations)
-    if (state.featureId) {
-      throw new Error(
-        'Feature brief already exists. Use feature brief update node for iterations. ' +
-          `Existing featureId: ${state.featureId}`
-      );
-    }
-
     // Get existing feature IDs to pass to the tool (for uniqueness checking)
     const prdWorkspacePath = getPrdWorkspacePath(state.projectPath);
     const currentFeatureIds = getExistingFeatureIds(prdWorkspacePath);

@@ -19,38 +19,19 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Check if tool result is already provided in userInput (resume scenario)
-    const userInput = state.userInput || {};
-    if (typeof userInput.gapAnalysisScore === 'number' && typeof userInput.summary === 'string') {
-      // Tool result already provided - use it directly (resume scenario)
-      const validatedResult = GAP_ANALYSIS_TOOL.resultSchema.parse({
-        gapAnalysisScore: userInput.gapAnalysisScore,
-        identifiedGaps: userInput.identifiedGaps || [],
-        requirementStrengths: userInput.requirementStrengths || [],
-        recommendations: userInput.recommendations || [],
-        summary: userInput.summary,
-        userWantsToContinueDespiteGaps: userInput.userWantsToContinueDespiteGaps,
-      });
-
-      return {
-        gapAnalysisScore: validatedResult.gapAnalysisScore,
-        identifiedGaps: validatedResult.identifiedGaps,
-        userIterationOverride: validatedResult.userWantsToContinueDespiteGaps,
-      };
-    }
-
     // Get feature brief content from state or file
-    const featureBriefContent = state.featureBriefContent
-      ? state.featureBriefContent
-      : state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-        : '';
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
 
     // Read requirements content from file
-    const requirementsContent =
-      state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.REQUIREMENTS)
-        : '';
+    const requirementsContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS
+    );
 
     // Tool result not provided - need to call the tool
     const toolInvocationData: MCPToolInvocationData<typeof GAP_ANALYSIS_TOOL.inputSchema> = {

@@ -27,26 +27,18 @@ export class PRDGapBasedFunctionalRequirementsGenerationNode extends PRDAbstract
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // This tool requires identified gaps - validate they exist
-    if (!state.identifiedGaps || state.identifiedGaps.length === 0) {
-      throw new Error(
-        'PRDGapBasedFunctionalRequirementsGenerationNode requires identifiedGaps in state. ' +
-          'Ensure gap analysis has been performed before using this node.'
-      );
-    }
-
-    // Get feature brief content from state or file
-    const featureBriefContent = state.featureBriefContent
-      ? state.featureBriefContent
-      : state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-        : '';
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
 
     // Read requirements content from file
-    const requirementsContent =
-      state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.REQUIREMENTS)
-        : '';
+    const requirementsContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS
+    );
 
     const toolInvocationData: MCPToolInvocationData<
       typeof GAP_BASED_FUNCTIONAL_REQUIREMENTS_TOOL.inputSchema

@@ -13,46 +13,27 @@ import {
 } from '../../../../common/metadata.js';
 
 /**
- * Functional Requirement Schema
- */
-export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
-  id: z.string().describe('Unique identifier for the requirement'),
-  title: z.string().describe('Short title of the functional requirement'),
-  description: z.string().describe('Detailed description of the functional requirement'),
-  priority: z.enum(['high', 'medium', 'low']).describe('Priority level of the requirement'),
-  category: z
-    .string()
-    .describe('Category of the requirement (e.g., UI/UX, Data, Security, Performance)'),
-});
-
-/**
  * Requirements Review Tool Input Schema
  */
 export const REQUIREMENTS_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  functionalRequirements: z
-    .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
-    .describe('Array of functional requirements to review'),
+  requirementsContent: z
+    .string()
+    .describe(
+      'The content of the requirements.md file containing all requirements (approved, rejected, modified, out-of-scope)'
+    ),
 });
 
 export type RequirementsReviewInput = z.infer<typeof REQUIREMENTS_REVIEW_INPUT_SCHEMA>;
 
 export const REQUIREMENTS_REVIEW_RESULT_SCHEMA = z.object({
-  approvedRequirements: z
-    .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
-    .describe('Requirements approved by the user'),
-  rejectedRequirements: z
-    .array(FUNCTIONAL_REQUIREMENT_SCHEMA)
-    .describe('Requirements rejected by the user'),
-  modifiedRequirements: z
-    .array(
-      FUNCTIONAL_REQUIREMENT_SCHEMA.extend({
-        originalId: z.string().describe('ID of the original requirement that was modified'),
-        modificationNotes: z.string().describe('Notes about what was modified'),
-      })
-    )
-    .describe('Requirements that were modified by the user'),
-  reviewSummary: z.string().describe('Summary of the review process and decisions made'),
-  userFeedback: z.string().optional().describe('Additional feedback or comments from the user'),
+  updatedRequirementsContent: z
+    .string()
+    .describe(
+      'The updated requirements.md file content with review decisions incorporated (approved, rejected, modified requirements and review history)'
+    ),
+  reviewSummary: z
+    .string()
+    .describe('Summary of the review process and decisions made in this review session'),
 });
 
 /**
@@ -65,7 +46,7 @@ export const REQUIREMENTS_REVIEW_TOOL: WorkflowToolMetadata<
   toolId: 'magi-prd-requirements-review',
   title: 'Magi - Requirements Review and Approval',
   description:
-    'Presents functional requirements to the user for review, approval, rejection, or modification',
+    'Reviews the requirements.md file with the user, facilitating approval, rejection, or modification of requirements. Returns updated requirements.md content.',
   inputSchema: REQUIREMENTS_REVIEW_INPUT_SCHEMA,
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   resultSchema: REQUIREMENTS_REVIEW_RESULT_SCHEMA,

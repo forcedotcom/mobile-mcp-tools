@@ -31,7 +31,7 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-requirements-review');
       expect(tool.toolMetadata.title).toBe('Magi - Requirements Review and Approval');
       expect(tool.toolMetadata.description).toBe(
-        'Presents functional requirements to the user for review, approval, rejection, or modification'
+        'Reviews the requirements.md file with the user, facilitating approval, rejection, or modification of requirements. Returns updated requirements.md content.'
       );
       expect(tool.toolMetadata.inputSchema).toBeDefined();
       expect(tool.toolMetadata.outputSchema).toBeDefined();
@@ -44,51 +44,26 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
   });
 
   describe('Input Schema Validation', () => {
-    it('should accept valid input with functional requirements', () => {
+    it('should accept valid input with requirements content', () => {
       const validInput = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement Title',
-            description: 'Requirement description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-        ],
+        requirementsContent: '# Requirements\n\n## Approved Requirements\n\n### REQ-001: Test',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should accept empty requirements array', () => {
+    it('should accept empty requirements content', () => {
       const validInput = {
-        functionalRequirements: [],
+        requirementsContent: '',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should reject input missing functionalRequirements', () => {
+    it('should reject input missing requirementsContent', () => {
       const invalidInput = {
-        workflowStateData: { thread_id: 'test-123' },
-      };
-      const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject requirements with invalid priority', () => {
-      const invalidInput = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement',
-            description: 'Description',
-            priority: 'invalid' as unknown as 'high' | 'medium' | 'low',
-            category: 'UI/UX',
-          },
-        ],
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
@@ -97,63 +72,27 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
   });
 
   describe('Result Schema Validation', () => {
-    it('should validate result with approved requirements', () => {
+    it('should validate result with updated requirements content', () => {
       const validResult = {
-        approvedRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement',
-            description: 'Description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-        ],
-        rejectedRequirements: [],
-        modifiedRequirements: [],
+        updatedRequirementsContent:
+          '# Requirements\n\n## Approved Requirements\n\n### REQ-001: Test',
         reviewSummary: 'Review summary',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
     });
 
-    it('should validate result with modified requirements', () => {
-      const validResult = {
-        approvedRequirements: [],
-        rejectedRequirements: [],
-        modifiedRequirements: [
-          {
-            id: 'REQ-002',
-            title: 'Modified Requirement',
-            description: 'Modified description',
-            priority: 'medium' as const,
-            category: 'Security',
-            originalId: 'REQ-001',
-            modificationNotes: 'Updated description',
-          },
-        ],
+    it('should reject result missing updatedRequirementsContent', () => {
+      const invalidResult = {
         reviewSummary: 'Review summary',
       };
-      const result = tool.toolMetadata.resultSchema.safeParse(validResult);
-      expect(result.success).toBe(true);
-    });
-
-    it('should validate result with user feedback', () => {
-      const validResult = {
-        approvedRequirements: [],
-        rejectedRequirements: [],
-        modifiedRequirements: [],
-        reviewSummary: 'Review summary',
-        userFeedback: 'Feedback',
-      };
-      const result = tool.toolMetadata.resultSchema.safeParse(validResult);
-      expect(result.success).toBe(true);
+      const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
+      expect(result.success).toBe(false);
     });
 
     it('should reject result missing reviewSummary', () => {
       const invalidResult = {
-        approvedRequirements: [],
-        rejectedRequirements: [],
-        modifiedRequirements: [],
+        updatedRequirementsContent: '# Requirements',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
@@ -161,17 +100,10 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
   });
 
   describe('Requirements Review Guidance Generation', () => {
-    it('should generate guidance with functional requirements', async () => {
+    it('should generate guidance with requirements content', async () => {
       const input = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement Title',
-            description: 'Requirement description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-        ],
+        requirementsContent:
+          '# Requirements\n\n## Approved Requirements\n\n### REQ-001: Requirement Title\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Requirement description',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -187,24 +119,11 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       expect(response.promptForLLM).toContain('Requirement Title');
     });
 
-    it('should format requirements list correctly', async () => {
+    it('should include requirements content in guidance', async () => {
+      const requirementsContent =
+        '# Requirements\n\n**Feature ID:** FEAT-001\n\n## Approved Requirements\n\n### REQ-001: First Requirement\n- **Priority**: high\n- **Category**: UI/UX';
       const input = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'First Requirement',
-            description: 'First description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-          {
-            id: 'REQ-002',
-            title: 'Second Requirement',
-            description: 'Second description',
-            priority: 'medium' as const,
-            category: 'Security',
-          },
-        ],
+        requirementsContent,
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -212,23 +131,15 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('1. **First Requirement**');
-      expect(response.promptForLLM).toContain('2. **Second Requirement**');
+      expect(response.promptForLLM).toContain('Current Requirements Document');
       expect(response.promptForLLM).toContain('REQ-001');
-      expect(response.promptForLLM).toContain('REQ-002');
+      expect(response.promptForLLM).toContain('First Requirement');
     });
 
     it('should include review process instructions', async () => {
       const input = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement',
-            description: 'Description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-        ],
+        requirementsContent:
+          '# Requirements\n\n### REQ-001: Requirement\n- **Description**: Description',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -237,22 +148,14 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('Review Process');
-      expect(response.promptForLLM).toContain('APPROVE');
-      expect(response.promptForLLM).toContain('REJECT');
-      expect(response.promptForLLM).toContain('MODIFY');
+      expect(response.promptForLLM).toContain('approve');
+      expect(response.promptForLLM).toContain('reject');
+      expect(response.promptForLLM).toContain('modify');
     });
 
-    it('should include workflow continuation instructions', async () => {
+    it('should include output format instructions', async () => {
       const input = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement',
-            description: 'Description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-        ],
+        requirementsContent: '# Requirements',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -260,16 +163,17 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('Post-Tool-Invocation Instructions');
-      expect(response.promptForLLM).toContain('magi-prd-orchestrator');
+      expect(response.promptForLLM).toContain('Output Format');
+      expect(response.promptForLLM).toContain('updatedRequirementsContent');
+      expect(response.promptForLLM).toContain('reviewSummary');
       expect(response.resultSchema).toBeDefined();
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty requirements array', async () => {
+    it('should handle empty requirements content', async () => {
       const input = {
-        functionalRequirements: [],
+        requirementsContent: '',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -277,17 +181,21 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       expect(result.content).toBeDefined();
     });
 
-    it('should handle many requirements', async () => {
-      const manyRequirements = Array.from({ length: 50 }, (_, i) => ({
-        id: `REQ-${String(i + 1).padStart(3, '0')}`,
-        title: `Requirement ${i + 1}`,
-        description: `Description ${i + 1}`,
-        priority: 'high' as const,
-        category: 'UI/UX',
-      }));
+    it('should handle missing requirements content', async () => {
+      const input = {
+        requirementsContent: '# Requirements\n\nNo requirements have been generated yet.',
+        workflowStateData: { thread_id: 'test-123' },
+      };
+
+      const result = await tool.handleRequest(input);
+      expect(result.content).toBeDefined();
+    });
+
+    it('should handle large requirements document', async () => {
+      const largeContent = `# Requirements\n\n${Array.from({ length: 50 }, (_, i) => `### REQ-${String(i + 1).padStart(3, '0')}: Requirement ${i + 1}\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Description ${i + 1}`).join('\n\n')}`;
 
       const input = {
-        functionalRequirements: manyRequirements,
+        requirementsContent: largeContent,
         workflowStateData: { thread_id: 'test-123' },
       };
 

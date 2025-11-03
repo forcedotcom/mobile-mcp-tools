@@ -24,37 +24,19 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Check if tool result is already provided in userInput (resume scenario)
-    const userInput = state.userInput || {};
-    if (typeof userInput.prdContent === 'string' && typeof userInput.prdFilePath === 'string') {
-      // Tool result already provided - use it directly (resume scenario)
-      const validatedResult = PRD_GENERATION_TOOL.resultSchema.parse({
-        prdContent: userInput.prdContent,
-        prdFilePath: userInput.prdFilePath,
-        documentStatus: userInput.documentStatus || {
-          author: 'PRD Generator',
-          lastModified: new Date().toISOString().split('T')[0],
-          status: 'draft' as const,
-        },
-        requirementsCount: userInput.requirementsCount || 0,
-        traceabilityTableRows: userInput.traceabilityTableRows || [],
-      });
-
-      return this.processPrdResult(validatedResult, state);
-    }
-
     // Get feature brief content from state or file
-    const featureBriefContent = state.featureBriefContent
-      ? state.featureBriefContent
-      : state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-        : '';
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
 
     // Read requirements content from file
-    const requirementsContent =
-      state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.REQUIREMENTS)
-        : '';
+    const requirementsContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS
+    );
 
     // Tool result not provided - need to call the tool
     const toolInvocationData: MCPToolInvocationData<typeof PRD_GENERATION_TOOL.inputSchema> = {
@@ -82,11 +64,6 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
     validatedResult: z.infer<typeof PRD_GENERATION_TOOL.resultSchema>,
     state: PRDState
   ): Partial<PRDState> {
-    // Validate required state
-    if (!state.projectPath || !state.featureId) {
-      throw new Error('Cannot determine feature directory: projectPath and featureId are missing');
-    }
-
     // Write the PRD content to disk
     const prdFilePath = writeMagiArtifact(
       state.projectPath,

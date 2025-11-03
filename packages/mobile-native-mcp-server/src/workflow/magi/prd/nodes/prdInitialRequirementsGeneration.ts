@@ -22,12 +22,11 @@ export class PRDInitialRequirementsGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Get feature brief content from state or file
-    const featureBriefContent = state.featureBriefContent
-      ? state.featureBriefContent
-      : state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-        : '';
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
 
     const toolInvocationData: MCPToolInvocationData<typeof INITIAL_REQUIREMENTS_TOOL.inputSchema> =
       {

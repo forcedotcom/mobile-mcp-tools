@@ -23,17 +23,18 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
 
   execute = (state: PRDState): Partial<PRDState> => {
     // Get feature brief content from state or file
-    const featureBriefContent = state.featureBriefContent
-      ? state.featureBriefContent
-      : state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-        : '';
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
 
     // Read requirements content from file
-    const requirementsContent =
-      state.projectPath && state.featureId
-        ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.REQUIREMENTS)
-        : '';
+    const requirementsContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS
+    );
 
     const toolInvocationData: MCPToolInvocationData<typeof GAP_REQUIREMENTS_TOOL.inputSchema> = {
       llmMetadata: {
