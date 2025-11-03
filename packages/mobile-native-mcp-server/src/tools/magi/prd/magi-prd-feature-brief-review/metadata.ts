@@ -38,6 +38,12 @@ export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
     .array(FEATURE_BRIEF_MODIFICATION_SCHEMA)
     .optional()
     .describe('Requested modifications to the feature brief (if not approved)'),
+  updatedFeatureBrief: z
+    .string()
+    .optional()
+    .describe(
+      'Updated feature brief markdown content with status section updated. Required when approved=true, must include status section with "approved" status.'
+    ),
 });
 
 export type FeatureBriefReviewResult = z.infer<typeof FEATURE_BRIEF_REVIEW_RESULT_SCHEMA>;

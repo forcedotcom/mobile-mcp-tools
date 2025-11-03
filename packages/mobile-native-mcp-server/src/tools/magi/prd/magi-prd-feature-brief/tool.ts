@@ -46,6 +46,7 @@ ${JSON.stringify(input.currentFeatureIds)}
 # OUTPUT REQUIREMENTS
 
 1. **Feature Brief Markdown**: Generate a concise feature brief in Markdown format that includes:
+   - A "Status" section near the top of the document (after the title) with format: '## Status\n**Status**: draft'
    - Original user utterance
    - Feature overview and purpose
 

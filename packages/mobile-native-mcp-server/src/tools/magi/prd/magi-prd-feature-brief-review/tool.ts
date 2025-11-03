@@ -99,23 +99,26 @@ If modifications are requested, approval MUST be false so the workflow can regen
 ## What Happens Next
 
 **If approved (approved: true)**:
-- Feature brief file is written to disk (first time)
+- You MUST update the Status section in the feature brief markdown to show "approved"
+- The Status section should have format: "## Status\n**Status**: approved"
+- You MUST return the complete updated feature brief markdown content in the updatedFeatureBrief field
+- The workflow will write this updated content to the file
 - Workflow proceeds directly to Requirements Generation
 - The approved feature brief file will be used for requirements generation
 
 **If modifications requested (approved: false)**:
-- Feature brief file is NOT written (content stays in memory)
+- Feature brief file remains on disk with draft status
 - Workflow automatically routes to Feature Brief Update Node
 - Your modifications and feedback will be passed to the update tool
 - A revised feature brief will be created (reusing same feature ID)
-- Updated content is stored in state (file still not written)
+- The updated content will be written to file with draft status
 - The user will review the revised version
-- This process repeats until the user approves (then file is written)
+- This process repeats until the user approves (then status updated to approved)
 
-**Remember**: You are ONLY reviewing and providing feedback. The workflow handles all file operations automatically. You MUST NOT:
-- Modify files directly
-- Edit the feature brief file
-- Change file contents manually
+**CRITICAL FILE STATUS UPDATES**:
+- When approving: You MUST update the Status section in the markdown from "draft" to "approved"
+- Return the complete updated feature brief markdown in the updatedFeatureBrief field
+- The Status section format must be: ## Status\n**Status**: approved (near the top, after the title)
 
 Begin the review process by presenting the feature brief and asking for the user's approval or requested modifications.
     `;

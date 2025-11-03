@@ -70,6 +70,8 @@ You must update the feature brief to incorporate:
 - Incorporate changes naturally and coherently
 - Ensure the updated brief addresses all feedback and modifications
 - Keep the markdown formatting consistent
+- **MUST include a Status section** with format: '## Status\n**Status**: draft' (near the top, after the title)
+- The status should always be set to "draft" when updating the feature brief
 
 # UPDATE GUIDELINES
 
@@ -89,6 +91,7 @@ Generate a COMPLETE, updated feature brief in Markdown format that:
 - Addresses all user feedback
 - Maintains professional formatting
 - Preserves the feature ID: "${input.existingFeatureId}"
+- **MUST include a Status section** near the top (after the title) with: '## Status\n**Status**: draft'
 
 **Output only the updated markdown content** - do not include explanations or metadata about the changes.
 

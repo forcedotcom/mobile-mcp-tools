@@ -40,9 +40,6 @@ export const PRDGenerationWorkflowState = Annotation.Root({
   featureId: Annotation<string>,
   userUtterance: Annotation<string>,
 
-  // Feature Brief Generation state
-  featureBriefContent: Annotation<string>, // Feature brief markdown content (in-memory during review/iteration)
-
   // Feature Brief Review state
   isFeatureBriefApproved: Annotation<boolean>,
   featureBriefUserFeedback: Annotation<string>,

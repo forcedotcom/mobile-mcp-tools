@@ -15,7 +15,7 @@ import {
   createFeatureDirectory,
   getExistingFeatureIds,
   getPrdWorkspacePath,
-  getMagiPath,
+  writeMagiArtifact,
   MAGI_ARTIFACTS,
 } from '../../../../utils/wellKnownDirectory.js';
 
@@ -49,7 +49,7 @@ export class PRDFeatureBriefGenerationNode extends PRDAbstractToolNode {
       FEATURE_BRIEF_TOOL.resultSchema
     );
 
-    // Create new feature directory (but don't write file yet - wait for approval)
+    // Create new feature directory
     const featureDirectoryPath = createFeatureDirectory(
       prdWorkspacePath,
       validatedResult.recommendedFeatureId,
@@ -57,20 +57,19 @@ export class PRDFeatureBriefGenerationNode extends PRDAbstractToolNode {
     );
     this.logger?.info(`Created feature directory at: ${featureDirectoryPath}`);
 
-    // Determine the file path where it will be written after approval
-    const featureBriefFilePath = getMagiPath(
+    // Write the feature brief file immediately with draft status
+    // The tool should have already included the status section in the markdown
+    const featureBriefFilePath = writeMagiArtifact(
       state.projectPath,
       validatedResult.recommendedFeatureId,
-      MAGI_ARTIFACTS.FEATURE_BRIEF
+      MAGI_ARTIFACTS.FEATURE_BRIEF,
+      validatedResult.featureBriefMarkdown
     );
-    this.logger?.info(`Feature brief will be written to: ${featureBriefFilePath} (after approval)`);
+    this.logger?.info(`Feature brief written to file: ${featureBriefFilePath} (status: draft)`);
 
-    // Store content in state, but DON'T write file yet
-    // File will be written by Review Node when approved
-    // Paths are now calculated from projectPath and featureId as needed
+    // Return featureId only - content is now always read from file
     return {
       featureId: validatedResult.recommendedFeatureId,
-      featureBriefContent: validatedResult.featureBriefMarkdown, // Content in memory
     };
   };
 }

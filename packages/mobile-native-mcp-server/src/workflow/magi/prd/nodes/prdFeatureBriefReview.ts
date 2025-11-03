@@ -24,7 +24,19 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Tool result not provided - need to call the tool
+    // Always read feature brief content from file
+    const featureBriefContent = readMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.FEATURE_BRIEF
+    );
+
+    if (!featureBriefContent) {
+      throw new Error(
+        `Feature brief file not found for featureId: ${state.featureId}. File should exist before review.`
+      );
+    }
+
     const toolInvocationData: MCPToolInvocationData<typeof FEATURE_BRIEF_REVIEW_TOOL.inputSchema> =
       {
         llmMetadata: {
@@ -33,11 +45,7 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
           inputSchema: FEATURE_BRIEF_REVIEW_TOOL.inputSchema,
         },
         input: {
-          featureBrief:
-            state.featureBriefContent ||
-            (state.projectPath && state.featureId
-              ? readMagiArtifact(state.projectPath, state.featureId, MAGI_ARTIFACTS.FEATURE_BRIEF)
-              : ''),
+          featureBrief: featureBriefContent,
         },
       };
 
@@ -63,21 +71,22 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
       validatedResult.approved = false;
     }
 
-    // If approved and file doesn't exist yet, write the file now
-    if (
-      validatedResult.approved &&
-      state.featureBriefContent &&
-      state.projectPath &&
-      state.featureId
-    ) {
-      // Write the approved feature brief to disk
+    // If approved, write the updated feature brief content back to file
+    // The tool should have updated the status section to "approved"
+    if (validatedResult.approved && validatedResult.updatedFeatureBrief) {
       const featureBriefPath = writeMagiArtifact(
         state.projectPath,
         state.featureId,
         MAGI_ARTIFACTS.FEATURE_BRIEF,
-        state.featureBriefContent
+        validatedResult.updatedFeatureBrief
       );
-      this.logger?.info(`Feature brief approved and written to file: ${featureBriefPath}`);
+      this.logger?.info(
+        `Feature brief approved and updated in file: ${featureBriefPath} (status: approved)`
+      );
+    } else if (validatedResult.approved && !validatedResult.updatedFeatureBrief) {
+      this.logger?.warn(
+        'Feature brief approved but updatedFeatureBrief not provided. Status may not be updated correctly.'
+      );
     }
 
     return {
