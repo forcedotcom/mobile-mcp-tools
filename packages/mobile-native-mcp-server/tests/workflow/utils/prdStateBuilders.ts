@@ -32,16 +32,10 @@ export function createPRDTestState(overrides: Partial<PRDState> = {}): PRDState 
     featureId: undefined,
     userUtterance: undefined,
 
-    // Feature Brief Generation state
-    featureBriefContent: undefined,
-
     // Feature Brief Review state
     isFeatureBriefApproved: undefined,
     featureBriefUserFeedback: undefined,
     featureBriefModifications: undefined,
-
-    // Functional Requirements state
-    functionalRequirements: undefined,
 
     // Gap Analysis state
     gapAnalysisScore: undefined,
@@ -49,7 +43,7 @@ export function createPRDTestState(overrides: Partial<PRDState> = {}): PRDState 
 
     // Iteration Control state
     shouldIterate: undefined,
-    userIterationOverride: undefined,
+    userIterationPreference: undefined,
 
     // PRD Generation Results
     prdContent: undefined,

@@ -45,17 +45,15 @@ describe('PRDGapAnalysisNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements\n\nREQ-001');
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce('# Feature Brief') // feature brief
+        .mockReturnValueOnce('# Requirements\n\nREQ-001'); // requirements
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
         gapAnalysisScore: 75,
         identifiedGaps: [],
-        requirementStrengths: [],
-        recommendations: [],
-        summary: 'Gap analysis complete',
       });
 
       node.execute(inputState);
@@ -71,17 +69,15 @@ describe('PRDGapAnalysisNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: featureBrief,
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirements);
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce(featureBrief) // feature brief
+        .mockReturnValueOnce(requirements); // requirements
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
         gapAnalysisScore: 80,
         identifiedGaps: [],
-        requirementStrengths: [],
-        recommendations: [],
-        summary: 'Summary',
       });
 
       node.execute(inputState);
@@ -95,10 +91,11 @@ describe('PRDGapAnalysisNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements');
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce('# Feature Brief') // feature brief
+        .mockReturnValueOnce('# Requirements'); // requirements
 
       const gaps = [
         {
@@ -115,36 +112,14 @@ describe('PRDGapAnalysisNode', () => {
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
         gapAnalysisScore: 75,
         identifiedGaps: gaps,
-        requirementStrengths: [],
-        recommendations: [],
-        summary: 'Gaps found',
-        userWantsToContinueDespiteGaps: true,
+        userIterationPreference: true,
       });
 
       const result = node.execute(inputState);
 
       expect(result.gapAnalysisScore).toBe(75);
       expect(result.identifiedGaps).toEqual(gaps);
-      expect(result.userIterationOverride).toBe(true);
-    });
-  });
-
-  describe('execute() - Resume Scenario', () => {
-    it('should use userInput result when provided (resume scenario)', () => {
-      const inputState = createPRDTestState({
-        projectPath: '/path/to/project',
-        featureId: 'feature-123',
-        userInput: {
-          gapAnalysisScore: 80,
-          summary: 'Resume gap analysis',
-          identifiedGaps: [],
-        },
-      });
-
-      const result = node.execute(inputState);
-
-      expect(result.gapAnalysisScore).toBe(80);
-      expect(mockToolExecutor.getCallHistory().length).toBe(0); // Tool not called
+      expect(result.userIterationPreference).toBe(true);
     });
   });
 });

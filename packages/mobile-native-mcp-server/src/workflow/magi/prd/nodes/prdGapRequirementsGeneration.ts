@@ -11,7 +11,11 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { GAP_REQUIREMENTS_TOOL } from '../../../../tools/magi/prd/magi-prd-gap-requirements/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import { readMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
+import {
+  getMagiPath,
+  writeMagiArtifact,
+  MAGI_ARTIFACTS,
+} from '../../../../utils/wellKnownDirectory.js';
 
 /**
  * Workflow node for generating functional requirements based on identified gaps.
@@ -22,15 +26,13 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Get feature brief content from state or file
-    const featureBriefContent = readMagiArtifact(
+    const featureBriefPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF
     );
 
-    // Read requirements content from file
-    const requirementsContent = readMagiArtifact(
+    const requirementsPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.REQUIREMENTS
@@ -43,8 +45,8 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
         inputSchema: GAP_REQUIREMENTS_TOOL.inputSchema,
       },
       input: {
-        featureBrief: featureBriefContent,
-        requirementsContent,
+        featureBriefPath: featureBriefPath,
+        requirementsPath: requirementsPath,
         identifiedGaps: state.identifiedGaps || [],
       },
     };
@@ -53,6 +55,20 @@ export class PRDGapRequirementsGenerationNode extends PRDAbstractToolNode {
       toolInvocationData,
       GAP_REQUIREMENTS_TOOL.resultSchema
     );
-    return validatedResult;
+
+    // Write the updated requirements file immediately with draft status
+    // The tool should have already included the status section and appended new requirements
+    const requirementsFilePath = writeMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS,
+      validatedResult.updatedRequirementsMarkdown
+    );
+    this.logger?.info(
+      `Gap-based requirements written to file: ${requirementsFilePath} (status: draft)`
+    );
+
+    // Return empty state - content is now always read from file
+    return {};
   };
 }

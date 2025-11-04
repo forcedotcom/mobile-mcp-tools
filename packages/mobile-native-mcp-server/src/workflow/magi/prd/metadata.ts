@@ -6,26 +6,6 @@
  */
 
 import { Annotation } from '@langchain/langgraph';
-import z from 'zod';
-
-/**
- * PRD-specific user input properties required by the PRD generation workflow.
- * These are focused on PRD generation rather than mobile app project setup.
- */
-export const PRD_USER_INPUT_PROPERTIES = {
-  projectPath: {
-    zodType: z.string(),
-    description: 'The path to the root project directory',
-    friendlyName: 'project path',
-  },
-  userUtterance: {
-    zodType: z.string(),
-    description: 'The original user request or description of the feature',
-    friendlyName: 'original user request',
-  },
-} as const;
-
-export type PRDUserInputProperties = typeof PRD_USER_INPUT_PROPERTIES;
 
 /**
  * Standalone PRD Generation Workflow State
@@ -51,16 +31,23 @@ export const PRDGenerationWorkflowState = Annotation.Root({
     }>
   >,
 
-  // Functional Requirements state
-  functionalRequirements: Annotation<
+  // Requirements Review state
+  approvedRequirementIds: Annotation<string[]>,
+  rejectedRequirementIds: Annotation<string[]>,
+  requirementModifications: Annotation<
     Array<{
-      id: string;
-      title: string;
-      description: string;
-      priority: 'high' | 'medium' | 'low';
-      category: string;
+      requirementId: string;
+      modificationReason: string;
+      requestedChanges: {
+        title?: string;
+        description?: string;
+        priority?: 'high' | 'medium' | 'low';
+        category?: string;
+      };
     }>
   >,
+  requirementsUserFeedback: Annotation<string>,
+  requirementsReviewSummary: Annotation<string>,
 
   // Gap Analysis state
   gapAnalysisScore: Annotation<number>,
@@ -82,8 +69,19 @@ export const PRDGenerationWorkflowState = Annotation.Root({
   >,
 
   // Iteration Control state
-  shouldIterate: Annotation<boolean>,
-  userIterationOverride: Annotation<boolean>,
+  userIterationPreference: Annotation<boolean>,
+
+  // PRD Review state
+  isPrdApproved: Annotation<boolean>,
+  prdModifications: Annotation<
+    Array<{
+      section: string;
+      modificationReason: string;
+      requestedContent: string;
+    }>
+  >,
+  prdUserFeedback: Annotation<string>,
+  prdReviewSummary: Annotation<string>,
 
   // PRD Generation Results
   prdContent: Annotation<string>,
@@ -92,9 +90,6 @@ export const PRDGenerationWorkflowState = Annotation.Root({
     lastModified: string;
     status: 'draft' | 'finalized';
   }>,
-
-  // PRD Review
-  isPrdApproved: Annotation<boolean>,
 
   // Error Handling state
   prdWorkflowFatalErrorMessages: Annotation<string[]>,

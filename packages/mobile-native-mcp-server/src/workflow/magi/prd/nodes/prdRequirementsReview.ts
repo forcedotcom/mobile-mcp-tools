@@ -11,12 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { REQUIREMENTS_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-requirements-review/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import {
-  readMagiArtifact,
-  writeMagiArtifact,
-  MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
-import z from 'zod';
+import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
 
 export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -24,8 +19,7 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Read requirements content from file
-    const requirementsContent = readMagiArtifact(
+    const requirementsPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.REQUIREMENTS
@@ -38,7 +32,7 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
         inputSchema: REQUIREMENTS_REVIEW_TOOL.inputSchema,
       },
       input: {
-        requirementsContent: requirementsContent || '',
+        requirementsPath: requirementsPath,
       },
     };
 
@@ -47,23 +41,14 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
       REQUIREMENTS_REVIEW_TOOL.resultSchema
     );
 
-    return this.processReviewResult(validatedResult, state);
+    // Store review feedback in state for the update node to process
+    return {
+      approvedRequirementIds: validatedResult.approvedRequirementIds,
+      rejectedRequirementIds: validatedResult.rejectedRequirementIds,
+      requirementModifications: validatedResult.modifications,
+      requirementsUserFeedback: validatedResult.userFeedback,
+      requirementsReviewSummary: validatedResult.reviewSummary,
+      userIterationPreference: validatedResult.userIterationPreference,
+    };
   };
-
-  private processReviewResult(
-    validatedResult: z.infer<typeof REQUIREMENTS_REVIEW_TOOL.resultSchema>,
-    state: PRDState
-  ): Partial<PRDState> {
-    // Write the updated requirements markdown content to disk
-    const requirementsFilePath = writeMagiArtifact(
-      state.projectPath,
-      state.featureId,
-      MAGI_ARTIFACTS.REQUIREMENTS,
-      validatedResult.updatedRequirementsContent
-    );
-    this.logger?.info(`Requirements updated and written to file: ${requirementsFilePath}`);
-
-    // Return empty state update (paths are calculated when needed)
-    return {};
-  }
 }

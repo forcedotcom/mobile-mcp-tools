@@ -25,36 +25,36 @@ export class MagiFeatureBriefUpdateTool extends PRDAbstractWorkflowTool<
   };
 
   private generateFeatureBriefUpdateGuidance(input: FeatureBriefUpdateInput) {
-    // featureBrief should always be content (never a path)
-    // The workflow node is responsible for reading from files if needed
-    const existingFeatureBriefContent =
-      input.featureBrief || 'Existing feature brief content not found';
+    const featureBriefPath = input.featureBriefPath;
+    const reviewResult = input.reviewResult;
+    const hasModifications = reviewResult.modifications && reviewResult.modifications.length > 0;
 
     return `
 # ROLE
 
-You are a feature brief update tool. Your task is to revise an EXISTING feature brief based on user feedback and requested modifications. You must maintain the same feature ID and update the content to address the user's concerns.
+You are a feature brief update tool. Your task is to revise an EXISTING feature brief based on user feedback and requested modifications. This tool is ONLY used when modifications are requested (not for approvals). You must maintain the same feature ID and update the content to address the user's concerns.
 
 # CONTEXT
 
-## Existing Feature Brief to Update
+## Feature Brief File to Update
 
-**Feature ID**: ${input.existingFeatureId} (MUST be preserved in the output)
+**File Path**: ${featureBriefPath}
 
-**Current Feature Brief Content**:
-${existingFeatureBriefContent}
+You should read the feature brief file from this path and update it based on the review feedback.
 
-## Original User Utterance
-${JSON.stringify(input.userUtterance)}
+## Review Result
 
-## User Feedback
-${input.userFeedback || 'No specific feedback provided'}
+**Status**: draft
+
+**Review Summary**: ${reviewResult.reviewSummary}
+
+**User Feedback**: ${reviewResult.userFeedback || 'No specific feedback provided'}
 
 ## Requested Modifications
 ${
-  input.modifications && input.modifications.length > 0
-    ? JSON.stringify(input.modifications, null, 2)
-    : 'No specific modifications requested'
+  hasModifications
+    ? JSON.stringify(reviewResult.modifications, null, 2)
+    : 'No specific modifications requested - but user feedback indicates changes are needed'
 }
 
 # TASK
@@ -65,13 +65,14 @@ You must update the feature brief to incorporate:
 3. Address any concerns or issues raised during the review
 
 **CRITICAL REQUIREMENTS**:
-- Maintain the SAME feature ID: "${input.existingFeatureId}"
+- Read the feature brief file from the provided path
+- Extract the feature ID from the existing brief (must be preserved in the output)
 - Preserve the overall structure and intent of the original brief
 - Incorporate changes naturally and coherently
 - Ensure the updated brief addresses all feedback and modifications
 - Keep the markdown formatting consistent
 - **MUST include a Status section** with format: '## Status\n**Status**: draft' (near the top, after the title)
-- The status should always be set to "draft" when updating the feature brief
+- The status should always be set to "draft" when updating the feature brief (since changes are being made)
 
 # UPDATE GUIDELINES
 
@@ -90,7 +91,7 @@ Generate a COMPLETE, updated feature brief in Markdown format that:
 - Incorporates all requested modifications
 - Addresses all user feedback
 - Maintains professional formatting
-- Preserves the feature ID: "${input.existingFeatureId}"
+- Preserves the feature ID from the original brief (extract from the file content)
 - **MUST include a Status section** near the top (after the title) with: '## Status\n**Status**: draft'
 
 **Output only the updated markdown content** - do not include explanations or metadata about the changes.

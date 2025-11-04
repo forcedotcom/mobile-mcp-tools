@@ -10,7 +10,7 @@ import { Logger } from '../../../../logging/logger.js';
 import { PRD_GENERATION_TOOL, PRDGenerationInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class SFMobileNativePRDGenerationTool extends PRDAbstractWorkflowTool<
+export class MagiPRDGenerationTool extends PRDAbstractWorkflowTool<
   typeof PRD_GENERATION_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {
@@ -34,11 +34,16 @@ You are a technical writer tasked with creating a comprehensive Product Requirem
 ${input.originalUserUtterance}
 
 ### Feature Brief
-${input.featureBrief}
+
+**File Path**: ${input.featureBriefPath}
+
+Please read the feature brief file from the path above.
 
 ### Current Functional Requirements
 
-${input.requirementsContent}
+**File Path**: ${input.requirementsPath}
+
+Please read the requirements.md file from the path above.
 
 **Important**: When generating the PRD, focus on **approved requirements** and **modified requirements**. Ignore **rejected requirements** and **out-of-scope requirements** as they have been explicitly excluded from the feature scope.
 

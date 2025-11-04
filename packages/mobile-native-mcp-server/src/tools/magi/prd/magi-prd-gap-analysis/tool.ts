@@ -13,9 +13,7 @@ import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.j
 /**
  * Tool for analyzing requirements against a feature brief to identify gaps.
  */
-export class SFMobileNativeGapAnalysisTool extends PRDAbstractWorkflowTool<
-  typeof GAP_ANALYSIS_TOOL
-> {
+export class MagiGapAnalysisTool extends PRDAbstractWorkflowTool<typeof GAP_ANALYSIS_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
     super(server, GAP_ANALYSIS_TOOL, 'GapAnalysisTool', logger);
   }
@@ -28,15 +26,19 @@ export class SFMobileNativeGapAnalysisTool extends PRDAbstractWorkflowTool<
 
   private generateGapAnalysisGuidance(input: GapAnalysisInput) {
     return `
-You are a requirements analysis expert conducting a gap analysis for a Salesforce mobile native app. Analyze the current functional requirements against the feature brief to identify gaps, assess requirement strengths, and provide recommendations.
+You are a requirements analysis expert conducting a gap analysis for a Salesforce mobile native app. Analyze the current functional requirements against the feature brief to identify gaps and provide recommendations.
 
 ## Feature Brief
 
-${input.featureBrief}
+**File Path**: ${input.featureBriefPath}
+
+Please read the feature brief file from the path above.
 
 ## Current Functional Requirements
 
-${input.requirementsContent}
+**File Path**: ${input.requirementsPath}
+
+Please read the requirements.md file from the path above.
 
 ## Your Task
 
@@ -51,42 +53,6 @@ Conduct a comprehensive gap analysis examining:
 
 **Important**: When analyzing requirements, focus on **approved requirements** and **modified requirements**. Ignore **rejected requirements** and **out-of-scope requirements** as they have been explicitly excluded from the feature scope.
 
-After presenting the gap analysis results, **ASK THE USER** if they want to:
-- Continue refining requirements to address the identified gaps, OR
-- Proceed to PRD generation despite the gaps (useful when gaps are minor or acceptable)
-
-The user should make an informed decision based on the gap analysis findings.
-
-## Field Requirements and Guidance
-
-**IMPORTANT**: The output schema will be provided to you separately. Ensure ALL required fields are included in your response. Pay special attention to the following:
-
-### Gap Objects (\`identifiedGaps\` array)
-
-Each gap object **MUST** include ALL required fields. Key guidance:
-- **id**: Use format "GAP-001", "GAP-002", etc. for unique identifiers
-- **title**: Provide a clear, concise title summarizing the gap (REQUIRED - do not omit this field)
-- **description**: Explain what functionality or requirement is missing
-- **severity**: Choose appropriate severity level based on impact
-- **category**: Categorize the gap (e.g., "Data", "UI/UX", "Security", "Performance")
-- **impact**: Explain the consequences if this gap is not addressed
-- **suggestedRequirements**: Provide actionable suggestions, each with:
-  - **title**: Clear title for the suggested requirement
-  - **description**: Detailed description of what should be implemented
-  - **priority**: Appropriate priority level
-  - **category**: Relevant category
-
-### Other Required Fields
-
-- **gapAnalysisScore**: Overall score from 0-100 (higher is better)
-- **requirementStrengths**: Analysis of individual requirement quality
-- **recommendations**: High-level improvement recommendations
-- **summary**: Comprehensive summary of findings
-- **userWantsToContinueDespiteGaps**: Set to:
-- **true** if the user wants to continue refining requirements to address gaps
-- **false** if the user wants to proceed to PRD generation despite the gaps
-- **Leave it out** if you couldn't get a clear user decision (will default to false)
-
 ## Analysis Guidelines
 
 ### Severity Assessment
@@ -95,12 +61,12 @@ Each gap object **MUST** include ALL required fields. Key guidance:
 - **Medium**: Nice-to-have functionality missing
 - **Low**: Minor enhancements missing
 
-### Requirement Strength Scoring (0-10)
-- **9-10**: Excellent - Clear, complete, actionable, well-prioritized
-- **7-8**: Good - Mostly clear with minor gaps
-- **5-6**: Fair - Adequate but needs improvement
-- **3-4**: Poor - Significant gaps
-- **0-2**: Very Poor - Unclear, incomplete, or not actionable
+### Gap Analysis Score (0-100)
+Score based on:
+- **Coverage**: How well requirements cover the feature brief
+- **Completeness**: Whether all necessary components and flows are covered
+- **Clarity**: Whether requirements are specific, measurable, and actionable
+- **Feasibility**: Whether requirements are realistic for mobile native app
 
 Provide detailed, actionable feedback to improve requirements quality and completeness.
 `;

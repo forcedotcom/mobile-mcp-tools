@@ -11,7 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { GAP_ANALYSIS_TOOL } from '../../../../tools/magi/prd/magi-prd-gap-analysis/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import { readMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
+import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
 
 export class PRDGapAnalysisNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -19,21 +19,18 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Get feature brief content from state or file
-    const featureBriefContent = readMagiArtifact(
+    const featureBriefPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF
     );
 
-    // Read requirements content from file
-    const requirementsContent = readMagiArtifact(
+    const requirementsPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.REQUIREMENTS
     );
 
-    // Tool result not provided - need to call the tool
     const toolInvocationData: MCPToolInvocationData<typeof GAP_ANALYSIS_TOOL.inputSchema> = {
       llmMetadata: {
         name: GAP_ANALYSIS_TOOL.toolId,
@@ -41,8 +38,8 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
         inputSchema: GAP_ANALYSIS_TOOL.inputSchema,
       },
       input: {
-        featureBrief: featureBriefContent,
-        requirementsContent,
+        featureBriefPath: featureBriefPath,
+        requirementsPath: requirementsPath,
       },
     };
 
@@ -53,7 +50,6 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
     return {
       gapAnalysisScore: validatedResult.gapAnalysisScore,
       identifiedGaps: validatedResult.identifiedGaps,
-      userIterationOverride: validatedResult.userWantsToContinueDespiteGaps,
     };
   };
 }

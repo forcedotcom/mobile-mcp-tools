@@ -12,7 +12,6 @@ import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { FEATURE_BRIEF_REVIEW_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-feature-brief-review/metadata.js';
 import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
-import * as fs from 'fs';
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
@@ -20,14 +19,6 @@ vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     FEATURE_BRIEF: 'feature-brief.md',
-  },
-}));
-
-// Mock fs
-vi.mock('fs', () => ({
-  default: {
-    existsSync: vi.fn(),
-    writeFileSync: vi.fn(),
   },
 }));
 
@@ -51,18 +42,18 @@ describe('PRDFeatureBriefReviewNode', () => {
 
   describe('execute() - Tool Invocation', () => {
     it('should invoke feature brief review tool with correct metadata', () => {
+      const featureBriefContent = '# Feature Brief\n\nContent';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief\n\nContent',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: true,
         reviewSummary: 'Feature brief approved',
+        updatedFeatureBrief: '# Feature Brief\n\n## Status\n**Status**: approved',
       });
 
       node.execute(inputState);
@@ -72,20 +63,19 @@ describe('PRDFeatureBriefReviewNode', () => {
       expect(lastCall?.llmMetadata.description).toBe(FEATURE_BRIEF_REVIEW_TOOL.description);
     });
 
-    it('should pass feature brief content from state to tool', () => {
+    it('should pass feature brief content from file to tool', () => {
       const featureBriefContent = '# Feature Brief\n\nTest content';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent,
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: true,
         reviewSummary: 'Approved',
+        updatedFeatureBrief: '# Feature Brief\n\n## Status\n**Status**: approved',
       });
 
       node.execute(inputState);
@@ -93,73 +83,55 @@ describe('PRDFeatureBriefReviewNode', () => {
       const lastCall = mockToolExecutor.getLastCall();
       expect(lastCall?.input.featureBrief).toBe(featureBriefContent);
     });
-
-    it('should read feature brief from file if not in state', () => {
-      const fileContent = '# Feature Brief from File';
-      const inputState = createPRDTestState({
-        projectPath: '/path/to/project',
-        featureId: 'feature-123',
-        featureBriefContent: undefined,
-      });
-
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(fileContent);
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
-
-      mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
-        approved: true,
-        reviewSummary: 'Approved',
-      });
-
-      node.execute(inputState);
-
-      expect(wellKnownDirectory.readMagiArtifact).toHaveBeenCalled();
-      const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.featureBrief).toBe(fileContent);
-    });
   });
 
   describe('execute() - Approval Handling', () => {
-    it('should write feature brief file when approved', () => {
+    it('should write updated feature brief file when approved', () => {
       const featureBriefContent = '# Feature Brief\n\nContent';
+      const updatedContent = '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent,
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: true,
         reviewSummary: 'Feature brief approved',
+        updatedFeatureBrief: updatedContent,
       });
 
       node.execute(inputState);
 
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalled();
+      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+        '/path/to/project',
+        'feature-123',
+        expect.anything(),
+        updatedContent
+      );
     });
 
     it('should return approval state when approved', () => {
+      const featureBriefContent = '# Feature Brief';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: true,
         reviewSummary: 'Approved',
         userFeedback: 'Looks good!',
+        updatedFeatureBrief: '# Feature Brief\n\n## Status\n**Status**: approved',
       });
 
       const result = node.execute(inputState);
@@ -169,14 +141,13 @@ describe('PRDFeatureBriefReviewNode', () => {
     });
 
     it('should return rejection state when not approved', () => {
+      const featureBriefContent = '# Feature Brief';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: false,
@@ -198,14 +169,13 @@ describe('PRDFeatureBriefReviewNode', () => {
     });
 
     it('should not write file when not approved', () => {
+      const featureBriefContent = '# Feature Brief';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: false,
@@ -218,60 +188,28 @@ describe('PRDFeatureBriefReviewNode', () => {
     });
   });
 
-  describe('execute() - Resume Scenario', () => {
-    it('should use userInput result when provided (resume scenario)', () => {
-      const inputState = createPRDTestState({
-        projectPath: '/path/to/project',
-        featureId: 'feature-123',
-        userInput: {
-          approved: true,
-          reviewSummary: 'Approved via resume',
-        },
-      });
-
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
-        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
-      );
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
-
-      const result = node.execute(inputState);
-
-      expect(result.isFeatureBriefApproved).toBe(true);
-      expect(mockToolExecutor.getCallHistory().length).toBe(0); // Tool not called
-    });
-  });
-
   describe('execute() - Edge Cases', () => {
-    it('should handle empty feature brief content', () => {
+    it('should throw error when feature brief file not found', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '',
       });
 
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
 
-      mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
-        approved: true,
-        reviewSummary: 'Approved',
-      });
-
-      node.execute(inputState);
-
-      const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.featureBrief).toBe('');
+      expect(() => {
+        node.execute(inputState);
+      }).toThrow('Feature brief file not found');
     });
 
     it('should handle invalid approval state (modifications but approved=true)', () => {
+      const featureBriefContent = '# Feature Brief';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-      vi.mocked(fs.default.existsSync).mockReturnValue(false);
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_REVIEW_TOOL.toolId, {
         approved: true, // Invalid: approved but has modifications

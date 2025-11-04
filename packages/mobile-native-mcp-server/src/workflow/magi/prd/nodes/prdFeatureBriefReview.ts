@@ -11,11 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { FEATURE_BRIEF_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-feature-brief-review/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import {
-  MAGI_ARTIFACTS,
-  readMagiArtifact,
-  writeMagiArtifact,
-} from '../../../../utils/wellKnownDirectory.js';
+import { MAGI_ARTIFACTS, getMagiPath } from '../../../../utils/wellKnownDirectory.js';
 import z from 'zod';
 
 export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
@@ -24,18 +20,12 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Always read feature brief content from file
-    const featureBriefContent = readMagiArtifact(
+    // Get the path to the feature brief file
+    const featureBriefPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF
     );
-
-    if (!featureBriefContent) {
-      throw new Error(
-        `Feature brief file not found for featureId: ${state.featureId}. File should exist before review.`
-      );
-    }
 
     const toolInvocationData: MCPToolInvocationData<typeof FEATURE_BRIEF_REVIEW_TOOL.inputSchema> =
       {
@@ -45,7 +35,7 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
           inputSchema: FEATURE_BRIEF_REVIEW_TOOL.inputSchema,
         },
         input: {
-          featureBrief: featureBriefContent,
+          featureBriefPath: featureBriefPath,
         },
       };
 
@@ -59,7 +49,7 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
 
   private processReviewResult(
     validatedResult: z.infer<typeof FEATURE_BRIEF_REVIEW_TOOL.resultSchema>,
-    state: PRDState
+    _state: PRDState
   ): Partial<PRDState> {
     // Validate: If modifications are requested, approved must be false
     const hasModifications =
@@ -71,24 +61,18 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
       validatedResult.approved = false;
     }
 
-    // If approved, write the updated feature brief content back to file
-    // The tool should have updated the status section to "approved"
-    if (validatedResult.approved && validatedResult.updatedFeatureBrief) {
-      const featureBriefPath = writeMagiArtifact(
-        state.projectPath,
-        state.featureId,
-        MAGI_ARTIFACTS.FEATURE_BRIEF,
-        validatedResult.updatedFeatureBrief
-      );
+    // Log the review outcome
+    if (validatedResult.approved) {
       this.logger?.info(
-        `Feature brief approved and updated in file: ${featureBriefPath} (status: approved)`
+        `Feature brief approved. Feedback will be applied by update tool to set status to approved.`
       );
-    } else if (validatedResult.approved && !validatedResult.updatedFeatureBrief) {
-      this.logger?.warn(
-        'Feature brief approved but updatedFeatureBrief not provided. Status may not be updated correctly.'
+    } else {
+      this.logger?.info(
+        `Feature brief requires modifications. Feedback will be applied by update tool.`
       );
     }
 
+    // Return only the feedback - the update tool will handle file modifications
     return {
       isFeatureBriefApproved: validatedResult.approved,
       featureBriefUserFeedback: validatedResult.userFeedback,

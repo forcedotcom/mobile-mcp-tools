@@ -16,8 +16,10 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
   readMagiArtifact: vi.fn(),
+  writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     FEATURE_BRIEF: 'feature-brief.md',
+    REQUIREMENTS: 'requirements.md',
   },
 }));
 
@@ -49,9 +51,11 @@ describe('PRDInitialRequirementsGenerationNode', () => {
 
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
 
+      const requirementsMarkdown = '# Requirements\n\n## Status\n**Status**: draft';
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+
       mockToolExecutor.setResult(INITIAL_REQUIREMENTS_TOOL.toolId, {
-        functionalRequirements: [],
-        summary: 'Requirements generated',
+        requirementsMarkdown,
       });
 
       node.execute(inputState);
@@ -69,11 +73,11 @@ describe('PRDInitialRequirementsGenerationNode', () => {
         featureBriefContent: featureBrief,
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBrief);
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(INITIAL_REQUIREMENTS_TOOL.toolId, {
-        functionalRequirements: [],
-        summary: 'Summary',
+        requirementsMarkdown: '# Requirements',
       });
 
       node.execute(inputState);
@@ -82,34 +86,30 @@ describe('PRDInitialRequirementsGenerationNode', () => {
       expect(lastCall?.input.featureBrief).toBe(featureBrief);
     });
 
-    it('should return functional requirements', () => {
+    it('should write requirements markdown to file', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-
-      const requirements = [
-        {
-          id: 'REQ-001',
-          title: 'Requirement 1',
-          description: 'Description 1',
-          priority: 'high' as const,
-          category: 'UI/UX',
-        },
-      ];
+      const requirementsMarkdown = '# Requirements\n\n## Status\n**Status**: draft';
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Feature Brief');
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(INITIAL_REQUIREMENTS_TOOL.toolId, {
-        functionalRequirements: requirements,
-        summary: 'Generated requirements',
+        requirementsMarkdown,
       });
 
       const result = node.execute(inputState);
 
-      expect(result.functionalRequirements).toEqual(requirements);
-      expect(result.summary).toBe('Generated requirements');
+      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+        '/path/to/project',
+        'feature-123',
+        expect.anything(),
+        requirementsMarkdown
+      );
+      expect(result).toEqual({});
     });
   });
 });

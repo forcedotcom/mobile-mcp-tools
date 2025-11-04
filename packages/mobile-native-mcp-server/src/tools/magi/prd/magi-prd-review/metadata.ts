@@ -11,40 +11,28 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
+import { PRD_MODIFICATION_SCHEMA } from '../shared/prdSchemas.js';
 
 /**
  * PRD Review Tool Input Schema
  */
 export const PRD_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  prdContent: z.string().describe('The complete PRD.md file content to review'),
   prdFilePath: z.string().describe('The file path where the PRD is located'),
-  documentStatus: z
-    .object({
-      author: z.string().describe('Author of the PRD'),
-      lastModified: z.string().describe('Last modified date'),
-      status: z.enum(['draft', 'finalized']).describe('Document status'),
-    })
-    .describe('Current document status'),
 });
 
 export type PRDReviewInput = z.infer<typeof PRD_REVIEW_INPUT_SCHEMA>;
 
 export const PRD_REVIEW_RESULT_SCHEMA = z.object({
-  prdApproved: z.boolean().describe('Whether the user approved the PRD'),
-  prdModifications: z
-    .array(
-      z.object({
-        section: z.string().describe('Section of the PRD that was modified'),
-        originalContent: z.string().describe('Original content that was changed'),
-        modifiedContent: z.string().describe('New content after modification'),
-        modificationReason: z.string().describe('Reason for the modification'),
-      })
-    )
-    .optional()
-    .describe('Any modifications requested by the user'),
-  userFeedback: z.string().optional().describe('Additional feedback or comments from the user'),
+  approved: z.boolean().describe('Whether the PRD is approved by the user'),
+  userFeedback: z.string().optional().describe('User feedback or comments on the PRD'),
   reviewSummary: z.string().describe('Summary of the review process and decisions made'),
+  modifications: z
+    .array(PRD_MODIFICATION_SCHEMA)
+    .optional()
+    .describe('Requested modifications to the PRD (if not approved)'),
 });
+
+export type PRDReviewResult = z.infer<typeof PRD_REVIEW_RESULT_SCHEMA>;
 
 /**
  * PRD Review Tool Metadata

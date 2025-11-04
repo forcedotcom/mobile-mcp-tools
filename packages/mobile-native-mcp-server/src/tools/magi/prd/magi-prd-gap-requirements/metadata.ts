@@ -11,7 +11,6 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
-import { FUNCTIONAL_REQUIREMENT_SCHEMA } from '../magi-prd-initial-requirements/metadata.js';
 
 /**
  * Schema for a suggested requirement in a gap
@@ -42,21 +41,21 @@ export const GAP_SCHEMA = z.object({
  * Gap Requirements Tool Input Schema
  */
 export const GAP_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  featureBrief: z.string().describe('The original feature brief'),
-  requirementsContent: z
+  featureBriefPath: z.string().describe('The path to the feature brief file'),
+  requirementsPath: z
     .string()
-    .describe(
-      'The content of the requirements.md file containing all requirements (approved, rejected, modified, out-of-scope)'
-    ),
+    .describe('The path to the requirements.md file containing all requirements'),
   identifiedGaps: z.array(GAP_SCHEMA).describe('Identified gaps that need to be addressed'),
 });
 
 export type GapRequirementsInput = z.infer<typeof GAP_REQUIREMENTS_INPUT_SCHEMA>;
 
 export const GAP_REQUIREMENTS_RESULT_SCHEMA = z.object({
-  functionalRequirements: z.array(FUNCTIONAL_REQUIREMENT_SCHEMA),
-  summary: z.string().describe('Brief summary of the proposed requirements'),
-  gapsAddressed: z.array(z.string()).describe('IDs of gaps addressed by these requirements'),
+  updatedRequirementsMarkdown: z
+    .string()
+    .describe(
+      'Complete updated requirements.md file content in markdown format. This should include all existing requirements plus the new requirements appended to the "Pending Review Requirements" section. Status should remain "draft".'
+    ),
 });
 
 /**

@@ -11,7 +11,11 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { INITIAL_REQUIREMENTS_TOOL } from '../../../../tools/magi/prd/magi-prd-initial-requirements/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import { readMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
+import {
+  getMagiPath,
+  writeMagiArtifact,
+  MAGI_ARTIFACTS,
+} from '../../../../utils/wellKnownDirectory.js';
 
 /**
  * Workflow node for generating initial functional requirements from a feature brief.
@@ -22,7 +26,7 @@ export class PRDInitialRequirementsGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    const featureBriefContent = readMagiArtifact(
+    const featureBriefPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF
@@ -36,7 +40,7 @@ export class PRDInitialRequirementsGenerationNode extends PRDAbstractToolNode {
           inputSchema: INITIAL_REQUIREMENTS_TOOL.inputSchema,
         },
         input: {
-          featureBrief: featureBriefContent,
+          featureBriefPath: featureBriefPath,
         },
       };
 
@@ -44,6 +48,20 @@ export class PRDInitialRequirementsGenerationNode extends PRDAbstractToolNode {
       toolInvocationData,
       INITIAL_REQUIREMENTS_TOOL.resultSchema
     );
-    return validatedResult;
+
+    // Write the requirements file immediately with draft status
+    // The tool should have already included the status section in the markdown
+    const requirementsFilePath = writeMagiArtifact(
+      state.projectPath,
+      state.featureId,
+      MAGI_ARTIFACTS.REQUIREMENTS,
+      validatedResult.requirementsMarkdown
+    );
+    this.logger?.info(
+      `Initial requirements written to file: ${requirementsFilePath} (status: draft)`
+    );
+
+    // Return empty state - content is now always read from file
+    return {};
   };
 }

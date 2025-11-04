@@ -29,12 +29,10 @@ export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
  * Gap Analysis Tool Input Schema
  */
 export const GAP_ANALYSIS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  featureBrief: z.string().describe('The original feature brief'),
-  requirementsContent: z
+  featureBriefPath: z.string().describe('The path to the feature brief file'),
+  requirementsPath: z
     .string()
-    .describe(
-      'The content of the requirements.md file containing all requirements (approved, rejected, modified, out-of-scope)'
-    ),
+    .describe('The path to the requirements.md file containing all requirements'),
 });
 
 export type GapAnalysisInput = z.infer<typeof GAP_ANALYSIS_INPUT_SCHEMA>;
@@ -69,32 +67,6 @@ export const GAP_ANALYSIS_RESULT_SCHEMA = z.object({
       })
     )
     .describe('Array of identified gaps'),
-  requirementStrengths: z
-    .array(
-      z.object({
-        requirementId: z.string().describe('ID of the requirement being analyzed'),
-        strengthScore: z
-          .number()
-          .min(0)
-          .max(10)
-          .describe('Strength score for this requirement (0-10)'),
-        strengths: z
-          .array(z.string())
-          .describe('List of strengths identified for this requirement'),
-        weaknesses: z.array(z.string()).describe('List of weaknesses or areas for improvement'),
-      })
-    )
-    .describe('Analysis of individual requirement strengths'),
-  recommendations: z
-    .array(z.string())
-    .describe('High-level recommendations for improving the requirements'),
-  summary: z.string().describe('Summary of the gap analysis findings'),
-  userWantsToContinueDespiteGaps: z
-    .boolean()
-    .optional()
-    .describe(
-      'User decision to continue refining requirements despite gaps. If not provided, defaults to false.'
-    ),
 });
 
 /**

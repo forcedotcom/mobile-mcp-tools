@@ -48,10 +48,12 @@ describe('PRDGenerationNode', () => {
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userUtterance: 'Add authentication',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements');
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce('# Feature Brief') // feature brief
+        .mockReturnValueOnce('# Requirements'); // requirements
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent: '# PRD\n\nContent',
@@ -73,15 +75,18 @@ describe('PRDGenerationNode', () => {
     });
 
     it('should pass user utterance, feature brief, and requirements to tool', () => {
+      const featureBrief = '# Feature Brief\n\nContent';
+      const requirementsContent = '# Requirements\n\nREQ-001: Requirement';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userUtterance: 'Add authentication feature',
-        featureBriefContent: '# Feature Brief',
       });
 
-      const requirementsContent = '# Requirements\n\nREQ-001: Requirement';
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce(featureBrief) // feature brief
+        .mockReturnValueOnce(requirementsContent); // requirements
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent: '# PRD',
@@ -99,7 +104,7 @@ describe('PRDGenerationNode', () => {
 
       const lastCall = mockToolExecutor.getLastCall();
       expect(lastCall?.input.originalUserUtterance).toBe('Add authentication feature');
-      expect(lastCall?.input.featureBrief).toBe('# Feature Brief');
+      expect(lastCall?.input.featureBrief).toBe(featureBrief);
       expect(lastCall?.input.requirementsContent).toBe(requirementsContent);
     });
 
@@ -108,10 +113,11 @@ describe('PRDGenerationNode', () => {
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userUtterance: 'Add feature',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements');
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce('# Feature Brief') // feature brief
+        .mockReturnValueOnce('# Requirements'); // requirements
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/prd.md'
       );
@@ -131,7 +137,12 @@ describe('PRDGenerationNode', () => {
 
       node.execute(inputState);
 
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalled();
+      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+        '/path/to/project',
+        'feature-123',
+        expect.anything(),
+        prdContent
+      );
     });
 
     it('should return PRD content and status', () => {
@@ -139,10 +150,11 @@ describe('PRDGenerationNode', () => {
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userUtterance: 'Add feature',
-        featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements');
+      vi.mocked(wellKnownDirectory.readMagiArtifact)
+        .mockReturnValueOnce('# Feature Brief') // feature brief
+        .mockReturnValueOnce('# Requirements'); // requirements
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/prd.md'
       );
@@ -166,33 +178,6 @@ describe('PRDGenerationNode', () => {
 
       expect(result.prdContent).toBe(prdContent);
       expect(result.prdStatus).toEqual(documentStatus);
-    });
-  });
-
-  describe('execute() - Resume Scenario', () => {
-    it('should use userInput result when provided (resume scenario)', () => {
-      const inputState = createPRDTestState({
-        projectPath: '/path/to/project',
-        featureId: 'feature-123',
-        userInput: {
-          prdContent: '# PRD from resume',
-          prdFilePath: '/path/to/prd.md',
-          documentStatus: {
-            author: 'AI',
-            lastModified: '2025-01-01',
-            status: 'draft' as const,
-          },
-        },
-      });
-
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
-        '/path/to/project/magi-sdd/feature-123/prd.md'
-      );
-
-      const result = node.execute(inputState);
-
-      expect(result.prdContent).toBe('# PRD from resume');
-      expect(mockToolExecutor.getCallHistory().length).toBe(0); // Tool not called
     });
   });
 

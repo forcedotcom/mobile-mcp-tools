@@ -25,16 +25,18 @@ export class MagiFeatureBriefReviewTool extends PRDAbstractWorkflowTool<
   };
 
   private generateFeatureBriefReviewGuidance(input: FeatureBriefReviewInput) {
-    const featureBriefContent = input.featureBrief || 'Feature brief content not found';
+    const featureBriefPath = input.featureBriefPath || 'Feature brief path not found';
 
     return `
 You are facilitating a feature brief review session with the user. Your role is to present the generated feature brief clearly and guide the user through the review process.
 
 ## Feature Brief to Review
 
-The following feature brief has been generated from the user's original request:
+The feature brief has been generated from the user's original request and is located at:
 
-${featureBriefContent}
+**File Path**: ${featureBriefPath}
+
+You should read the file from this path and present it to the user for review.
 
 ## Review Process
 
@@ -60,6 +62,7 @@ The user can respond in one of the following ways:
 
 ## Guidelines
 
+- Read the feature brief file from the provided path
 - Present the feature brief in a clear, readable format
 - Ask open-ended questions to understand the user's approval or concerns
 - If the user wants modifications, capture the specific sections and requested changes
@@ -74,18 +77,18 @@ The user can respond in one of the following ways:
    - You MUST set approved to false
    - You MUST provide the modifications array
    - You MUST NOT modify the feature brief file directly
-   - You MUST return control to the workflow to regenerate
+   - You MUST return control to the workflow to apply the changes
 
 2. **If the user approves the feature brief as-is**:
    - You MUST set approved to true
    - You MUST NOT include any modifications in the array
-   - The workflow will proceed to requirements generation
+   - The workflow will proceed to apply the approval status update
 
 3. **ABSOLUTELY FORBIDDEN**:
    - Modifying the feature brief file directly
    - Editing files and then approving
    - Setting approved to true when modifications are requested
-   - Bypassing the workflow regeneration process
+   - Returning updated feature brief content (only return feedback)
 
 ## Approval Logic
 
@@ -96,31 +99,7 @@ The logic is simple:
 **You cannot approve AND request modifications at the same time.**
 If modifications are requested, approval MUST be false so the workflow can regenerate properly.
 
-## What Happens Next
-
-**If approved (approved: true)**:
-- You MUST update the Status section in the feature brief markdown to show "approved"
-- The Status section should have format: "## Status\n**Status**: approved"
-- You MUST return the complete updated feature brief markdown content in the updatedFeatureBrief field
-- The workflow will write this updated content to the file
-- Workflow proceeds directly to Requirements Generation
-- The approved feature brief file will be used for requirements generation
-
-**If modifications requested (approved: false)**:
-- Feature brief file remains on disk with draft status
-- Workflow automatically routes to Feature Brief Update Node
-- Your modifications and feedback will be passed to the update tool
-- A revised feature brief will be created (reusing same feature ID)
-- The updated content will be written to file with draft status
-- The user will review the revised version
-- This process repeats until the user approves (then status updated to approved)
-
-**CRITICAL FILE STATUS UPDATES**:
-- When approving: You MUST update the Status section in the markdown from "draft" to "approved"
-- Return the complete updated feature brief markdown in the updatedFeatureBrief field
-- The Status section format must be: ## Status\n**Status**: approved (near the top, after the title)
-
-Begin the review process by presenting the feature brief and asking for the user's approval or requested modifications.
+Begin the review process by reading the feature brief file and asking for the user's approval or requested modifications.
     `;
   }
 }

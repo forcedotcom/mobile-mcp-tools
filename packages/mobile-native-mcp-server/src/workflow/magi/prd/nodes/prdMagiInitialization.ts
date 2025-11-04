@@ -22,11 +22,9 @@ export class PRDMagiInitializationNode extends PRDAbstractToolNode {
     const initializedState: Partial<PRDState> = {
       userInput: state.userInput || {},
       // Only initialize these if they're not already set
-      ...(state.functionalRequirements === undefined && { functionalRequirements: [] }),
       ...(state.gapAnalysisScore === undefined && { gapAnalysisScore: 0 }),
       ...(state.identifiedGaps === undefined && { identifiedGaps: [] }),
-      ...(state.shouldIterate === undefined && { shouldIterate: false }),
-      ...(state.userIterationOverride === undefined && { userIterationOverride: undefined }),
+      ...(state.userIterationPreference === undefined && { userIterationPreference: undefined }),
       ...(state.prdContent === undefined && { prdContent: '' }),
       ...(state.prdStatus === undefined && {
         prdStatus: {

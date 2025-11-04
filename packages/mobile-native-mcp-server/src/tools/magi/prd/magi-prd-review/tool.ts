@@ -10,7 +10,7 @@ import { Logger } from '../../../../logging/logger.js';
 import { PRD_REVIEW_TOOL, PRDReviewInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class SFMobileNativePRDReviewTool extends PRDAbstractWorkflowTool<typeof PRD_REVIEW_TOOL> {
+export class MagiPRDReviewTool extends PRDAbstractWorkflowTool<typeof PRD_REVIEW_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
     super(server, PRD_REVIEW_TOOL, 'PRDReviewTool', logger);
   }
@@ -29,13 +29,8 @@ You are facilitating a PRD review session with the user. Your role is to present
 ## Generated PRD Document
 
 **File Path**: ${input.prdFilePath}
-**Author**: ${input.documentStatus.author}
-**Last Modified**: ${input.documentStatus.lastModified}
-**Status**: ${input.documentStatus.status}
 
-## PRD Content
-
-${input.prdContent}
+Please read the PRD.md file from the path above and use it to conduct the review session.
 
 ## Review Process
 
@@ -62,6 +57,26 @@ The user should consider:
 2. **MODIFY**: Request specific changes to sections of the PRD
 3. **REJECT**: Reject the PRD and request a complete revision
 
+## Output Format
+
+After completing the review, you must return feedback about the review decisions:
+
+1. **approved**: Boolean indicating if the PRD is approved (true) or modifications are needed (false)
+2. **userFeedback**: Optional additional feedback or comments from the user
+3. **reviewSummary**: Summary of what happened in this review session
+4. **modifications**: Optional array of modification requests. Each modification should include:
+   - **section**: Section of the PRD to modify (e.g., "Functional Requirements", "Feature Brief")
+   - **modificationReason**: Reason for the modification request
+   - **requestedContent**: The user's requested content changes
+
+## CRITICAL WORKFLOW RULES
+
+**MANDATORY**: You MUST follow these rules exactly:
+
+1. **You are ONLY collecting feedback** - Do NOT modify the PRD.md file directly
+2. **Return only the review decisions** - The workflow will apply these changes using a separate update tool
+3. **Be specific** - For modifications, provide clear details about what sections need changes and what the new content should be
+
 ## Important Notes
 
 - **Approved PRD** will proceed to finalization and become the official requirements document
@@ -69,7 +84,9 @@ The user should consider:
 - **Rejected PRD** will require significant revision and regeneration
 - All decisions should be clearly documented for future reference
 
-Begin the review process by presenting the PRD and asking for the user's decision.
+**Remember**: You are collecting feedback only. Do NOT return updated PRD.md content. Return only the review decisions as specified in the output format.
+
+Begin the review process by reading the PRD file and asking for the user's decision.
     `;
   }
 }

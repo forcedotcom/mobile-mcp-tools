@@ -14,7 +14,7 @@ import { RequirementsBaseUtility } from '../shared/requirementsBaseUtility.js';
 /**
  * Tool for generating functional requirements based on identified gaps.
  */
-export class SFMobileNativeGapRequirementsTool extends PRDAbstractWorkflowTool<
+export class MagiGapRequirementsTool extends PRDAbstractWorkflowTool<
   typeof GAP_REQUIREMENTS_TOOL
 > {
   private requirementsUtility: RequirementsBaseUtility;
@@ -34,11 +34,11 @@ export class SFMobileNativeGapRequirementsTool extends PRDAbstractWorkflowTool<
     const gapsList = input.identifiedGaps
       .map(
         (gap, index) => `${index + 1}. **${gap.title}** (${gap.severity} severity)
- - ID: ${gap.id}
- - Category: ${gap.category}
- - Description: ${gap.description}
- - Impact: ${gap.impact}
- - Suggested Requirements: ${gap.suggestedRequirements.map(req => req.title).join(', ')}`
+- ID: ${gap.id}
+- Category: ${gap.category}
+- Description: ${gap.description}
+- Impact: ${gap.impact}
+- Suggested Requirements: ${gap.suggestedRequirements.map(req => req.title).join(', ')}`
       )
       .join('\n\n');
 
@@ -47,11 +47,15 @@ You are a product requirements analyst tasked with generating additional functio
 
 ## Feature Brief
 
-${input.featureBrief}
+**File Path**: ${input.featureBriefPath}
+
+Please read the feature brief file from the path above.
 
 ## Current Functional Requirements
 
-${input.requirementsContent}
+**File Path**: ${input.requirementsPath}
+
+Please read the requirements.md file from the path above.
 
 ## Gap Analysis Context
 
@@ -78,6 +82,27 @@ Your task is to generate NEW functional requirements that address the identified
 - Assign appropriate priorities based on gap severity
 
 ${this.requirementsUtility.generateCommonRequirementsGuidance()}
+
+## Output Requirements
+
+You MUST return the updated requirements markdown:
+
+**updatedRequirementsMarkdown**: Complete updated requirements.md file content
+
+### Updated Requirements Markdown Format
+
+The updatedRequirementsMarkdown MUST:
+- Preserve all existing sections (Approved Requirements, Modified Requirements, Rejected Requirements, Review History)
+- Append new requirements to the "Pending Review Requirements" section (or create it if it doesn't exist)
+- Maintain the Status section with "draft" status (do not change to approved)
+- Use format REQ-XXX for new requirement IDs, ensuring they are unique and don't conflict with existing IDs
+- Preserve all existing formatting and structure
+
+**CRITICAL**: 
+- The Status section should remain: "## Status\n**Status**: draft"
+- All new requirements should be added to the "Pending Review Requirements" section
+- Preserve all existing content and structure
+- The updatedRequirementsMarkdown field is REQUIRED and must contain the complete updated file content
 
 Focus on addressing the identified gaps while building upon existing requirements.
 `;

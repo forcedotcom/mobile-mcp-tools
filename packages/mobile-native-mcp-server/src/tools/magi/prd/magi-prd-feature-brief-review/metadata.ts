@@ -11,24 +11,16 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
+import { FEATURE_BRIEF_MODIFICATION_SCHEMA } from '../shared/featureBriefSchemas.js';
 
 /**
  * Feature Brief Review Tool Input Schema
  */
 export const FEATURE_BRIEF_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  featureBrief: z.string().describe('The feature brief content (markdown text) to review'),
+  featureBriefPath: z.string().describe('The path to the feature brief file to review'),
 });
 
 export type FeatureBriefReviewInput = z.infer<typeof FEATURE_BRIEF_REVIEW_INPUT_SCHEMA>;
-
-/**
- * Modification Request Schema (optional)
- */
-export const FEATURE_BRIEF_MODIFICATION_SCHEMA = z.object({
-  section: z.string().describe('Section of the feature brief to modify'),
-  modificationReason: z.string().describe('Reason for the modification request'),
-  requestedContent: z.string().describe("The user's requested content changes"),
-});
 
 export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
   approved: z.boolean().describe('Whether the feature brief is approved by the user'),
@@ -38,12 +30,6 @@ export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
     .array(FEATURE_BRIEF_MODIFICATION_SCHEMA)
     .optional()
     .describe('Requested modifications to the feature brief (if not approved)'),
-  updatedFeatureBrief: z
-    .string()
-    .optional()
-    .describe(
-      'Updated feature brief markdown content with status section updated. Required when approved=true, must include status section with "approved" status.'
-    ),
 });
 
 export type FeatureBriefReviewResult = z.infer<typeof FEATURE_BRIEF_REVIEW_RESULT_SCHEMA>;

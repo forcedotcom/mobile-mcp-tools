@@ -32,36 +32,16 @@ export const PRD_GENERATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.exten
   originalUserUtterance: z
     .string()
     .describe('The original user request or utterance that initiated this feature'),
-  featureBrief: z.string().describe('The approved feature brief'),
-  requirementsContent: z
+  featureBriefPath: z.string().describe('The path to the approved feature brief file'),
+  requirementsPath: z
     .string()
-    .describe(
-      'The content of the requirements.md file containing all requirements (approved, rejected, modified, out-of-scope)'
-    ),
+    .describe('The path to the requirements.md file containing all requirements'),
 });
 
 export type PRDGenerationInput = z.infer<typeof PRD_GENERATION_INPUT_SCHEMA>;
 
 export const PRD_GENERATION_RESULT_SCHEMA = z.object({
   prdContent: z.string().describe('The complete PRD.md file content'),
-  prdFilePath: z.string().describe('The file path where the PRD was generated'),
-  documentStatus: z
-    .object({
-      author: z.string().describe('Author of the PRD'),
-      lastModified: z.string().describe('Last modified date'),
-      status: z.enum(['draft', 'finalized']).describe('Document status'),
-    })
-    .describe('Document status information'),
-  requirementsCount: z.number().describe('Total number of requirements included in the PRD'),
-  traceabilityTableRows: z
-    .array(
-      z.object({
-        requirementId: z.string().describe('Requirement ID'),
-        technicalRequirementIds: z.string().describe('Technical requirement IDs (TBD for now)'),
-        userStoryIds: z.string().describe('User story IDs (TBD for now)'),
-      })
-    )
-    .describe('Traceability table rows'),
 });
 
 /**

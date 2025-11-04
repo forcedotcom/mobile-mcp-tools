@@ -29,14 +29,17 @@ export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
  * Initial Requirements Tool Input Schema
  */
 export const INITIAL_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  featureBrief: z.string().describe('The feature brief generated from the previous step'),
+  featureBriefPath: z.string().describe('The path to the feature brief file to read'),
 });
 
 export type InitialRequirementsInput = z.infer<typeof INITIAL_REQUIREMENTS_INPUT_SCHEMA>;
 
 export const INITIAL_REQUIREMENTS_RESULT_SCHEMA = z.object({
-  functionalRequirements: z.array(FUNCTIONAL_REQUIREMENT_SCHEMA),
-  summary: z.string().describe('Brief summary of the proposed requirements'),
+  requirementsMarkdown: z
+    .string()
+    .describe(
+      'Complete requirements.md file content in markdown format, including Status section with "draft" status. Must follow the requirements.md structure with all requirements marked as pending review.'
+    ),
 });
 
 /**

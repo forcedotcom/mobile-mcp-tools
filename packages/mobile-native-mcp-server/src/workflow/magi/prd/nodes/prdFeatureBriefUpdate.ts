@@ -13,10 +13,13 @@ import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 
 import {
+  getMagiPath,
   readMagiArtifact,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
 } from '../../../../utils/wellKnownDirectory.js';
+import { FEATURE_BRIEF_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-feature-brief-review/metadata.js';
+import z from 'zod';
 
 export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -24,20 +27,29 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Always read feature brief content from file
-    const featureBriefContent = readMagiArtifact(
+    // This node should only be called when modifications are requested (not approved)
+    // The workflow routes approved reviews to the finalization node instead
+    if (state.isFeatureBriefApproved) {
+      throw new Error(
+        'Feature brief update node should not be called for approved reviews. Route to finalization node instead.'
+      );
+    }
+
+    // Get the path to the feature brief file
+    const featureBriefPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF
     );
 
-    if (!featureBriefContent) {
-      throw new Error(
-        `Feature brief file not found for featureId: ${state.featureId}. File should exist before update.`
-      );
-    }
+    // Construct review result from state
+    const reviewResult: z.infer<typeof FEATURE_BRIEF_REVIEW_TOOL.resultSchema> = {
+      approved: false, // Always false for update node
+      userFeedback: state.featureBriefUserFeedback,
+      reviewSummary: `Review of feature brief ${state.featureId} - modifications requested`,
+      modifications: state.featureBriefModifications,
+    };
 
-    // Build tool input with update context
     const toolInvocationData: MCPToolInvocationData<typeof FEATURE_BRIEF_UPDATE_TOOL.inputSchema> =
       {
         llmMetadata: {
@@ -46,11 +58,8 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
           inputSchema: FEATURE_BRIEF_UPDATE_TOOL.inputSchema,
         },
         input: {
-          existingFeatureId: state.featureId,
-          featureBrief: featureBriefContent,
-          userUtterance: state.userUtterance || '',
-          userFeedback: state.featureBriefUserFeedback,
-          modifications: state.featureBriefModifications,
+          featureBriefPath: featureBriefPath,
+          reviewResult: reviewResult,
         },
       };
 
@@ -59,15 +68,17 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
       FEATURE_BRIEF_UPDATE_TOOL.resultSchema
     );
 
-    // Write the updated feature brief file immediately with draft status
+    // Write the updated feature brief file with draft status
     // The tool should have already included the status section with "draft" status
-    const featureBriefPath = writeMagiArtifact(
+    const updatedFeatureBriefPath = writeMagiArtifact(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF,
       validatedResult.featureBriefMarkdown
     );
-    this.logger?.info(`Updated feature brief written to file: ${featureBriefPath} (status: draft)`);
+    this.logger?.info(
+      `Updated feature brief written to file: ${updatedFeatureBriefPath} (status: draft)`
+    );
 
     // Clear review state since we've processed the update
     // Content is now always read from file, so don't store in state

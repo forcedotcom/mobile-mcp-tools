@@ -16,6 +16,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
   readMagiArtifact: vi.fn(),
+  writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     FEATURE_BRIEF: 'feature-brief.md',
     REQUIREMENTS: 'requirements.md',
@@ -61,10 +62,11 @@ describe('PRDGapRequirementsGenerationNode', () => {
 
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements');
 
+      const updatedRequirementsMarkdown = '# Requirements\n\nUpdated';
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+
       mockToolExecutor.setResult(GAP_REQUIREMENTS_TOOL.toolId, {
-        functionalRequirements: [],
-        summary: 'Requirements generated',
-        gapsAddressed: ['GAP-001'],
+        updatedRequirementsMarkdown,
       });
 
       node.execute(inputState);
@@ -96,11 +98,10 @@ describe('PRDGapRequirementsGenerationNode', () => {
 
       const requirementsContent = '# Requirements';
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(GAP_REQUIREMENTS_TOOL.toolId, {
-        functionalRequirements: [],
-        summary: 'Summary',
-        gapsAddressed: [],
+        updatedRequirementsMarkdown: '# Requirements\n\nUpdated',
       });
 
       node.execute(inputState);
@@ -110,7 +111,7 @@ describe('PRDGapRequirementsGenerationNode', () => {
       expect(lastCall?.input.requirementsContent).toBe(requirementsContent);
     });
 
-    it('should return functional requirements', () => {
+    it('should write updated requirements markdown to file', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
@@ -128,29 +129,23 @@ describe('PRDGapRequirementsGenerationNode', () => {
         ],
       });
 
+      const updatedRequirementsMarkdown = '# Requirements\n\nUpdated';
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('# Requirements');
-
-      const requirements = [
-        {
-          id: 'REQ-001',
-          title: 'Requirement',
-          description: 'Description',
-          priority: 'high' as const,
-          category: 'Security',
-        },
-      ];
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(GAP_REQUIREMENTS_TOOL.toolId, {
-        functionalRequirements: requirements,
-        summary: 'Generated',
-        gapsAddressed: ['GAP-001'],
+        updatedRequirementsMarkdown,
       });
 
       const result = node.execute(inputState);
 
-      expect(result.functionalRequirements).toEqual(requirements);
-      expect(result.summary).toBe('Generated');
-      expect(result.gapsAddressed).toEqual(['GAP-001']);
+      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+        '/path/to/project',
+        'feature-123',
+        expect.anything(),
+        updatedRequirementsMarkdown
+      );
+      expect(result).toEqual({});
     });
   });
 });

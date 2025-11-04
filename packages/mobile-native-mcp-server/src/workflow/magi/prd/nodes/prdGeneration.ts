@@ -13,7 +13,7 @@ import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 import {
   MAGI_ARTIFACTS,
-  readMagiArtifact,
+  getMagiPath,
   writeMagiArtifact,
 } from '../../../../utils/wellKnownDirectory.js';
 import z from 'zod';
@@ -24,21 +24,18 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Get feature brief content from state or file
-    const featureBriefContent = readMagiArtifact(
+    const featureBriefPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.FEATURE_BRIEF
     );
 
-    // Read requirements content from file
-    const requirementsContent = readMagiArtifact(
+    const requirementsPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.REQUIREMENTS
     );
 
-    // Tool result not provided - need to call the tool
     const toolInvocationData: MCPToolInvocationData<typeof PRD_GENERATION_TOOL.inputSchema> = {
       llmMetadata: {
         name: PRD_GENERATION_TOOL.toolId,
@@ -47,8 +44,8 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
       },
       input: {
         originalUserUtterance: state.userUtterance || '',
-        featureBrief: featureBriefContent,
-        requirementsContent,
+        featureBriefPath: featureBriefPath,
+        requirementsPath: requirementsPath,
       },
     };
 
@@ -73,10 +70,9 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
     );
     this.logger?.info(`PRD written to file: ${prdFilePath}`);
 
-    // Return minimal mapped state - paths are now calculated from projectPath and featureId
+    // Return minimal mapped state - content is now always read from file
     return {
       prdContent: validatedResult.prdContent,
-      prdStatus: validatedResult.documentStatus,
     };
   }
 }

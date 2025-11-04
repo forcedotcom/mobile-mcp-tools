@@ -25,13 +25,11 @@ export class PRDFeatureBriefGenerationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Get existing feature IDs to pass to the tool (for uniqueness checking)
     const prdWorkspacePath = getPrdWorkspacePath(state.projectPath);
     const currentFeatureIds = getExistingFeatureIds(prdWorkspacePath);
 
-    // Build tool input for initial generation
     const toolInput = {
-      userUtterance: state.userUtterance || '',
+      userUtterance: state.userUtterance,
       currentFeatureIds: currentFeatureIds,
     };
 
@@ -57,8 +55,7 @@ export class PRDFeatureBriefGenerationNode extends PRDAbstractToolNode {
     );
     this.logger?.info(`Created feature directory at: ${featureDirectoryPath}`);
 
-    // Write the feature brief file immediately with draft status
-    // The tool should have already included the status section in the markdown
+    // Write the feature brief file
     const featureBriefFilePath = writeMagiArtifact(
       state.projectPath,
       validatedResult.recommendedFeatureId,
@@ -67,7 +64,6 @@ export class PRDFeatureBriefGenerationNode extends PRDAbstractToolNode {
     );
     this.logger?.info(`Feature brief written to file: ${featureBriefFilePath} (status: draft)`);
 
-    // Return featureId only - content is now always read from file
     return {
       featureId: validatedResult.recommendedFeatureId,
     };

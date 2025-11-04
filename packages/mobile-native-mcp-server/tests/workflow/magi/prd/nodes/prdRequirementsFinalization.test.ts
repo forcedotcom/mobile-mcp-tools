@@ -6,11 +6,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PRDRequirementsReviewNode } from '../../../../../src/workflow/magi/prd/nodes/prdRequirementsReview.js';
+import { PRDRequirementsFinalizationNode } from '../../../../../src/workflow/magi/prd/nodes/prdRequirementsFinalization.js';
 import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
-import { REQUIREMENTS_REVIEW_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-requirements-review/metadata.js';
+import { REQUIREMENTS_FINALIZATION_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-requirements-finalization/metadata.js';
 import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
 
 // Mock wellKnownDirectory utilities
@@ -22,26 +22,26 @@ vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
   },
 }));
 
-describe('PRDRequirementsReviewNode', () => {
-  let node: PRDRequirementsReviewNode;
+describe('PRDRequirementsFinalizationNode', () => {
+  let node: PRDRequirementsFinalizationNode;
   let mockToolExecutor: MockToolExecutor;
   let mockLogger: MockLogger;
 
   beforeEach(() => {
     mockToolExecutor = new MockToolExecutor();
     mockLogger = new MockLogger();
-    node = new PRDRequirementsReviewNode(mockToolExecutor, mockLogger);
+    node = new PRDRequirementsFinalizationNode(mockToolExecutor, mockLogger);
     vi.clearAllMocks();
   });
 
   describe('Constructor', () => {
     it('should initialize with correct node name', () => {
-      expect(node.name).toBe('requirementsReview');
+      expect(node.name).toBe('requirementsFinalization');
     });
   });
 
   describe('execute() - Tool Invocation', () => {
-    it('should invoke requirements review tool with correct metadata', () => {
+    it('should invoke requirements finalization tool with correct metadata', () => {
       const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
@@ -51,15 +51,17 @@ describe('PRDRequirementsReviewNode', () => {
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
-      mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
-        updatedRequirementsContent: '# Requirements\n\nUpdated',
+      const finalizedContent = '# Requirements\n\n## Status\n**Status**: approved';
+      mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
+        finalizedRequirementsContent: finalizedContent,
+        finalizationSummary: 'Requirements finalized',
       });
 
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.llmMetadata.name).toBe(REQUIREMENTS_REVIEW_TOOL.toolId);
-      expect(lastCall?.llmMetadata.description).toBe(REQUIREMENTS_REVIEW_TOOL.description);
+      expect(lastCall?.llmMetadata.name).toBe(REQUIREMENTS_FINALIZATION_TOOL.toolId);
+      expect(lastCall?.llmMetadata.description).toBe(REQUIREMENTS_FINALIZATION_TOOL.description);
     });
 
     it('should pass requirements content to tool', () => {
@@ -72,8 +74,8 @@ describe('PRDRequirementsReviewNode', () => {
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
-      mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
-        updatedRequirementsContent: '# Requirements\n\nUpdated',
+      mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
+        finalizedRequirementsContent: '# Requirements\n\n## Status\n**Status**: approved',
       });
 
       node.execute(inputState);
@@ -82,9 +84,9 @@ describe('PRDRequirementsReviewNode', () => {
       expect(lastCall?.input.requirementsContent).toBe(requirementsContent);
     });
 
-    it('should write updated requirements markdown file', () => {
+    it('should write finalized requirements markdown to file', () => {
       const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
-      const updatedContent = '# Requirements\n\n## Status\n**Status**: draft\n\nUpdated';
+      const finalizedContent = '# Requirements\n\n## Status\n**Status**: approved';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
@@ -93,42 +95,33 @@ describe('PRDRequirementsReviewNode', () => {
       vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
-      mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
-        updatedRequirementsContent: updatedContent,
+      mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
+        finalizedRequirementsContent: finalizedContent,
       });
 
-      node.execute(inputState);
+      const result = node.execute(inputState);
 
       expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
         '/path/to/project',
         'feature-123',
         expect.anything(),
-        updatedContent
+        finalizedContent
       );
+      expect(result).toEqual({});
     });
-  });
 
-  describe('execute() - Validation Errors', () => {
-    it('should throw error when projectPath is missing', () => {
+    it('should throw error when requirements file not found', () => {
       const inputState = createPRDTestState({
-        projectPath: undefined,
+        projectPath: '/path/to/project',
         featureId: 'feature-123',
       });
 
-      expect(() => {
-        node.execute(inputState);
-      }).toThrow();
-    });
+      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
 
-    it('should throw error when featureId is missing', () => {
-      const inputState = createPRDTestState({
-        projectPath: '/path/to/project',
-        featureId: undefined,
-      });
-
-      expect(() => {
-        node.execute(inputState);
-      }).toThrow();
+      expect(() => node.execute(inputState)).toThrow(
+        'Requirements file not found for featureId: feature-123'
+      );
     });
   });
 });
+

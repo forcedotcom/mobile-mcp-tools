@@ -19,23 +19,6 @@ export class PRDReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Check if tool result is already provided in userInput (resume scenario)
-    const userInput = state.userInput || {};
-    if (typeof userInput.prdApproved === 'boolean' && typeof userInput.reviewSummary === 'string') {
-      // Tool result already provided - use it directly (resume scenario)
-      const validatedResult = PRD_REVIEW_TOOL.resultSchema.parse({
-        prdApproved: userInput.prdApproved,
-        prdModifications: userInput.prdModifications || [],
-        userFeedback: userInput.userFeedback,
-        reviewSummary: userInput.reviewSummary,
-      });
-
-      return {
-        isPrdApproved: validatedResult.prdApproved,
-      };
-    }
-
-    // Tool result not provided - need to call the tool
     const prdFilePath =
       state.projectPath && state.featureId
         ? getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.PRD)
@@ -48,13 +31,7 @@ export class PRDReviewNode extends PRDAbstractToolNode {
         inputSchema: PRD_REVIEW_TOOL.inputSchema,
       },
       input: {
-        prdContent: state.prdContent || '',
         prdFilePath: prdFilePath,
-        documentStatus: state.prdStatus || {
-          author: 'PRD Generator',
-          lastModified: new Date().toISOString(),
-          status: 'draft' as const,
-        },
       },
     };
 
@@ -62,8 +39,13 @@ export class PRDReviewNode extends PRDAbstractToolNode {
       toolInvocationData,
       PRD_REVIEW_TOOL.resultSchema
     );
+
+    // Store review feedback in state for the update node to process
     return {
-      isPrdApproved: validatedResult.prdApproved,
+      isPrdApproved: validatedResult.approved,
+      prdModifications: validatedResult.modifications,
+      prdUserFeedback: validatedResult.userFeedback,
+      prdReviewSummary: validatedResult.reviewSummary,
     };
   };
 }
