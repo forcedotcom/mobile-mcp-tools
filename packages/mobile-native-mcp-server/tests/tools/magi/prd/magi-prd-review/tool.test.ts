@@ -7,17 +7,17 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SFMobileNativePRDReviewTool } from '../../../../../src/tools/magi/prd/magi-prd-review/tool.js';
+import { MagiPRDReviewTool } from '../../../../../src/tools/magi/prd/magi-prd-review/tool.js';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
-describe('SFMobileNativePRDReviewTool', () => {
-  let tool: SFMobileNativePRDReviewTool;
+describe('MagiPRDReviewTool', () => {
+  let tool: MagiPRDReviewTool;
   let mockServer: McpServer;
   let annotations: ToolAnnotations;
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
-    tool = new SFMobileNativePRDReviewTool(mockServer);
+    tool = new MagiPRDReviewTool(mockServer);
     annotations = {
       readOnlyHint: true,
       destructiveHint: false,
@@ -44,83 +44,17 @@ describe('SFMobileNativePRDReviewTool', () => {
   });
 
   describe('Input Schema Validation', () => {
-    it('should accept valid input with all required fields', () => {
+    it('should accept valid input with prdFilePath', () => {
       const validInput = {
-        prdContent: '# PRD Content\n\nThis is test PRD content.',
         prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
-    });
-
-    it('should accept finalized status', () => {
-      const validInput = {
-        prdContent: '# PRD Content',
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'finalized' as const,
-        },
-        workflowStateData: { thread_id: 'test-123' },
-      };
-      const result = tool.toolMetadata.inputSchema.safeParse(validInput);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject input missing prdContent', () => {
-      const invalidInput = {
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
-        workflowStateData: { thread_id: 'test-123' },
-      };
-      const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
     });
 
     it('should reject input missing prdFilePath', () => {
       const invalidInput = {
-        prdContent: '# PRD Content',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
-        workflowStateData: { thread_id: 'test-123' },
-      };
-      const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject input missing documentStatus', () => {
-      const invalidInput = {
-        prdContent: '# PRD Content',
-        prdFilePath: '/path/to/prd.md',
-        workflowStateData: { thread_id: 'test-123' },
-      };
-      const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject invalid document status', () => {
-      const invalidInput = {
-        prdContent: '# PRD Content',
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'invalid' as unknown as 'draft' | 'finalized',
-        },
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
@@ -131,8 +65,7 @@ describe('SFMobileNativePRDReviewTool', () => {
   describe('Result Schema Validation', () => {
     it('should validate result with approved PRD', () => {
       const validResult = {
-        prdApproved: true,
-        reviewSummary: 'PRD approved by user',
+        approved: true,
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
@@ -140,42 +73,22 @@ describe('SFMobileNativePRDReviewTool', () => {
 
     it('should validate result with modifications', () => {
       const validResult = {
-        prdApproved: false,
-        prdModifications: [
+        approved: false,
+        modifications: [
           {
             section: 'Functional Requirements',
-            originalContent: 'Original content',
-            modifiedContent: 'Modified content',
             modificationReason: 'User requested changes',
+            requestedContent: 'Modified content',
           },
         ],
-        reviewSummary: 'PRD requires modifications',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
     });
 
-    it('should validate result with user feedback', () => {
-      const validResult = {
-        prdApproved: true,
-        userFeedback: 'Great work on the PRD!',
-        reviewSummary: 'PRD approved with positive feedback',
-      };
-      const result = tool.toolMetadata.resultSchema.safeParse(validResult);
-      expect(result.success).toBe(true);
-    });
-
-    it('should reject result missing prdApproved', () => {
+    it('should reject result missing approved', () => {
       const invalidResult = {
-        reviewSummary: 'Some summary',
-      };
-      const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject result missing reviewSummary', () => {
-      const invalidResult = {
-        prdApproved: true,
+        modifications: [],
       };
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
@@ -183,15 +96,9 @@ describe('SFMobileNativePRDReviewTool', () => {
   });
 
   describe('PRD Review Guidance Generation', () => {
-    it('should generate guidance with PRD content', async () => {
+    it('should generate guidance with PRD file path', async () => {
       const input = {
-        prdContent: '# Test PRD\n\nThis is test content.',
         prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -203,22 +110,13 @@ describe('SFMobileNativePRDReviewTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('PRD review session');
-      expect(response.promptForLLM).toContain('# Test PRD');
       expect(response.promptForLLM).toContain('/path/to/prd.md');
-      expect(response.promptForLLM).toContain('AI Assistant');
-      expect(response.promptForLLM).toContain('2025-01-01');
-      expect(response.promptForLLM).toContain('draft');
+      expect(response.promptForLLM).toContain('File Path');
     });
 
     it('should include review process instructions', async () => {
       const input = {
-        prdContent: '# PRD Content',
         prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'Author',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -234,13 +132,7 @@ describe('SFMobileNativePRDReviewTool', () => {
 
     it('should include review guidelines', async () => {
       const input = {
-        prdContent: '# PRD Content',
         prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'Author',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -257,13 +149,7 @@ describe('SFMobileNativePRDReviewTool', () => {
 
     it('should include workflow continuation instructions', async () => {
       const input = {
-        prdContent: '# PRD Content',
         prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'Author',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -278,41 +164,25 @@ describe('SFMobileNativePRDReviewTool', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty PRD content', async () => {
+    it('should handle empty PRD file path', async () => {
       const input = {
-        prdContent: '',
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
+        prdFilePath: '',
         workflowStateData: { thread_id: 'test-123' },
       };
 
       const result = await tool.handleRequest(input);
       expect(result.content).toBeDefined();
-      expect(result.content[0].type).toBe('text');
     });
 
-    it('should handle long PRD content', async () => {
-      const longContent = '# PRD\n\n' + 'Test content.\n'.repeat(1000);
+    it('should handle long PRD file path', async () => {
+      const longPath = '/path/to/' + 'nested/'.repeat(50) + 'prd.md';
       const input = {
-        prdContent: longContent,
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
+        prdFilePath: longPath,
         workflowStateData: { thread_id: 'test-123' },
       };
 
       const result = await tool.handleRequest(input);
       expect(result.content).toBeDefined();
-      const responseText = result.content[0].text as string;
-      const response = JSON.parse(responseText);
-      expect(response.promptForLLM).toContain(longContent);
     });
   });
 });

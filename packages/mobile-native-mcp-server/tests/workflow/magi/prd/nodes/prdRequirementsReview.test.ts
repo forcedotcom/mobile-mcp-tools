@@ -15,8 +15,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
-  readMagiArtifact: vi.fn(),
-  writeMagiArtifact: vi.fn(),
+  getMagiPath: vi.fn(),
   MAGI_ARTIFACTS: {
     REQUIREMENTS: 'requirements.md',
   },
@@ -48,11 +47,13 @@ describe('PRDRequirementsReviewNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/requirements.md'
+      );
 
       mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
-        updatedRequirementsContent: '# Requirements\n\nUpdated',
+        approvedRequirementIds: ['REQ-001'],
+        rejectedRequirementIds: [],
       });
 
       node.execute(inputState);
@@ -62,49 +63,55 @@ describe('PRDRequirementsReviewNode', () => {
       expect(lastCall?.llmMetadata.description).toBe(REQUIREMENTS_REVIEW_TOOL.description);
     });
 
-    it('should pass requirements content to tool', () => {
-      const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
+    it('should pass requirements path to tool', () => {
+      const requirementsPath = '/path/to/project/magi-sdd/feature-123/requirements.md';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(requirementsPath);
 
       mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
-        updatedRequirementsContent: '# Requirements\n\nUpdated',
+        approvedRequirementIds: ['REQ-001'],
+        rejectedRequirementIds: [],
       });
 
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.requirementsContent).toBe(requirementsContent);
+      expect(lastCall?.input.requirementsPath).toBe(requirementsPath);
     });
 
-    it('should write updated requirements markdown file', () => {
-      const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
-      const updatedContent = '# Requirements\n\n## Status\n**Status**: draft\n\nUpdated';
+    it('should return review results', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/requirements.md'
+      );
 
       mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
-        updatedRequirementsContent: updatedContent,
+        approvedRequirementIds: ['REQ-001', 'REQ-003'],
+        rejectedRequirementIds: ['REQ-002'],
+        modifications: [
+          {
+            requirementId: 'REQ-004',
+            modificationReason: 'Needs clarification',
+            requestedChanges: {
+              description: 'Updated description',
+            },
+          },
+        ],
       });
 
-      node.execute(inputState);
+      const result = node.execute(inputState);
 
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
-        '/path/to/project',
-        'feature-123',
-        expect.anything(),
-        updatedContent
-      );
+      expect(result.approvedRequirementIds).toEqual(['REQ-001', 'REQ-003']);
+      expect(result.rejectedRequirementIds).toEqual(['REQ-002']);
+      expect(result.requirementModifications).toBeDefined();
     });
   });
 

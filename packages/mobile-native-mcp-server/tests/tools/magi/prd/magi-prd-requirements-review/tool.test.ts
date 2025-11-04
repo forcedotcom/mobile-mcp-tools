@@ -7,17 +7,17 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SFMobileNativeRequirementsReviewTool } from '../../../../../src/tools/magi/prd/magi-prd-requirements-review/tool.js';
+import { MagiRequirementsReviewTool } from '../../../../../src/tools/magi/prd/magi-prd-requirements-review/tool.js';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
-describe('SFMobileNativeRequirementsReviewTool', () => {
-  let tool: SFMobileNativeRequirementsReviewTool;
+describe('MagiRequirementsReviewTool', () => {
+  let tool: MagiRequirementsReviewTool;
   let mockServer: McpServer;
   let annotations: ToolAnnotations;
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
-    tool = new SFMobileNativeRequirementsReviewTool(mockServer);
+    tool = new MagiRequirementsReviewTool(mockServer);
     annotations = {
       readOnlyHint: true,
       destructiveHint: false,
@@ -31,7 +31,7 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-requirements-review');
       expect(tool.toolMetadata.title).toBe('Magi - Requirements Review and Approval');
       expect(tool.toolMetadata.description).toBe(
-        'Reviews the requirements.md file with the user, facilitating approval, rejection, or modification of requirements. Returns updated requirements.md content.'
+        'Reviews the requirements.md file with the user, facilitating approval, rejection, or modification of requirements. Returns review feedback including approved/rejected IDs and modification requests.'
       );
       expect(tool.toolMetadata.inputSchema).toBeDefined();
       expect(tool.toolMetadata.outputSchema).toBeDefined();
@@ -44,25 +44,25 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
   });
 
   describe('Input Schema Validation', () => {
-    it('should accept valid input with requirements content', () => {
+    it('should accept valid input with requirements path', () => {
       const validInput = {
-        requirementsContent: '# Requirements\n\n## Approved Requirements\n\n### REQ-001: Test',
+        requirementsPath: '/path/to/requirements.md',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should accept empty requirements content', () => {
+    it('should accept empty requirements path', () => {
       const validInput = {
-        requirementsContent: '',
+        requirementsPath: '',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should reject input missing requirementsContent', () => {
+    it('should reject input missing requirementsPath', () => {
       const invalidInput = {
         workflowStateData: { thread_id: 'test-123' },
       };
@@ -72,27 +72,29 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
   });
 
   describe('Result Schema Validation', () => {
-    it('should validate result with updated requirements content', () => {
+    it('should validate result with approved and rejected requirement IDs', () => {
       const validResult = {
-        updatedRequirementsContent:
-          '# Requirements\n\n## Approved Requirements\n\n### REQ-001: Test',
+        approvedRequirementIds: ['REQ-001', 'REQ-003'],
+        rejectedRequirementIds: ['REQ-002'],
         reviewSummary: 'Review summary',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
     });
 
-    it('should reject result missing updatedRequirementsContent', () => {
+    it('should reject result missing approvedRequirementIds', () => {
       const invalidResult = {
+        rejectedRequirementIds: [],
         reviewSummary: 'Review summary',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
     });
 
-    it('should reject result missing reviewSummary', () => {
+    it('should reject result missing rejectedRequirementIds', () => {
       const invalidResult = {
-        updatedRequirementsContent: '# Requirements',
+        approvedRequirementIds: [],
+        reviewSummary: 'Review summary',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
@@ -100,10 +102,9 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
   });
 
   describe('Requirements Review Guidance Generation', () => {
-    it('should generate guidance with requirements content', async () => {
+    it('should generate guidance with requirements path', async () => {
       const input = {
-        requirementsContent:
-          '# Requirements\n\n## Approved Requirements\n\n### REQ-001: Requirement Title\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Requirement description',
+        requirementsPath: '/path/to/requirements.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -115,15 +116,14 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('requirements review session');
-      expect(response.promptForLLM).toContain('REQ-001');
-      expect(response.promptForLLM).toContain('Requirement Title');
+      expect(response.promptForLLM).toContain('/path/to/requirements.md');
+      expect(response.promptForLLM).toContain('File Path');
     });
 
-    it('should include requirements content in guidance', async () => {
-      const requirementsContent =
-        '# Requirements\n\n**Feature ID:** FEAT-001\n\n## Approved Requirements\n\n### REQ-001: First Requirement\n- **Priority**: high\n- **Category**: UI/UX';
+    it('should include requirements path in guidance', async () => {
+      const requirementsPath = '/path/to/project/magi-sdd/feature-123/requirements.md';
       const input = {
-        requirementsContent,
+        requirementsPath,
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -132,14 +132,12 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('Current Requirements Document');
-      expect(response.promptForLLM).toContain('REQ-001');
-      expect(response.promptForLLM).toContain('First Requirement');
+      expect(response.promptForLLM).toContain(requirementsPath);
     });
 
     it('should include review process instructions', async () => {
       const input = {
-        requirementsContent:
-          '# Requirements\n\n### REQ-001: Requirement\n- **Description**: Description',
+        requirementsPath: '/path/to/requirements.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -155,7 +153,7 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
 
     it('should include output format instructions', async () => {
       const input = {
-        requirementsContent: '# Requirements',
+        requirementsPath: '/path/to/requirements.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -164,16 +162,16 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('Output Format');
-      expect(response.promptForLLM).toContain('updatedRequirementsContent');
-      expect(response.promptForLLM).toContain('reviewSummary');
+      expect(response.promptForLLM).toContain('approvedRequirementIds');
+      expect(response.promptForLLM).toContain('rejectedRequirementIds');
       expect(response.resultSchema).toBeDefined();
     });
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty requirements content', async () => {
+    it('should handle empty requirements path', async () => {
       const input = {
-        requirementsContent: '',
+        requirementsPath: '',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -181,9 +179,9 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       expect(result.content).toBeDefined();
     });
 
-    it('should handle missing requirements content', async () => {
+    it('should handle missing requirements path', async () => {
       const input = {
-        requirementsContent: '# Requirements\n\nNo requirements have been generated yet.',
+        requirementsPath: '/path/to/missing/requirements.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -191,11 +189,10 @@ describe('SFMobileNativeRequirementsReviewTool', () => {
       expect(result.content).toBeDefined();
     });
 
-    it('should handle large requirements document', async () => {
-      const largeContent = `# Requirements\n\n${Array.from({ length: 50 }, (_, i) => `### REQ-${String(i + 1).padStart(3, '0')}: Requirement ${i + 1}\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Description ${i + 1}`).join('\n\n')}`;
-
+    it('should handle long requirements path', async () => {
+      const longPath = '/path/to/' + 'nested/'.repeat(50) + 'requirements.md';
       const input = {
-        requirementsContent: largeContent,
+        requirementsPath: longPath,
         workflowStateData: { thread_id: 'test-123' },
       };
 

@@ -10,11 +10,11 @@ import fs from 'fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { PRDGenerationOrchestrator } from '../../src/tools/magi/prd/magi-prd-orchestrator/tool.js';
 import { MagiFeatureBriefGenerationTool } from '../../src/tools/magi/prd/magi-prd-feature-brief/tool.js';
-import { SFMobileNativeInitialRequirementsTool } from '../../src/tools/magi/prd/magi-prd-initial-requirements/tool.js';
-import { SFMobileNativeRequirementsReviewTool } from '../../src/tools/magi/prd/magi-prd-requirements-review/tool.js';
-import { SFMobileNativeGapAnalysisTool } from '../../src/tools/magi/prd/magi-prd-gap-analysis/tool.js';
-import { SFMobileNativePRDGenerationTool } from '../../src/tools/magi/prd/magi-prd-generation/tool.js';
-import { SFMobileNativePRDReviewTool } from '../../src/tools/magi/prd/magi-prd-review/tool.js';
+import { MagiInitialRequirementsTool } from '../../src/tools/magi/prd/magi-prd-initial-requirements/tool.js';
+import { MagiRequirementsReviewTool } from '../../src/tools/magi/prd/magi-prd-requirements-review/tool.js';
+import { MagiGapAnalysisTool } from '../../src/tools/magi/prd/magi-prd-gap-analysis/tool.js';
+import { MagiPRDGenerationTool } from '../../src/tools/magi/prd/magi-prd-generation/tool.js';
+import { MagiPRDReviewTool } from '../../src/tools/magi/prd/magi-prd-review/tool.js';
 import { PRDOrchestratorInput } from '../../src/tools/magi/prd/magi-prd-orchestrator/metadata.js';
 import { FeatureBriefWorkflowInput } from '../../src/tools/magi/prd/magi-prd-feature-brief/metadata.js';
 import { InitialRequirementsInput } from '../../src/tools/magi/prd/magi-prd-initial-requirements/metadata.js';
@@ -27,21 +27,21 @@ describe('PRD Workflow Integration Test', () => {
   let server: McpServer;
   let prdOrchestrator: PRDGenerationOrchestrator;
   let featureBriefTool: MagiFeatureBriefGenerationTool;
-  let initialRequirementsTool: SFMobileNativeInitialRequirementsTool;
-  let requirementsReviewTool: SFMobileNativeRequirementsReviewTool;
-  let gapAnalysisTool: SFMobileNativeGapAnalysisTool;
-  let prdGenerationTool: SFMobileNativePRDGenerationTool;
-  let prdReviewTool: SFMobileNativePRDReviewTool;
+  let initialRequirementsTool: MagiInitialRequirementsTool;
+  let requirementsReviewTool: MagiRequirementsReviewTool;
+  let gapAnalysisTool: MagiGapAnalysisTool;
+  let prdGenerationTool: MagiPRDGenerationTool;
+  let prdReviewTool: MagiPRDReviewTool;
 
   beforeEach(() => {
     server = new McpServer({ name: 'test-server', version: '1.0.0' });
     prdOrchestrator = new PRDGenerationOrchestrator(server, undefined, true); // Use memory for testing
     featureBriefTool = new MagiFeatureBriefGenerationTool(server);
-    initialRequirementsTool = new SFMobileNativeInitialRequirementsTool(server);
-    requirementsReviewTool = new SFMobileNativeRequirementsReviewTool(server);
-    gapAnalysisTool = new SFMobileNativeGapAnalysisTool(server);
-    prdGenerationTool = new SFMobileNativePRDGenerationTool(server);
-    prdReviewTool = new SFMobileNativePRDReviewTool(server);
+    initialRequirementsTool = new MagiInitialRequirementsTool(server);
+    requirementsReviewTool = new MagiRequirementsReviewTool(server);
+    gapAnalysisTool = new MagiGapAnalysisTool(server);
+    prdGenerationTool = new MagiPRDGenerationTool(server);
+    prdReviewTool = new MagiPRDReviewTool(server);
   });
 
   it('should complete the entire PRD workflow from start to finish', async () => {
@@ -156,10 +156,42 @@ describe('PRD Workflow Integration Test', () => {
       orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt
     );
 
-    // Verify we get instructions to call the next tool (initial requirements)
+    // Verify we get instructions to call the feature brief finalization tool first
     expect(orchestratorResponse3.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-prd-initial-requirements'
+      'magi-prd-feature-brief-finalization'
     );
+
+    // Step 5: Call feature brief finalization tool (implicitly via orchestrator resume)
+    // The finalization tool updates the feature brief status to "approved"
+    console.log('✅ Feature Brief Finalization step (handled by workflow)...');
+    
+    // Resume workflow with finalization result
+    const orchestratorInput3Finalization: PRDOrchestratorInput = {
+      userInput: {
+        // Tool result format (what the feature brief finalization tool returns)
+        finalizedFeatureBriefContent:
+          '# Customer Contact Management App\n\n## Status\n**Status**: approved\n\nA mobile application for managing customer contacts...',
+        // State fields needed for workflow continuation
+        userUtterance,
+        projectPath,
+        featureId: 'customer-contact-management',
+        featureBriefPath: mockFeatureBriefPath,
+      },
+      workflowStateData: { thread_id: threadId },
+    };
+
+    const orchestratorResponse3Finalization = await prdOrchestrator.handleRequest(
+      orchestratorInput3Finalization
+    );
+    console.log(
+      '📋 Orchestrator Response 3 (after finalization):',
+      orchestratorResponse3Finalization.structuredContent.orchestrationInstructionsPrompt
+    );
+
+    // Verify we get instructions to call the initial requirements tool
+    expect(
+      orchestratorResponse3Finalization.structuredContent.orchestrationInstructionsPrompt
+    ).toContain('magi-prd-initial-requirements');
 
     // Step 6: Call magi-prd-initial-requirements tool
     console.log('⚙️ Calling magi-prd-initial-requirements tool...');
@@ -167,8 +199,7 @@ describe('PRD Workflow Integration Test', () => {
     // The initial requirements tool reads the file content from the path
 
     const initialRequirementsInput: InitialRequirementsInput = {
-      projectPath,
-      featureBrief: mockFeatureBriefPath,
+      featureBriefPath: mockFeatureBriefPath,
       workflowStateData: { thread_id: threadId },
     };
 
@@ -181,53 +212,16 @@ describe('PRD Workflow Integration Test', () => {
 
     // Step 7: Call orchestrator back with initial requirements result
     console.log('🔄 Calling orchestrator back with initial requirements result...');
+    const mockRequirementsPath = `${mockFeatureDirectory}/requirements.md`;
     const orchestratorInput4: PRDOrchestratorInput = {
       userInput: {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'User Authentication',
-            description:
-              'Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO',
-            priority: 'high',
-            category: 'Security',
-          },
-          {
-            id: 'REQ-002',
-            title: 'Contact List View',
-            description:
-              'Display a scrollable list of customer contacts with search and filter capabilities',
-            priority: 'high',
-            category: 'UI/UX',
-          },
-          {
-            id: 'REQ-003',
-            title: 'Add New Contact',
-            description:
-              'Allow users to create new customer contacts with required fields validation',
-            priority: 'high',
-            category: 'UI/UX',
-          },
-          {
-            id: 'REQ-004',
-            title: 'Edit Contact Information',
-            description: 'Enable users to modify existing contact details with data validation',
-            priority: 'medium',
-            category: 'UI/UX',
-          },
-          {
-            id: 'REQ-005',
-            title: 'Delete Contact',
-            description: 'Allow users to remove contacts with confirmation dialog',
-            priority: 'medium',
-            category: 'UI/UX',
-          },
-        ],
-        summary:
-          'Generated 5 functional requirements covering authentication, contact management, and user interface components for the customer contact management mobile app.',
+        // Tool result format (what the initial requirements tool returns)
+        requirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: User Authentication\n- **Priority**: high\n- **Category**: Security\n- **Description**: Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO\n\n### REQ-002: Contact List View\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Display a scrollable list of customer contacts with search and filter capabilities\n\n### REQ-003: Add New Contact\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Allow users to create new customer contacts with required fields validation\n\n### REQ-004: Edit Contact Information\n- **Priority**: medium\n- **Category**: UI/UX\n- **Description**: Enable users to modify existing contact details with data validation\n\n### REQ-005: Delete Contact\n- **Priority**: medium\n- **Category**: UI/UX\n- **Description**: Allow users to remove contacts with confirmation dialog',
+        // State fields needed for workflow continuation
         userUtterance,
         projectPath,
         featureId: 'customer-contact-management',
+        requirementsPath: mockRequirementsPath,
       },
       workflowStateData: { thread_id: threadId },
     };
@@ -246,40 +240,7 @@ describe('PRD Workflow Integration Test', () => {
     // Step 8: Call magi-prd-requirements-review tool
     console.log('📋 Calling magi-prd-requirements-review tool...');
     const requirementsReviewInput: RequirementsReviewInput = {
-      projectPath,
-      functionalRequirements: [
-        {
-          id: 'REQ-001',
-          title: 'User Authentication',
-          description:
-            'Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO',
-          priority: 'high',
-          category: 'Security',
-        },
-        {
-          id: 'REQ-002',
-          title: 'Contact List View',
-          description:
-            'Display a scrollable list of customer contacts with search and filter capabilities',
-          priority: 'high',
-          category: 'UI/UX',
-        },
-        {
-          id: 'REQ-003',
-          title: 'Add New Contact',
-          description:
-            'Allow users to create new customer contacts with required fields validation',
-          priority: 'high',
-          category: 'UI/UX',
-        },
-        {
-          id: 'REQ-004',
-          title: 'Edit Contact Information',
-          description: 'Enable users to modify existing contact details with data validation',
-          priority: 'medium',
-          category: 'UI/UX',
-        },
-      ],
+      requirementsPath: mockRequirementsPath,
       workflowStateData: { thread_id: threadId },
     };
 
@@ -295,50 +256,13 @@ describe('PRD Workflow Integration Test', () => {
     const orchestratorInput5: PRDOrchestratorInput = {
       userInput: {
         // Tool result format (what the requirements review tool returns)
-        approvedRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'User Authentication',
-            description:
-              'Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO',
-            priority: 'high',
-            category: 'Security',
-          },
-          {
-            id: 'REQ-002',
-            title: 'Contact List View',
-            description:
-              'Display a scrollable list of customer contacts with search and filter capabilities',
-            priority: 'high',
-            category: 'UI/UX',
-          },
-          {
-            id: 'REQ-003',
-            title: 'Add New Contact',
-            description:
-              'Allow users to create new customer contacts with required fields validation',
-            priority: 'high',
-            category: 'UI/UX',
-          },
-        ],
-        rejectedRequirements: [
-          {
-            id: 'REQ-004',
-            title: 'Edit Contact Information',
-            description: 'Enable users to modify existing contact details with data validation',
-            priority: 'medium',
-            category: 'UI/UX',
-          },
-        ],
-        modifiedRequirements: [],
-        reviewSummary:
-          'User approved 3 high-priority requirements for core contact management functionality. Rejected the edit contact feature as it was deemed unnecessary for the initial version.',
-        userFeedback:
-          'Focus on core functionality first, can add editing features in future iterations.',
+        approvedRequirementIds: ['REQ-001', 'REQ-002', 'REQ-003'],
+        rejectedRequirementIds: ['REQ-004'],
         // State fields needed for workflow continuation
         userUtterance,
         projectPath,
         featureId: 'customer-contact-management',
+        requirementsPath: mockRequirementsPath,
       },
       workflowStateData: { thread_id: threadId },
     };
@@ -357,34 +281,8 @@ describe('PRD Workflow Integration Test', () => {
     // Step 10: Call magi-prd-gap-analysis tool
     console.log('🔍 Calling magi-prd-gap-analysis tool...');
     const gapAnalysisInput: GapAnalysisInput = {
-      projectPath,
-      featureBrief: mockFeatureBriefPath,
-      functionalRequirements: [
-        {
-          id: 'REQ-001',
-          title: 'User Authentication',
-          description:
-            'Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO',
-          priority: 'high',
-          category: 'Security',
-        },
-        {
-          id: 'REQ-002',
-          title: 'Contact List View',
-          description:
-            'Display a scrollable list of customer contacts with search and filter capabilities',
-          priority: 'high',
-          category: 'UI/UX',
-        },
-        {
-          id: 'REQ-003',
-          title: 'Add New Contact',
-          description:
-            'Allow users to create new customer contacts with required fields validation',
-          priority: 'high',
-          category: 'UI/UX',
-        },
-      ],
+      featureBriefPath: mockFeatureBriefPath,
+      requirementsPath: mockRequirementsPath,
       workflowStateData: { thread_id: threadId },
     };
 
@@ -433,25 +331,6 @@ describe('PRD Workflow Integration Test', () => {
             ],
           },
         ],
-        requirementStrengths: [
-          {
-            requirementId: 'REQ-001',
-            strengthScore: 9,
-            strengths: [
-              'Clear security requirements',
-              'Proper authentication method specified',
-              'Well-defined priority',
-            ],
-            weaknesses: ['Missing error handling details'],
-          },
-        ],
-        recommendations: [
-          'Add search functionality requirements',
-          'Implement contact categorization features',
-        ],
-        summary:
-          'Good foundation with clear core functionality. Main gaps identified in search capabilities and contact organization features.',
-        userWantsToContinueDespiteGaps: false, // User wants to proceed despite gaps
         // State fields needed for workflow continuation
         userUtterance,
         projectPath,
@@ -466,44 +345,45 @@ describe('PRD Workflow Integration Test', () => {
       orchestratorResponse6.structuredContent.orchestrationInstructionsPrompt
     );
 
-    // Verify we get instructions to call PRD generation
+    // Verify we get instructions to call requirements finalization (since gap score >= 80)
     expect(orchestratorResponse6.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'magi-prd-generation'
+      'magi-prd-requirements-finalization'
     );
+
+    // Step 12: Handle requirements finalization step
+    console.log('✅ Requirements Finalization step...');
+    const orchestratorInput6Finalization: PRDOrchestratorInput = {
+      userInput: {
+        // Tool result format (what the requirements finalization tool returns)
+        finalizedRequirementsContent:
+          '# Requirements\n\n## Status\n**Status**: approved\n\n## Approved Requirements\n\n### REQ-001: User Authentication\n- **Priority**: high\n- **Category**: Security\n- **Description**: Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO\n\n### REQ-002: Contact List View\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Display a scrollable list of customer contacts with search and filter capabilities\n\n### REQ-003: Add New Contact\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Allow users to create new customer contacts with required fields validation',
+        // State fields needed for workflow continuation
+        userUtterance,
+        projectPath,
+        featureId: 'customer-contact-management',
+        requirementsPath: mockRequirementsPath,
+      },
+      workflowStateData: { thread_id: threadId },
+    };
+
+    const orchestratorResponse6Finalization = await prdOrchestrator.handleRequest(
+      orchestratorInput6Finalization
+    );
+    console.log(
+      '📋 Orchestrator Response 6 (after finalization):',
+      orchestratorResponse6Finalization.structuredContent.orchestrationInstructionsPrompt
+    );
+
+    // Verify we get instructions to call PRD generation
+    expect(
+      orchestratorResponse6Finalization.structuredContent.orchestrationInstructionsPrompt
+    ).toContain('magi-prd-generation');
 
     // Step 12: Call magi-prd-generation tool
     console.log('📄 Calling magi-prd-generation tool...');
     const prdGenerationInput: PRDGenerationInput = {
-      projectPath,
-      originalUserUtterance: userUtterance,
-      featureBrief: mockFeatureBriefPath,
-      approvedRequirements: [
-        {
-          id: 'REQ-001',
-          title: 'User Authentication',
-          description:
-            'Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO',
-          priority: 'high',
-          category: 'Security',
-        },
-        {
-          id: 'REQ-002',
-          title: 'Contact List View',
-          description:
-            'Display a scrollable list of customer contacts with search and filter capabilities',
-          priority: 'high',
-          category: 'UI/UX',
-        },
-        {
-          id: 'REQ-003',
-          title: 'Add New Contact',
-          description:
-            'Allow users to create new customer contacts with required fields validation',
-          priority: 'high',
-          category: 'UI/UX',
-        },
-      ],
-      modifiedRequirements: [],
+      featureBriefPath: mockFeatureBriefPath,
+      requirementsPath: mockRequirementsPath,
       workflowStateData: { thread_id: threadId },
     };
 
@@ -520,30 +400,6 @@ describe('PRD Workflow Integration Test', () => {
         // Tool result format (what the PRD generation tool returns)
         prdContent:
           '# Product Requirements Document\n\n## Customer Contact Management App\n\n### Overview\nA mobile application for managing customer contacts...',
-        prdFilePath: `${mockFeatureDirectory}/PRD.md`,
-        documentStatus: {
-          author: 'AI Assistant (Mobile MCP Tools)',
-          lastModified: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-          status: 'draft' as const,
-        },
-        requirementsCount: 3,
-        traceabilityTableRows: [
-          {
-            requirementId: 'REQ-001',
-            technicalRequirementIds: 'TBD (populated later)',
-            userStoryIds: 'TBD (populated later)',
-          },
-          {
-            requirementId: 'REQ-002',
-            technicalRequirementIds: 'TBD (populated later)',
-            userStoryIds: 'TBD (populated later)',
-          },
-          {
-            requirementId: 'REQ-003',
-            technicalRequirementIds: 'TBD (populated later)',
-            userStoryIds: 'TBD (populated later)',
-          },
-        ],
         // State fields needed for workflow continuation
         userUtterance,
         projectPath,
@@ -565,16 +421,9 @@ describe('PRD Workflow Integration Test', () => {
 
     // Step 14: Call magi-prd-review tool
     console.log('✅ Calling magi-prd-review tool...');
+    const mockPrdPath = `${mockFeatureDirectory}/PRD.md`;
     const prdReviewInput: PRDReviewInput = {
-      projectPath,
-      prdContent:
-        '# Product Requirements Document\n\n## Customer Contact Management App\n\n### Overview\nA mobile application for managing customer contacts...',
-      prdFilePath: `${mockFeatureDirectory}/PRD.md`,
-      documentStatus: {
-        author: 'AI Assistant (Mobile MCP Tools)',
-        lastModified: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-        status: 'draft' as const,
-      },
+      prdFilePath: mockPrdPath,
       workflowStateData: { thread_id: threadId },
     };
 
@@ -586,12 +435,8 @@ describe('PRD Workflow Integration Test', () => {
     const orchestratorInput8: PRDOrchestratorInput = {
       userInput: {
         // Tool result format (what the PRD review tool returns)
-        prdApproved: true,
-        prdModifications: [],
-        userFeedback:
-          'The PRD looks comprehensive and well-structured. Ready to proceed with development.',
-        reviewSummary:
-          'PRD approved without modifications. All requirements are clear and comprehensive.',
+        approved: true,
+        modifications: [],
         // State fields needed for workflow continuation
         userUtterance,
         projectPath,
@@ -606,13 +451,41 @@ describe('PRD Workflow Integration Test', () => {
       orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt
     );
 
+    // Verify we get instructions to call PRD finalization (since PRD is approved)
+    expect(orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt).toContain(
+      'magi-prd-finalization'
+    );
+
+    // Step 16: Handle PRD finalization step
+    console.log('✅ PRD Finalization step...');
+    const orchestratorInput8Finalization: PRDOrchestratorInput = {
+      userInput: {
+        // Tool result format (what the PRD finalization tool returns)
+        finalizedPrdContent:
+          '# Product Requirements Document\n\n## Document Status\n**Status**: finalized\n\n## Customer Contact Management App\n\n### Overview\nA mobile application for managing customer contacts...',
+        // State fields needed for workflow continuation
+        userUtterance,
+        projectPath,
+        featureId: 'customer-contact-management',
+      },
+      workflowStateData: { thread_id: threadId },
+    };
+
+    const orchestratorResponse8Finalization = await prdOrchestrator.handleRequest(
+      orchestratorInput8Finalization
+    );
+    console.log(
+      '🏁 Final Orchestrator Response (after finalization):',
+      orchestratorResponse8Finalization.structuredContent.orchestrationInstructionsPrompt
+    );
+
     // Verify the workflow has concluded
-    expect(orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'workflow has concluded'
-    );
-    expect(orchestratorResponse8.structuredContent.orchestrationInstructionsPrompt).toContain(
-      'No further workflow actions'
-    );
+    expect(
+      orchestratorResponse8Finalization.structuredContent.orchestrationInstructionsPrompt
+    ).toContain('workflow has concluded');
+    expect(
+      orchestratorResponse8Finalization.structuredContent.orchestrationInstructionsPrompt
+    ).toContain('No further workflow actions');
 
     console.log('🎉 PRD workflow completed successfully!');
   }, 30000); // 30 second timeout for the full workflow

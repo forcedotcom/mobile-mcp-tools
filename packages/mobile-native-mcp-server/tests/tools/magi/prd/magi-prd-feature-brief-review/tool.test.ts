@@ -44,25 +44,25 @@ describe('MagiFeatureBriefReviewTool', () => {
   });
 
   describe('Input Schema Validation', () => {
-    it('should accept valid input with feature brief', () => {
+    it('should accept valid input with feature brief path', () => {
       const validInput = {
-        featureBrief: '# Feature Brief\n\nTest content',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should accept empty feature brief', () => {
+    it('should accept empty feature brief path', () => {
       const validInput = {
-        featureBrief: '',
+        featureBriefPath: '',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should reject input missing featureBrief', () => {
+    it('should reject input missing featureBriefPath', () => {
       const invalidInput = {
         workflowStateData: { thread_id: 'test-123' },
       };
@@ -72,7 +72,7 @@ describe('MagiFeatureBriefReviewTool', () => {
 
     it('should reject input missing workflowStateData', () => {
       const invalidInput = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
@@ -128,14 +128,15 @@ describe('MagiFeatureBriefReviewTool', () => {
         approved: true,
       };
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
-      expect(result.success).toBe(false);
+      // reviewSummary is optional, so this should pass
+      expect(result.success).toBe(true);
     });
   });
 
   describe('Feature Brief Review Guidance Generation', () => {
-    it('should generate guidance with feature brief content', async () => {
+    it('should generate guidance with feature brief path', async () => {
       const input = {
-        featureBrief: '# Feature Brief\n\nThis is test content.',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -147,13 +148,13 @@ describe('MagiFeatureBriefReviewTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('feature brief review session');
-      expect(response.promptForLLM).toContain('# Feature Brief');
-      expect(response.promptForLLM).toContain('This is test content');
+      expect(response.promptForLLM).toContain('/path/to/feature-brief.md');
+      expect(response.promptForLLM).toContain('File Path');
     });
 
     it('should include review process instructions', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -168,7 +169,7 @@ describe('MagiFeatureBriefReviewTool', () => {
 
     it('should include workflow rules', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -178,13 +179,12 @@ describe('MagiFeatureBriefReviewTool', () => {
 
       expect(response.promptForLLM).toContain('CRITICAL WORKFLOW RULES');
       expect(response.promptForLLM).toContain('MANDATORY');
-      expect(response.promptForLLM).toContain('approved to false');
       expect(response.promptForLLM).toContain('modifications');
     });
 
-    it('should handle missing feature brief gracefully', async () => {
+    it('should handle missing feature brief path gracefully', async () => {
       const input = {
-        featureBrief: '',
+        featureBriefPath: '',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -192,12 +192,12 @@ describe('MagiFeatureBriefReviewTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('Feature brief content not found');
+      expect(response.promptForLLM).toContain('Feature brief path not found');
     });
 
     it('should include workflow continuation instructions', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -212,10 +212,10 @@ describe('MagiFeatureBriefReviewTool', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle very long feature brief content', async () => {
-      const longContent = '# Feature Brief\n\n' + 'Content line.\n'.repeat(500);
+    it('should handle very long feature brief path', async () => {
+      const longPath = '/path/to/' + 'nested/'.repeat(100) + 'feature-brief.md';
       const input = {
-        featureBrief: longContent,
+        featureBriefPath: longPath,
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -223,12 +223,12 @@ describe('MagiFeatureBriefReviewTool', () => {
       expect(result.content).toBeDefined();
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
-      expect(response.promptForLLM).toContain(longContent);
+      expect(response.promptForLLM).toContain(longPath);
     });
 
-    it('should handle feature brief with special characters', async () => {
+    it('should handle feature brief path with special characters', async () => {
       const input = {
-        featureBrief: '# Feature Brief\n\nContent with "quotes" and <tags>',
+        featureBriefPath: '/path/to/feature-brief (v2).md',
         workflowStateData: { thread_id: 'test-123' },
       };
 

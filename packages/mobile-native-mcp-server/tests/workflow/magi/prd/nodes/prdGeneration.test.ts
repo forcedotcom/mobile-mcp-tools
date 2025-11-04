@@ -15,7 +15,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
-  readMagiArtifact: vi.fn(),
+  getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     FEATURE_BRIEF: 'feature-brief.md',
@@ -50,21 +50,13 @@ describe('PRDGenerationNode', () => {
         userUtterance: 'Add authentication',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce('# Feature Brief') // feature brief
-        .mockReturnValueOnce('# Requirements'); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent: '# PRD\n\nContent',
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
-        requirementsCount: 5,
-        traceabilityTableRows: [],
       });
 
       node.execute(inputState);
@@ -75,37 +67,28 @@ describe('PRDGenerationNode', () => {
     });
 
     it('should pass user utterance, feature brief, and requirements to tool', () => {
-      const featureBrief = '# Feature Brief\n\nContent';
-      const requirementsContent = '# Requirements\n\nREQ-001: Requirement';
+      const featureBriefPath = '/path/to/project/magi-sdd/feature-123/feature-brief.md';
+      const requirementsPath = '/path/to/project/magi-sdd/feature-123/requirements.md';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userUtterance: 'Add authentication feature',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce(featureBrief) // feature brief
-        .mockReturnValueOnce(requirementsContent); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce(featureBriefPath) // feature brief path
+        .mockReturnValueOnce(requirementsPath); // requirements path
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent: '# PRD',
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
-        requirementsCount: 0,
-        traceabilityTableRows: [],
       });
 
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.originalUserUtterance).toBe('Add authentication feature');
-      expect(lastCall?.input.featureBrief).toBe(featureBrief);
-      expect(lastCall?.input.requirementsContent).toBe(requirementsContent);
+      expect(lastCall?.input.featureBriefPath).toBe(featureBriefPath);
+      expect(lastCall?.input.requirementsPath).toBe(requirementsPath);
     });
 
     it('should write PRD content to file', () => {
@@ -115,9 +98,9 @@ describe('PRDGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce('# Feature Brief') // feature brief
-        .mockReturnValueOnce('# Requirements'); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/prd.md'
       );
@@ -125,14 +108,6 @@ describe('PRDGenerationNode', () => {
       const prdContent = '# PRD\n\nComplete PRD content';
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent,
-        prdFilePath: '/path/to/prd.md',
-        documentStatus: {
-          author: 'AI',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
-        requirementsCount: 0,
-        traceabilityTableRows: [],
       });
 
       node.execute(inputState);
@@ -145,39 +120,29 @@ describe('PRDGenerationNode', () => {
       );
     });
 
-    it('should return PRD content and status', () => {
+    it('should return PRD content', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce('# Feature Brief') // feature brief
-        .mockReturnValueOnce('# Requirements'); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/prd.md'
       );
 
       const prdContent = '# PRD\n\nContent';
-      const documentStatus = {
-        author: 'AI Assistant',
-        lastModified: '2025-01-01',
-        status: 'draft' as const,
-      };
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent,
-        prdFilePath: '/path/to/prd.md',
-        documentStatus,
-        requirementsCount: 5,
-        traceabilityTableRows: [],
       });
 
       const result = node.execute(inputState);
 
       expect(result.prdContent).toBe(prdContent);
-      expect(result.prdStatus).toEqual(documentStatus);
     });
   });
 

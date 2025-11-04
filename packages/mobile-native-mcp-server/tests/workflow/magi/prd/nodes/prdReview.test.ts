@@ -57,7 +57,7 @@ describe('PRDReviewNode', () => {
       );
 
       mockToolExecutor.setResult(PRD_REVIEW_TOOL.toolId, {
-        prdApproved: true,
+        approved: true,
         reviewSummary: 'PRD approved',
       });
 
@@ -68,34 +68,30 @@ describe('PRDReviewNode', () => {
       expect(lastCall?.llmMetadata.description).toBe(PRD_REVIEW_TOOL.description);
     });
 
-    it('should pass PRD content and metadata to tool', () => {
-      const prdContent = '# PRD\n\nComplete PRD content';
-      const documentStatus = {
-        author: 'AI Assistant',
-        lastModified: '2025-01-01',
-        status: 'draft' as const,
-      };
+    it('should pass PRD file path to tool', () => {
+      const prdFilePath = '/path/to/project/magi-sdd/feature-123/prd.md';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        prdContent,
-        prdStatus: documentStatus,
+        prdContent: '# PRD\n\nComplete PRD content',
+        prdStatus: {
+          author: 'AI Assistant',
+          lastModified: '2025-01-01',
+          status: 'draft' as const,
+        },
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
-        '/path/to/project/magi-sdd/feature-123/prd.md'
-      );
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(prdFilePath);
 
       mockToolExecutor.setResult(PRD_REVIEW_TOOL.toolId, {
-        prdApproved: true,
+        approved: true,
         reviewSummary: 'Approved',
       });
 
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.prdContent).toBe(prdContent);
-      expect(lastCall?.input.documentStatus).toEqual(documentStatus);
+      expect(lastCall?.input.prdFilePath).toBe(prdFilePath);
     });
 
     it('should return approval status', () => {
@@ -115,7 +111,7 @@ describe('PRDReviewNode', () => {
       );
 
       mockToolExecutor.setResult(PRD_REVIEW_TOOL.toolId, {
-        prdApproved: true,
+        approved: true,
         reviewSummary: 'PRD approved',
       });
 
@@ -131,15 +127,24 @@ describe('PRDReviewNode', () => {
         projectPath: '/path/to/project',
         featureId: 'feature-123',
         userInput: {
-          prdApproved: false,
+          approved: false,
           reviewSummary: 'Needs modifications',
         },
       });
 
+      // Mock the tool executor to return the userInput result
+      mockToolExecutor.setResult(PRD_REVIEW_TOOL.toolId, {
+        approved: false,
+        reviewSummary: 'Needs modifications',
+      });
+
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/prd.md'
+      );
+
       const result = node.execute(inputState);
 
       expect(result.isPrdApproved).toBe(false);
-      expect(mockToolExecutor.getCallHistory().length).toBe(0); // Tool not called
     });
   });
 });

@@ -15,7 +15,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
-  readMagiArtifact: vi.fn(),
+  getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     REQUIREMENTS: 'requirements.md',
@@ -48,7 +48,9 @@ describe('PRDRequirementsFinalizationNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/requirements.md'
+      );
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       const finalizedContent = '# Requirements\n\n## Status\n**Status**: approved';
@@ -64,14 +66,14 @@ describe('PRDRequirementsFinalizationNode', () => {
       expect(lastCall?.llmMetadata.description).toBe(REQUIREMENTS_FINALIZATION_TOOL.description);
     });
 
-    it('should pass requirements content to tool', () => {
-      const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
+    it('should pass requirements path to tool', () => {
+      const requirementsPath = '/path/to/project/magi-sdd/feature-123/requirements.md';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(requirementsPath);
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
@@ -81,7 +83,7 @@ describe('PRDRequirementsFinalizationNode', () => {
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.requirementsContent).toBe(requirementsContent);
+      expect(lastCall?.input.requirementsPath).toBe(requirementsPath);
     });
 
     it('should write finalized requirements markdown to file', () => {
@@ -92,7 +94,9 @@ describe('PRDRequirementsFinalizationNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(requirementsContent);
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/requirements.md'
+      );
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
@@ -110,18 +114,6 @@ describe('PRDRequirementsFinalizationNode', () => {
       expect(result).toEqual({});
     });
 
-    it('should throw error when requirements file not found', () => {
-      const inputState = createPRDTestState({
-        projectPath: '/path/to/project',
-        featureId: 'feature-123',
-      });
-
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
-
-      expect(() => node.execute(inputState)).toThrow(
-        'Requirements file not found for featureId: feature-123'
-      );
-    });
   });
 });
 

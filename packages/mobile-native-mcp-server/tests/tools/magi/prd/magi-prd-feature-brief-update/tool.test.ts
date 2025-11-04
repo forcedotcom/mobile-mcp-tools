@@ -31,7 +31,7 @@ describe('MagiFeatureBriefUpdateTool', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-feature-brief-update');
       expect(tool.toolMetadata.title).toBe('Magi - Update Feature Brief');
       expect(tool.toolMetadata.description).toBe(
-        'Updates an existing feature brief based on user feedback and modification requests from the review process'
+        'Updates an existing feature brief based on user feedback and modification requests. This tool is ONLY used when modifications are requested (not for approvals).'
       );
       expect(tool.toolMetadata.inputSchema).toBeDefined();
       expect(tool.toolMetadata.outputSchema).toBeDefined();
@@ -46,9 +46,17 @@ describe('MagiFeatureBriefUpdateTool', () => {
   describe('Input Schema Validation', () => {
     it('should accept valid input with all required fields', () => {
       const validInput = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief\n\nContent',
-        userUtterance: 'Original request',
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [
+            {
+              section: 'Overview',
+              modificationReason: 'Needs more detail',
+              requestedContent: 'Updated content',
+            },
+          ],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
@@ -57,64 +65,64 @@ describe('MagiFeatureBriefUpdateTool', () => {
 
     it('should accept input with modifications', () => {
       const validInput = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
-        modifications: [
-          {
-            section: 'Overview',
-            modificationReason: 'Needs more detail',
-            requestedContent: 'Updated content',
-          },
-        ],
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [
+            {
+              section: 'Overview',
+              modificationReason: 'Needs more detail',
+              requestedContent: 'Updated content',
+            },
+          ],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should accept input with user feedback', () => {
+    it('should accept input with approved review result', () => {
       const validInput = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
-        userFeedback: 'Need more details',
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: true,
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should reject input missing existingFeatureId', () => {
+    it('should reject input missing featureBriefPath', () => {
       const invalidInput = {
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
+        reviewResult: {
+          approved: false,
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
     });
 
-    it('should reject input missing featureBrief', () => {
+    it('should reject input missing reviewResult', () => {
       const invalidInput = {
-        existingFeatureId: 'feature-123',
-        userUtterance: 'Original request',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
     });
 
-    it('should accept input with undefined userUtterance (z.unknown allows undefined)', () => {
-      const inputWithUndefined = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: undefined,
-        workflowStateData: { thread_id: 'test-123' },
+    it('should reject input missing workflowStateData', () => {
+      const invalidInput = {
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+        },
       };
-      const result = tool.toolMetadata.inputSchema.safeParse(inputWithUndefined);
-      // Note: z.unknown() accepts undefined by default
-      expect(result.success).toBe(true);
+      const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
+      expect(result.success).toBe(false);
     });
   });
 
@@ -135,11 +143,19 @@ describe('MagiFeatureBriefUpdateTool', () => {
   });
 
   describe('Feature Brief Update Guidance Generation', () => {
-    it('should generate guidance with existing feature brief', async () => {
+    it('should generate guidance with feature brief path', async () => {
       const input = {
-        existingFeatureId: 'user-authentication',
-        featureBrief: '# Feature Brief\n\nOriginal content',
-        userUtterance: 'Add authentication',
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [
+            {
+              section: 'Overview',
+              modificationReason: 'Needs more detail',
+              requestedContent: 'Updated content',
+            },
+          ],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -151,39 +167,23 @@ describe('MagiFeatureBriefUpdateTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('ROLE');
-      expect(response.promptForLLM).toContain('user-authentication');
-      expect(response.promptForLLM).toContain('# Feature Brief');
-      expect(response.promptForLLM).toContain('Original content');
+      expect(response.promptForLLM).toContain('/path/to/feature-brief.md');
+      expect(response.promptForLLM).toContain('File Path');
     });
 
-    it('should include feature ID preservation instruction', async () => {
+    it('should include modification instructions', async () => {
       const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
-        workflowStateData: { thread_id: 'test-123' },
-      };
-
-      const result = await tool.handleRequest(input);
-      const responseText = result.content[0].text as string;
-      const response = JSON.parse(responseText);
-
-      expect(response.promptForLLM).toContain('MUST be preserved');
-      expect(response.promptForLLM).toContain('feature-123');
-    });
-
-    it('should include modifications when provided', async () => {
-      const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
-        modifications: [
-          {
-            section: 'Overview',
-            modificationReason: 'Needs more detail',
-            requestedContent: 'Updated content',
-          },
-        ],
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [
+            {
+              section: 'Overview',
+              modificationReason: 'Needs more detail',
+              requestedContent: 'Updated content',
+            },
+          ],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -196,12 +196,12 @@ describe('MagiFeatureBriefUpdateTool', () => {
       expect(response.promptForLLM).toContain('Needs more detail');
     });
 
-    it('should include user feedback when provided', async () => {
+    it('should handle review result without modifications', async () => {
       const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
-        userFeedback: 'Need more details',
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -209,30 +209,22 @@ describe('MagiFeatureBriefUpdateTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('User Feedback');
-      expect(response.promptForLLM).toContain('Need more details');
-    });
-
-    it('should handle missing feature brief gracefully', async () => {
-      const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '',
-        userUtterance: 'Original request',
-        workflowStateData: { thread_id: 'test-123' },
-      };
-
-      const result = await tool.handleRequest(input);
-      const responseText = result.content[0].text as string;
-      const response = JSON.parse(responseText);
-
-      expect(response.promptForLLM).toContain('Existing feature brief content not found');
+      expect(response.promptForLLM).toContain('No specific modifications requested');
     });
 
     it('should include workflow continuation instructions', async () => {
       const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [
+            {
+              section: 'Overview',
+              modificationReason: 'Needs more detail',
+              requestedContent: 'Updated content',
+            },
+          ],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -249,10 +241,11 @@ describe('MagiFeatureBriefUpdateTool', () => {
   describe('Edge Cases', () => {
     it('should handle empty modifications array', async () => {
       const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: 'Original request',
-        modifications: [],
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -263,11 +256,24 @@ describe('MagiFeatureBriefUpdateTool', () => {
       expect(response.promptForLLM).toContain('No specific modifications requested');
     });
 
-    it('should handle complex user utterance objects', async () => {
+    it('should handle complex modification requests', async () => {
       const input = {
-        existingFeatureId: 'feature-123',
-        featureBrief: '# Feature Brief',
-        userUtterance: { text: 'Update', details: { priority: 'high' } },
+        featureBriefPath: '/path/to/feature-brief.md',
+        reviewResult: {
+          approved: false,
+          modifications: [
+            {
+              section: 'Overview',
+              modificationReason: 'Needs more detail',
+              requestedContent: 'Updated content',
+            },
+            {
+              section: 'User Stories',
+              modificationReason: 'Missing edge cases',
+              requestedContent: 'Add edge case stories',
+            },
+          ],
+        },
         workflowStateData: { thread_id: 'test-123' },
       };
 

@@ -15,6 +15,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+  getMagiPath: vi.fn(),
   readMagiArtifact: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
@@ -49,7 +50,9 @@ describe('PRDInitialRequirementsGenerationNode', () => {
         featureBriefContent: '# Feature Brief',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
+      );
 
       const requirementsMarkdown = '# Requirements\n\n## Status\n**Status**: draft';
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
@@ -73,7 +76,9 @@ describe('PRDInitialRequirementsGenerationNode', () => {
         featureBriefContent: featureBrief,
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBrief);
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
+      );
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(INITIAL_REQUIREMENTS_TOOL.toolId, {
@@ -83,7 +88,7 @@ describe('PRDInitialRequirementsGenerationNode', () => {
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.featureBrief).toBe(featureBrief);
+      expect(lastCall?.input.featureBriefPath).toBe('/path/to/project/magi-sdd/feature-123/feature-brief.md');
     });
 
     it('should write requirements markdown to file', () => {

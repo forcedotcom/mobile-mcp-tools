@@ -7,17 +7,17 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SFMobileNativeGapRequirementsTool } from '../../../../../src/tools/magi/prd/magi-prd-gap-requirements/tool.js';
+import { MagiGapRequirementsTool } from '../../../../../src/tools/magi/prd/magi-prd-gap-requirements/tool.js';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
-describe('SFMobileNativeGapRequirementsTool', () => {
-  let tool: SFMobileNativeGapRequirementsTool;
+describe('MagiGapRequirementsTool', () => {
+  let tool: MagiGapRequirementsTool;
   let mockServer: McpServer;
   let annotations: ToolAnnotations;
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
-    tool = new SFMobileNativeGapRequirementsTool(mockServer);
+    tool = new MagiGapRequirementsTool(mockServer);
     annotations = {
       readOnlyHint: true,
       destructiveHint: false,
@@ -46,8 +46,8 @@ describe('SFMobileNativeGapRequirementsTool', () => {
   describe('Input Schema Validation', () => {
     it('should accept valid input with gaps and requirements', () => {
       const validInput = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [
           {
             id: 'GAP-001',
@@ -72,9 +72,9 @@ describe('SFMobileNativeGapRequirementsTool', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject input missing featureBrief', () => {
+    it('should reject input missing featureBriefPath', () => {
       const invalidInput = {
-        requirementsContent: '# Requirements',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [],
         workflowStateData: { thread_id: 'test-123' },
       };
@@ -84,8 +84,8 @@ describe('SFMobileNativeGapRequirementsTool', () => {
 
     it('should reject input missing identifiedGaps', () => {
       const invalidInput = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
@@ -94,39 +94,26 @@ describe('SFMobileNativeGapRequirementsTool', () => {
   });
 
   describe('Result Schema Validation', () => {
-    it('should validate result with functional requirements', () => {
+    it('should validate result with updated requirements markdown', () => {
       const validResult = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement',
-            description: 'Description',
-            priority: 'high' as const,
-            category: 'Security',
-          },
-        ],
-        summary: 'Summary',
-        gapsAddressed: ['GAP-001'],
+        updatedRequirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement\n- **Priority**: high\n- **Category**: Security\n- **Description**: Description',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
     });
 
-    it('should reject result missing functionalRequirements', () => {
-      const invalidResult = {
-        summary: 'Summary',
-        gapsAddressed: [],
-      };
+    it('should reject result missing updatedRequirementsMarkdown', () => {
+      const invalidResult = {};
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
     });
   });
 
   describe('Gap Requirements Guidance Generation', () => {
-    it('should generate guidance with gaps and requirements', async () => {
+    it('should generate guidance with gaps and requirements paths', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [
           {
             id: 'GAP-001',
@@ -156,15 +143,16 @@ describe('SFMobileNativeGapRequirementsTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('requirements analyst');
-      expect(response.promptForLLM).toContain('# Feature Brief');
-      expect(response.promptForLLM).toContain('# Requirements');
+      expect(response.promptForLLM).toContain('File Path');
+      expect(response.promptForLLM).toContain('/path/to/feature-brief.md');
+      expect(response.promptForLLM).toContain('/path/to/requirements.md');
       expect(response.promptForLLM).toContain('GAP-001');
     });
 
     it('should format gaps list correctly', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [
           {
             id: 'GAP-001',
@@ -207,8 +195,8 @@ describe('SFMobileNativeGapRequirementsTool', () => {
 
     it('should include requirement filtering instructions', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [
           {
             id: 'GAP-001',
@@ -234,8 +222,8 @@ describe('SFMobileNativeGapRequirementsTool', () => {
 
     it('should include workflow continuation instructions', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [
           {
             id: 'GAP-001',
@@ -263,8 +251,8 @@ describe('SFMobileNativeGapRequirementsTool', () => {
   describe('Edge Cases', () => {
     it('should handle empty gaps array', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: [],
         workflowStateData: { thread_id: 'test-123' },
       };
@@ -285,8 +273,8 @@ describe('SFMobileNativeGapRequirementsTool', () => {
       }));
 
       const input = {
-        featureBrief: '# Feature Brief',
-        requirementsContent: '# Requirements',
+        featureBriefPath: '/path/to/feature-brief.md',
+        requirementsPath: '/path/to/requirements.md',
         identifiedGaps: manyGaps,
         workflowStateData: { thread_id: 'test-123' },
       };

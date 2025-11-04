@@ -15,6 +15,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+  getMagiPath: vi.fn(),
   readMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     FEATURE_BRIEF: 'feature-brief.md',
@@ -47,9 +48,9 @@ describe('PRDGapAnalysisNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce('# Feature Brief') // feature brief
-        .mockReturnValueOnce('# Requirements\n\nREQ-001'); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
         gapAnalysisScore: 75,
@@ -64,16 +65,16 @@ describe('PRDGapAnalysisNode', () => {
     });
 
     it('should pass feature brief and requirements to tool', () => {
-      const featureBrief = '# Feature Brief\n\nContent';
-      const requirements = '# Requirements\n\nREQ-001: Requirement';
+      const featureBriefPath = '/path/to/project/magi-sdd/feature-123/feature-brief.md';
+      const requirementsPath = '/path/to/project/magi-sdd/feature-123/requirements.md';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce(featureBrief) // feature brief
-        .mockReturnValueOnce(requirements); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce(featureBriefPath) // feature brief path
+        .mockReturnValueOnce(requirementsPath); // requirements path
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
         gapAnalysisScore: 80,
@@ -83,8 +84,8 @@ describe('PRDGapAnalysisNode', () => {
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.featureBrief).toBe(featureBrief);
-      expect(lastCall?.input.requirementsContent).toBe(requirements);
+      expect(lastCall?.input.featureBriefPath).toBe(featureBriefPath);
+      expect(lastCall?.input.requirementsPath).toBe(requirementsPath);
     });
 
     it('should return gap analysis results', () => {
@@ -93,9 +94,9 @@ describe('PRDGapAnalysisNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact)
-        .mockReturnValueOnce('# Feature Brief') // feature brief
-        .mockReturnValueOnce('# Requirements'); // requirements
+      vi.mocked(wellKnownDirectory.getMagiPath)
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
+        .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 
       const gaps = [
         {
@@ -112,14 +113,12 @@ describe('PRDGapAnalysisNode', () => {
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
         gapAnalysisScore: 75,
         identifiedGaps: gaps,
-        userIterationPreference: true,
       });
 
       const result = node.execute(inputState);
 
       expect(result.gapAnalysisScore).toBe(75);
       expect(result.identifiedGaps).toEqual(gaps);
-      expect(result.userIterationPreference).toBe(true);
     });
   });
 });

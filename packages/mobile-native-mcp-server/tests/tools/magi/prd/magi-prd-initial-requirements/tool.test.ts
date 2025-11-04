@@ -7,17 +7,17 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SFMobileNativeInitialRequirementsTool } from '../../../../../src/tools/magi/prd/magi-prd-initial-requirements/tool.js';
+import { MagiInitialRequirementsTool } from '../../../../../src/tools/magi/prd/magi-prd-initial-requirements/tool.js';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
-describe('SFMobileNativeInitialRequirementsTool', () => {
-  let tool: SFMobileNativeInitialRequirementsTool;
+describe('MagiInitialRequirementsTool', () => {
+  let tool: MagiInitialRequirementsTool;
   let mockServer: McpServer;
   let annotations: ToolAnnotations;
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
-    tool = new SFMobileNativeInitialRequirementsTool(mockServer);
+    tool = new MagiInitialRequirementsTool(mockServer);
     annotations = {
       readOnlyHint: true,
       destructiveHint: false,
@@ -46,16 +46,16 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
   });
 
   describe('Input Schema Validation', () => {
-    it('should accept valid input with feature brief', () => {
+    it('should accept valid input with feature brief path', () => {
       const validInput = {
-        featureBrief: '# Feature Brief\n\nContent',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
       const result = tool.toolMetadata.inputSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should reject input missing featureBrief', () => {
+    it('should reject input missing featureBriefPath', () => {
       const invalidInput = {
         workflowStateData: { thread_id: 'test-123' },
       };
@@ -65,7 +65,7 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
 
     it('should reject input missing workflowStateData', () => {
       const invalidInput = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
       };
       const result = tool.toolMetadata.inputSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
@@ -73,68 +73,33 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
   });
 
   describe('Result Schema Validation', () => {
-    it('should validate result with functional requirements', () => {
+    it('should validate result with requirements markdown', () => {
       const validResult = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement Title',
-            description: 'Requirement description',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-        ],
-        summary: 'Requirements summary',
+        requirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement Title\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Requirement description',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
     });
 
-    it('should validate result with multiple requirements', () => {
+    it('should validate result with multiple requirements in markdown', () => {
       const validResult = {
-        functionalRequirements: [
-          {
-            id: 'REQ-001',
-            title: 'Requirement 1',
-            description: 'Description 1',
-            priority: 'high' as const,
-            category: 'UI/UX',
-          },
-          {
-            id: 'REQ-002',
-            title: 'Requirement 2',
-            description: 'Description 2',
-            priority: 'medium' as const,
-            category: 'Security',
-          },
-        ],
-        summary: 'Summary',
+        requirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement 1\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Description 1\n\n### REQ-002: Requirement 2\n- **Priority**: medium\n- **Category**: Security\n- **Description**: Description 2',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
     });
 
-    it('should reject result missing functionalRequirements', () => {
-      const invalidResult = {
-        summary: 'Summary',
-      };
-      const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
-      expect(result.success).toBe(false);
-    });
-
-    it('should reject result missing summary', () => {
-      const invalidResult = {
-        functionalRequirements: [],
-      };
+    it('should reject result missing requirementsMarkdown', () => {
+      const invalidResult = {};
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
     });
   });
 
   describe('Initial Requirements Guidance Generation', () => {
-    it('should generate guidance with feature brief', async () => {
+    it('should generate guidance with feature brief path', async () => {
       const input = {
-        featureBrief: '# Feature Brief\n\nTest content',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -146,13 +111,13 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('product requirements analyst');
-      expect(response.promptForLLM).toContain('# Feature Brief');
-      expect(response.promptForLLM).toContain('Test content');
+      expect(response.promptForLLM).toContain('File Path');
+      expect(response.promptForLLM).toContain('/path/to/feature-brief.md');
     });
 
     it('should include task instructions', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -168,7 +133,7 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
 
     it('should include requirements quality standards', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -184,7 +149,7 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
 
     it('should include workflow continuation instructions', async () => {
       const input = {
-        featureBrief: '# Feature Brief',
+        featureBriefPath: '/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -199,9 +164,9 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle empty feature brief', async () => {
+    it('should handle long file path', async () => {
       const input = {
-        featureBrief: '',
+        featureBriefPath: '/very/long/path/to/feature-brief.md',
         workflowStateData: { thread_id: 'test-123' },
       };
 
@@ -209,10 +174,9 @@ describe('SFMobileNativeInitialRequirementsTool', () => {
       expect(result.content).toBeDefined();
     });
 
-    it('should handle very long feature brief', async () => {
-      const longBrief = '# Feature Brief\n\n' + 'Content line.\n'.repeat(500);
+    it('should handle path with special characters', async () => {
       const input = {
-        featureBrief: longBrief,
+        featureBriefPath: '/path/to/feature-brief (v2).md',
         workflowStateData: { thread_id: 'test-123' },
       };
 

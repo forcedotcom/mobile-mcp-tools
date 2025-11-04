@@ -15,7 +15,7 @@ import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory
 
 // Mock wellKnownDirectory utilities
 vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
-  readMagiArtifact: vi.fn(),
+  getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
     FEATURE_BRIEF: 'feature-brief.md',
@@ -45,12 +45,19 @@ describe('PRDFeatureBriefUpdateNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        userUtterance: 'Add authentication',
-        featureBriefUserFeedback: 'Need more details',
+        isFeatureBriefApproved: false,
+        featureBriefModifications: [
+          {
+            section: 'Overview',
+            modificationReason: 'Needs more detail',
+            requestedContent: 'Updated content',
+          },
+        ],
       });
 
-      const featureBriefContent = '# Feature Brief\n\nOriginal content';
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
+      );
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
@@ -66,19 +73,23 @@ describe('PRDFeatureBriefUpdateNode', () => {
       expect(lastCall?.llmMetadata.description).toBe(FEATURE_BRIEF_UPDATE_TOOL.description);
     });
 
-    it('should pass existing feature ID and content to tool', () => {
-      const featureBriefContent = '# Original Brief';
+    it('should pass feature brief path and review result to tool', () => {
+      const featureBriefPath = '/path/to/project/magi-sdd/feature-123/feature-brief.md';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        userUtterance: 'Original request',
-        featureBriefUserFeedback: 'Need updates',
+        isFeatureBriefApproved: false,
+        featureBriefModifications: [
+          {
+            section: 'Overview',
+            modificationReason: 'Needs more detail',
+            requestedContent: 'Updated content',
+          },
+        ],
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
-        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
-      );
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(featureBriefPath);
+      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(featureBriefPath);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_UPDATE_TOOL.toolId, {
         featureBriefMarkdown: '# Updated Brief',
@@ -87,21 +98,28 @@ describe('PRDFeatureBriefUpdateNode', () => {
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.existingFeatureId).toBe('feature-123');
-      expect(lastCall?.input.featureBrief).toBe(featureBriefContent);
-      expect(lastCall?.input.userUtterance).toBe('Original request');
-      expect(lastCall?.input.userFeedback).toBe('Need updates');
+      expect(lastCall?.input.featureBriefPath).toBe(featureBriefPath);
+      expect(lastCall?.input.reviewResult.approved).toBe(false);
+      expect(lastCall?.input.reviewResult.modifications).toBeDefined();
     });
 
     it('should write updated feature brief file and return state', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        userUtterance: 'Update',
+        isFeatureBriefApproved: false,
+        featureBriefModifications: [
+          {
+            section: 'Overview',
+            modificationReason: 'Needs more detail',
+            requestedContent: 'Updated content',
+          },
+        ],
       });
 
-      const featureBriefContent = '# Original';
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue(featureBriefContent);
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
+      );
       vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
@@ -129,13 +147,20 @@ describe('PRDFeatureBriefUpdateNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
+        isFeatureBriefApproved: false,
       });
 
-      vi.mocked(wellKnownDirectory.readMagiArtifact).mockReturnValue('');
+      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
+      );
+
+      mockToolExecutor.setResult(FEATURE_BRIEF_UPDATE_TOOL.toolId, {
+        featureBriefMarkdown: '# Updated Brief',
+      });
 
       expect(() => {
         node.execute(inputState);
-      }).toThrow('Feature brief file not found');
+      }).not.toThrow('Feature brief file not found');
     });
 
     it('should throw error when featureId is missing', () => {
