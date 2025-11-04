@@ -11,7 +11,7 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
-import { FEATURE_BRIEF_MODIFICATION_SCHEMA } from '../shared/featureBriefSchemas.js';
+import { FEATURE_BRIEF_REVIEW_RESULT_SCHEMA } from '../shared/featureBriefSchemas.js';
 
 /**
  * Feature Brief Review Tool Input Schema
@@ -21,14 +21,6 @@ export const FEATURE_BRIEF_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA
 });
 
 export type FeatureBriefReviewInput = z.infer<typeof FEATURE_BRIEF_REVIEW_INPUT_SCHEMA>;
-
-export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
-  approved: z.boolean().describe('Whether the feature brief is approved by the user'),
-  modifications: z
-    .array(FEATURE_BRIEF_MODIFICATION_SCHEMA)
-    .optional()
-    .describe('Requested modifications to the feature brief (if not approved)'),
-});
 
 export type FeatureBriefReviewResult = z.infer<typeof FEATURE_BRIEF_REVIEW_RESULT_SCHEMA>;
 

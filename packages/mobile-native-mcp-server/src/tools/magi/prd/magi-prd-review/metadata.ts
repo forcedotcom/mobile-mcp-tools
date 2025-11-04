@@ -11,7 +11,7 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
-import { PRD_MODIFICATION_SCHEMA } from '../shared/prdSchemas.js';
+import { PRD_REVIEW_RESULT_SCHEMA } from '../shared/prdSchemas.js';
 
 /**
  * PRD Review Tool Input Schema
@@ -21,14 +21,6 @@ export const PRD_REVIEW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
 });
 
 export type PRDReviewInput = z.infer<typeof PRD_REVIEW_INPUT_SCHEMA>;
-
-export const PRD_REVIEW_RESULT_SCHEMA = z.object({
-  approved: z.boolean().describe('Whether the PRD is approved by the user'),
-  modifications: z
-    .array(PRD_MODIFICATION_SCHEMA)
-    .optional()
-    .describe('Requested modifications to the PRD (if not approved)'),
-});
 
 export type PRDReviewResult = z.infer<typeof PRD_REVIEW_RESULT_SCHEMA>;
 

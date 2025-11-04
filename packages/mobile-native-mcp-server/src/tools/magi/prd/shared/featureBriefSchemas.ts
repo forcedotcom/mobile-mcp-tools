@@ -19,3 +19,17 @@ export const FEATURE_BRIEF_MODIFICATION_SCHEMA = z.object({
 
 export type FeatureBriefModification = z.infer<typeof FEATURE_BRIEF_MODIFICATION_SCHEMA>;
 
+/**
+ * Feature Brief Review Result Schema
+ * Used for feature brief review and update operations
+ */
+export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
+  approved: z.boolean().describe('Whether the feature brief is approved by the user'),
+  modifications: z
+    .array(FEATURE_BRIEF_MODIFICATION_SCHEMA)
+    .optional()
+    .describe('Requested modifications to the feature brief (if not approved)'),
+});
+
+export type FeatureBriefReviewResult = z.infer<typeof FEATURE_BRIEF_REVIEW_RESULT_SCHEMA>;
+

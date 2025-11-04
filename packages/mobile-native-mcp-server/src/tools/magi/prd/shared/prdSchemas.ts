@@ -18,3 +18,17 @@ export const PRD_MODIFICATION_SCHEMA = z.object({
 });
 
 export type PRDModification = z.infer<typeof PRD_MODIFICATION_SCHEMA>;
+
+/**
+ * PRD Review Result Schema
+ * Used for PRD review and update operations
+ */
+export const PRD_REVIEW_RESULT_SCHEMA = z.object({
+  approved: z.boolean().describe('Whether the PRD is approved by the user'),
+  modifications: z
+    .array(PRD_MODIFICATION_SCHEMA)
+    .optional()
+    .describe('Requested modifications to the PRD (if not approved)'),
+});
+
+export type PRDReviewResult = z.infer<typeof PRD_REVIEW_RESULT_SCHEMA>;

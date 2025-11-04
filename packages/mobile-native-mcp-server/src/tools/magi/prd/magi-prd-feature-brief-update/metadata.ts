@@ -11,7 +11,7 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
-import { FEATURE_BRIEF_REVIEW_RESULT_SCHEMA } from '../magi-prd-feature-brief-review/metadata.js';
+import { FEATURE_BRIEF_REVIEW_RESULT_SCHEMA } from '../shared/featureBriefSchemas.js';
 
 /**
  * Feature Brief Update Tool Input Schema

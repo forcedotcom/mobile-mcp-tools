@@ -11,7 +11,7 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
 } from '../../../../common/metadata.js';
-import { PRD_REVIEW_RESULT_SCHEMA } from '../magi-prd-review/metadata.js';
+import { PRD_REVIEW_RESULT_SCHEMA } from '../shared/prdSchemas.js';
 
 /**
  * PRD Update Tool Input Schema
