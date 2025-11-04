@@ -628,7 +628,6 @@ Then generates new requirements addressing gaps while avoiding all excluded item
 **Tool Input:**
 ```typescript
 {
-  originalUserUtterance: string,
   featureBriefPath: string, // Path to the feature brief file
   requirementsPath: string // Path to the requirements.md file
 }
@@ -654,10 +653,9 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 
 **PRD Structure:**
 1. Document Status (author, date, status)
-2. Original User Utterance
-3. Feature Brief
-4. Functional Requirements
-5. Traceability Table
+2. Feature Brief
+3. Functional Requirements
+4. Traceability Table
 
 ---
 

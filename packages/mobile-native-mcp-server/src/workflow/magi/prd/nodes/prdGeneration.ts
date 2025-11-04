@@ -43,7 +43,6 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
         inputSchema: PRD_GENERATION_TOOL.inputSchema,
       },
       input: {
-        originalUserUtterance: state.userUtterance || '',
         featureBriefPath: featureBriefPath,
         requirementsPath: requirementsPath,
       },

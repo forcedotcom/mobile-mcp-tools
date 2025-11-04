@@ -12,7 +12,7 @@ import { REQUIREMENTS_FINALIZATION_TOOL } from '../../../../tools/magi/prd/magi-
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
 import {
-  readMagiArtifact,
+  getMagiPath,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
 } from '../../../../utils/wellKnownDirectory.js';
@@ -27,18 +27,12 @@ export class PRDRequirementsFinalizationNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    // Always read requirements content from file
-    const requirementsContent = readMagiArtifact(
+    // Get the path to the requirements file
+    const requirementsPath = getMagiPath(
       state.projectPath,
       state.featureId,
       MAGI_ARTIFACTS.REQUIREMENTS
     );
-
-    if (!requirementsContent) {
-      throw new Error(
-        `Requirements file not found for featureId: ${state.featureId}. Requirements file should exist before finalization.`
-      );
-    }
 
     const toolInvocationData: MCPToolInvocationData<
       typeof REQUIREMENTS_FINALIZATION_TOOL.inputSchema
@@ -49,7 +43,7 @@ export class PRDRequirementsFinalizationNode extends PRDAbstractToolNode {
         inputSchema: REQUIREMENTS_FINALIZATION_TOOL.inputSchema,
       },
       input: {
-        requirementsContent: requirementsContent,
+        requirementsPath: requirementsPath,
       },
     };
 

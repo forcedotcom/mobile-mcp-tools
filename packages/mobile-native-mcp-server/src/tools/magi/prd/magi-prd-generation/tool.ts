@@ -30,9 +30,6 @@ You are a technical writer tasked with creating a comprehensive Product Requirem
 
 ## Input Context
 
-### Original User Utterance
-${input.originalUserUtterance}
-
 ### Feature Brief
 
 **File Path**: ${input.featureBriefPath}
@@ -58,13 +55,10 @@ Generate a complete PRD.md file with the following structure and content:
 - **Last Modified**: Current date in YYYY-MM-DD format
 - **Status**: "draft" (since this is the initial generation)
 
-### 2. Original User Utterance
-Include the exact original user request that initiated this feature.
-
-### 3. Feature Brief
+### 2. Feature Brief
 Include the approved feature brief as generated during the requirements process.
 
-### 4. Functional Requirements
+### 3. Functional Requirements
 List all approved requirements with:
 - Requirement ID
 - Title
@@ -74,7 +68,7 @@ List all approved requirements with:
 
 Also include any modified requirements with modification notes.
 
-### 5. Traceability
+### 4. Traceability
 Create a traceability table with the following structure:
 
 | Requirement ID | Technical Requirement IDs | User Story IDs |

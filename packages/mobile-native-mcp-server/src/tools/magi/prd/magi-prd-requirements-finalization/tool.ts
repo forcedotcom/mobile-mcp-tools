@@ -25,19 +25,16 @@ export class MagiRequirementsFinalizationTool extends PRDAbstractWorkflowTool<
   };
 
   private generateRequirementsFinalizationGuidance(input: RequirementsFinalizationInput) {
-    const requirementsContent =
-      input.requirementsContent || '# Requirements\n\nNo requirements found.';
+    const requirementsPath = input.requirementsPath;
 
     return `
 You are facilitating the finalization of requirements before proceeding to PRD generation. Your role is to ensure all requirements have been properly reviewed and to finalize the requirements document.
 
 ## Current Requirements Document
 
-The following is the current requirements.md file content:
+**File Path**: ${requirementsPath}
 
-\`\`\`markdown
-${requirementsContent}
-\`\`\`
+Please read the requirements.md file from the path above.
 
 ## Finalization Process
 

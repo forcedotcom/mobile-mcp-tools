@@ -16,9 +16,6 @@ import {
  * PRD Generation Tool Input Schema
  */
 export const PRD_GENERATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  originalUserUtterance: z
-    .string()
-    .describe('The original user request or utterance that initiated this feature'),
   featureBriefPath: z.string().describe('The path to the approved feature brief file'),
   requirementsPath: z
     .string()

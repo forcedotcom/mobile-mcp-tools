@@ -16,11 +16,7 @@ import {
  * Requirements Finalization Tool Input Schema
  */
 export const REQUIREMENTS_FINALIZATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  requirementsContent: z
-    .string()
-    .describe(
-      'The content of the requirements.md file containing all requirements (approved, rejected, modified, pending review)'
-    ),
+  requirementsPath: z.string().describe('The path to the requirements.md file to finalize'),
 });
 
 export type RequirementsFinalizationInput = z.infer<typeof REQUIREMENTS_FINALIZATION_INPUT_SCHEMA>;
