@@ -102,7 +102,6 @@ describe('PRDFinalizationNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'test-feature',
-        prdContent: '# PRD Content',
         isPrdApproved: true,
       });
 

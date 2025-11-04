@@ -69,9 +69,6 @@ export class PRDGenerationNode extends PRDAbstractToolNode {
     );
     this.logger?.info(`PRD written to file: ${prdFilePath}`);
 
-    // Return minimal mapped state - content is now always read from file
-    return {
-      prdContent: validatedResult.prdContent,
-    };
+    return {};
   }
 }

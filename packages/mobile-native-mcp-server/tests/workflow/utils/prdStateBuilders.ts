@@ -45,12 +45,9 @@ export function createPRDTestState(overrides: Partial<PRDState> = {}): PRDState 
     shouldIterate: undefined,
     userIterationPreference: undefined,
 
-    // PRD Generation Results
-    prdContent: undefined,
-    prdStatus: undefined,
-
     // PRD Review
     isPrdApproved: undefined,
+    prdModifications: undefined,
 
     // Error Handling state
     prdWorkflowFatalErrorMessages: undefined,

@@ -78,14 +78,6 @@ export const PRDGenerationWorkflowState = Annotation.Root({
     }>
   >,
 
-  // PRD Generation Results
-  prdContent: Annotation<string>,
-  prdStatus: Annotation<{
-    author: string;
-    lastModified: string;
-    status: 'draft' | 'finalized';
-  }>,
-
   // Error Handling state
   prdWorkflowFatalErrorMessages: Annotation<string[]>,
 });

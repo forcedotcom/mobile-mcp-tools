@@ -64,6 +64,7 @@ export class PRDUpdateNode extends PRDAbstractToolNode {
     return {
       // Clear review state when updating
       prdModifications: undefined,
+      isPrdApproved: undefined,
     };
   };
 }

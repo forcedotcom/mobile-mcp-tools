@@ -24,16 +24,6 @@ export class PRDMagiInitializationNode extends PRDAbstractToolNode {
       // Only initialize these if they're not already set
       ...(state.gapAnalysisScore === undefined && { gapAnalysisScore: 0 }),
       ...(state.identifiedGaps === undefined && { identifiedGaps: [] }),
-      ...(state.userIterationPreference === undefined && { userIterationPreference: undefined }),
-      ...(state.prdContent === undefined && { prdContent: '' }),
-      ...(state.prdStatus === undefined && {
-        prdStatus: {
-          author: 'PRD Generator',
-          lastModified: new Date().toISOString(),
-          status: 'draft' as const,
-        },
-      }),
-      ...(state.isPrdApproved === undefined && { isPrdApproved: false }),
     };
 
     // Extract required values from userInput

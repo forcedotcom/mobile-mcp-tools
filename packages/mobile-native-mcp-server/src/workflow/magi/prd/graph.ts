@@ -8,6 +8,12 @@
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { PRDGenerationWorkflowState } from './metadata.js';
 
+/**
+ * Minimum gap analysis score threshold for proceeding to requirements finalization.
+ * Scores below this threshold trigger gap-based requirements generation.
+ */
+const GAP_ANALYSIS_THRESHOLD = 80;
+
 // Import all PRD-specific workflow nodes
 import { PRDMagiInitializationNode } from './nodes/prdMagiInitialization.js';
 import { PRDFeatureBriefGenerationNode } from './nodes/prdFeatureBriefGeneration.js';
@@ -125,10 +131,11 @@ export const prdGenerationWorkflow = new StateGraph(PRDGenerationWorkflowState)
   // Update → Review (loop back to review after applying modifications)
   .addEdge(requirementsUpdateNode.name, requirementsReviewNode.name)
 
-  // Gap Analysis → Conditional: Generate gap-based requirements if score < 80, otherwise finalize
+  // Gap Analysis → Conditional: Generate gap-based requirements if score < threshold, otherwise finalize
   .addConditionalEdges(gapAnalysisNode.name, state => {
+    // If gap analysis score is undefined, treat as 0 to trigger gap requirements generation
     const gapScore = state.gapAnalysisScore ?? 0;
-    const shouldIterate = gapScore < 80;
+    const shouldIterate = gapScore < GAP_ANALYSIS_THRESHOLD;
     return shouldIterate ? gapRequirementsGenerationNode.name : requirementsFinalizationNode.name;
   })
 

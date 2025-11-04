@@ -120,7 +120,7 @@ describe('PRDGenerationNode', () => {
       );
     });
 
-    it('should return PRD content', () => {
+    it('should return empty state (content is written to file)', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
@@ -142,7 +142,8 @@ describe('PRDGenerationNode', () => {
 
       const result = node.execute(inputState);
 
-      expect(result.prdContent).toBe(prdContent);
+      // Content is written to file, not stored in state
+      expect(result).toEqual({});
     });
   });
 

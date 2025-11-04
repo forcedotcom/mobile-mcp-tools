@@ -52,6 +52,10 @@ export class PRDFinalizationNode extends PRDAbstractToolNode {
     this.logger?.info(`PRD finalized and written to file: ${finalizedPrdPath} (status: finalized)`);
 
     this.logger?.info('PRD workflow completed');
-    return {};
+    // Clear transient review state since PRD is finalized
+    return {
+      isPrdApproved: undefined,
+      prdModifications: undefined,
+    };
   };
 }

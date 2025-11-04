@@ -44,12 +44,6 @@ describe('PRDReviewNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        prdContent: '# PRD\n\nContent',
-        prdStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
       });
 
       vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
@@ -73,12 +67,6 @@ describe('PRDReviewNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        prdContent: '# PRD\n\nComplete PRD content',
-        prdStatus: {
-          author: 'AI Assistant',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
       });
 
       vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(prdFilePath);
@@ -98,12 +86,6 @@ describe('PRDReviewNode', () => {
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
-        prdContent: '# PRD',
-        prdStatus: {
-          author: 'AI',
-          lastModified: '2025-01-01',
-          status: 'draft' as const,
-        },
       });
 
       vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(

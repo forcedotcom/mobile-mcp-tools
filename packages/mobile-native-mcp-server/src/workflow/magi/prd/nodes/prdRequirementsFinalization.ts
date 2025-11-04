@@ -63,6 +63,14 @@ export class PRDRequirementsFinalizationNode extends PRDAbstractToolNode {
       `Requirements finalized and written to file: ${requirementsFilePath} (status: approved)`
     );
 
-    return {};
+    // Clear transient review and gap analysis state since requirements are finalized
+    return {
+      approvedRequirementIds: undefined,
+      rejectedRequirementIds: undefined,
+      requirementModifications: undefined,
+      userIterationPreference: undefined,
+      gapAnalysisScore: undefined,
+      identifiedGaps: undefined,
+    };
   };
 }

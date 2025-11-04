@@ -19,10 +19,13 @@ export class PRDReviewNode extends PRDAbstractToolNode {
   }
 
   execute = (state: PRDState): Partial<PRDState> => {
-    const prdFilePath =
-      state.projectPath && state.featureId
-        ? getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.PRD)
-        : '';
+    if (!state.projectPath || !state.featureId) {
+      throw new Error(
+        'PRD review requires both projectPath and featureId to be set in state. Cannot proceed without valid paths.'
+      );
+    }
+
+    const prdFilePath = getMagiPath(state.projectPath, state.featureId, MAGI_ARTIFACTS.PRD);
 
     const toolInvocationData: MCPToolInvocationData<typeof PRD_REVIEW_TOOL.inputSchema> = {
       llmMetadata: {

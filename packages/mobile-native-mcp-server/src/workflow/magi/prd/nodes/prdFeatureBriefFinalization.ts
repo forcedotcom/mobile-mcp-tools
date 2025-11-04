@@ -63,6 +63,10 @@ export class PRDFeatureBriefFinalizationNode extends PRDAbstractToolNode {
       `Feature brief finalized and written to file: ${featureBriefFilePath} (status: approved)`
     );
 
-    return {};
+    // Clear review state since feature brief is finalized
+    return {
+      isFeatureBriefApproved: undefined,
+      featureBriefModifications: undefined,
+    };
   };
 }
