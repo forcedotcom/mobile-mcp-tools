@@ -41,7 +41,6 @@ describe('PRDRequirementsReviewNode', () => {
 
   describe('execute() - Tool Invocation', () => {
     it('should invoke requirements review tool with correct metadata', () => {
-      const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',

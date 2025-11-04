@@ -42,7 +42,6 @@ describe('PRDRequirementsFinalizationNode', () => {
 
   describe('execute() - Tool Invocation', () => {
     it('should invoke requirements finalization tool with correct metadata', () => {
-      const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
         featureId: 'feature-123',
@@ -87,7 +86,6 @@ describe('PRDRequirementsFinalizationNode', () => {
     });
 
     it('should write finalized requirements markdown to file', () => {
-      const requirementsContent = '# Requirements\n\n## Status\n**Status**: draft';
       const finalizedContent = '# Requirements\n\n## Status\n**Status**: approved';
       const inputState = createPRDTestState({
         projectPath: '/path/to/project',
@@ -113,7 +111,5 @@ describe('PRDRequirementsFinalizationNode', () => {
       );
       expect(result).toEqual({});
     });
-
   });
 });
-

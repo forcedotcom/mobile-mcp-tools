@@ -50,4 +50,3 @@ export const REQUIREMENTS_REVIEW_RESULT_SCHEMA = z.object({
 });
 
 export type RequirementsReviewResult = z.infer<typeof REQUIREMENTS_REVIEW_RESULT_SCHEMA>;
-

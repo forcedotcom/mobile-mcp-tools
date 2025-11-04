@@ -88,7 +88,9 @@ describe('PRDInitialRequirementsGenerationNode', () => {
       node.execute(inputState);
 
       const lastCall = mockToolExecutor.getLastCall();
-      expect(lastCall?.input.featureBriefPath).toBe('/path/to/project/magi-sdd/feature-123/feature-brief.md');
+      expect(lastCall?.input.featureBriefPath).toBe(
+        '/path/to/project/magi-sdd/feature-123/feature-brief.md'
+      );
     });
 
     it('should write requirements markdown to file', () => {

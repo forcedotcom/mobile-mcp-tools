@@ -10,9 +10,7 @@ import { Logger } from '../../../../logging/logger.js';
 import { PRD_GENERATION_TOOL, PRDGenerationInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class MagiPRDGenerationTool extends PRDAbstractWorkflowTool<
-  typeof PRD_GENERATION_TOOL
-> {
+export class MagiPRDGenerationTool extends PRDAbstractWorkflowTool<typeof PRD_GENERATION_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
     super(server, PRD_GENERATION_TOOL, 'PRDGenerationTool', logger);
   }

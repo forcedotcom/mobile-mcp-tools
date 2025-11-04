@@ -96,7 +96,8 @@ describe('MagiGapRequirementsTool', () => {
   describe('Result Schema Validation', () => {
     it('should validate result with updated requirements markdown', () => {
       const validResult = {
-        updatedRequirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement\n- **Priority**: high\n- **Category**: Security\n- **Description**: Description',
+        updatedRequirementsMarkdown:
+          '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement\n- **Priority**: high\n- **Category**: Security\n- **Description**: Description',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);

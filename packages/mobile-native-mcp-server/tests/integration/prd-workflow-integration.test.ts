@@ -164,7 +164,7 @@ describe('PRD Workflow Integration Test', () => {
     // Step 5: Call feature brief finalization tool (implicitly via orchestrator resume)
     // The finalization tool updates the feature brief status to "approved"
     console.log('✅ Feature Brief Finalization step (handled by workflow)...');
-    
+
     // Resume workflow with finalization result
     const orchestratorInput3Finalization: PRDOrchestratorInput = {
       userInput: {
@@ -216,7 +216,8 @@ describe('PRD Workflow Integration Test', () => {
     const orchestratorInput4: PRDOrchestratorInput = {
       userInput: {
         // Tool result format (what the initial requirements tool returns)
-        requirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: User Authentication\n- **Priority**: high\n- **Category**: Security\n- **Description**: Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO\n\n### REQ-002: Contact List View\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Display a scrollable list of customer contacts with search and filter capabilities\n\n### REQ-003: Add New Contact\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Allow users to create new customer contacts with required fields validation\n\n### REQ-004: Edit Contact Information\n- **Priority**: medium\n- **Category**: UI/UX\n- **Description**: Enable users to modify existing contact details with data validation\n\n### REQ-005: Delete Contact\n- **Priority**: medium\n- **Category**: UI/UX\n- **Description**: Allow users to remove contacts with confirmation dialog',
+        requirementsMarkdown:
+          '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: User Authentication\n- **Priority**: high\n- **Category**: Security\n- **Description**: Implement secure user login using Salesforce OAuth 2.0 with support for both username/password and SSO\n\n### REQ-002: Contact List View\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Display a scrollable list of customer contacts with search and filter capabilities\n\n### REQ-003: Add New Contact\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Allow users to create new customer contacts with required fields validation\n\n### REQ-004: Edit Contact Information\n- **Priority**: medium\n- **Category**: UI/UX\n- **Description**: Enable users to modify existing contact details with data validation\n\n### REQ-005: Delete Contact\n- **Priority**: medium\n- **Category**: UI/UX\n- **Description**: Allow users to remove contacts with confirmation dialog',
         // State fields needed for workflow continuation
         userUtterance,
         projectPath,

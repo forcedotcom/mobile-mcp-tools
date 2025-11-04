@@ -10,9 +10,7 @@ import { Logger } from '../../../../logging/logger.js';
 import { PRD_FINALIZATION_TOOL, PRDFinalizationInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class MagiPRDFinalizationTool extends PRDAbstractWorkflowTool<
-  typeof PRD_FINALIZATION_TOOL
-> {
+export class MagiPRDFinalizationTool extends PRDAbstractWorkflowTool<typeof PRD_FINALIZATION_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
     super(server, PRD_FINALIZATION_TOOL, 'PRDFinalizationTool', logger);
   }
@@ -90,4 +88,3 @@ Update the Status section to "finalized" while preserving all other content exac
     `;
   }
 }
-

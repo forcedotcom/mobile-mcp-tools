@@ -75,7 +75,8 @@ describe('MagiInitialRequirementsTool', () => {
   describe('Result Schema Validation', () => {
     it('should validate result with requirements markdown', () => {
       const validResult = {
-        requirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement Title\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Requirement description',
+        requirementsMarkdown:
+          '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement Title\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Requirement description',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
@@ -83,7 +84,8 @@ describe('MagiInitialRequirementsTool', () => {
 
     it('should validate result with multiple requirements in markdown', () => {
       const validResult = {
-        requirementsMarkdown: '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement 1\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Description 1\n\n### REQ-002: Requirement 2\n- **Priority**: medium\n- **Category**: Security\n- **Description**: Description 2',
+        requirementsMarkdown:
+          '# Requirements\n\n## Status\n**Status**: draft\n\n## Pending Review Requirements\n\n### REQ-001: Requirement 1\n- **Priority**: high\n- **Category**: UI/UX\n- **Description**: Description 1\n\n### REQ-002: Requirement 2\n- **Priority**: medium\n- **Category**: Security\n- **Description**: Description 2',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);

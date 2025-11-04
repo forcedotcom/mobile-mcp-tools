@@ -14,9 +14,7 @@ import { RequirementsBaseUtility } from '../shared/requirementsBaseUtility.js';
 /**
  * Tool for generating functional requirements based on identified gaps.
  */
-export class MagiGapRequirementsTool extends PRDAbstractWorkflowTool<
-  typeof GAP_REQUIREMENTS_TOOL
-> {
+export class MagiGapRequirementsTool extends PRDAbstractWorkflowTool<typeof GAP_REQUIREMENTS_TOOL> {
   private requirementsUtility: RequirementsBaseUtility;
 
   constructor(server: McpServer, logger?: Logger) {

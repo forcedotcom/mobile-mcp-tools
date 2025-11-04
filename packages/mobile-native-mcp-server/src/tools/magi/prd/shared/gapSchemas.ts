@@ -35,4 +35,3 @@ export const GAP_SCHEMA = z.object({
 });
 
 export type Gap = z.infer<typeof GAP_SCHEMA>;
-

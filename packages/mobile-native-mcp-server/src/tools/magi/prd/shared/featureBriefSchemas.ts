@@ -32,4 +32,3 @@ export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
 });
 
 export type FeatureBriefReviewResult = z.infer<typeof FEATURE_BRIEF_REVIEW_RESULT_SCHEMA>;
-
