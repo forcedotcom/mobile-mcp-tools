@@ -24,8 +24,6 @@ export type FeatureBriefReviewInput = z.infer<typeof FEATURE_BRIEF_REVIEW_INPUT_
 
 export const FEATURE_BRIEF_REVIEW_RESULT_SCHEMA = z.object({
   approved: z.boolean().describe('Whether the feature brief is approved by the user'),
-  userFeedback: z.string().optional().describe('User feedback or comments on the feature brief'),
-  reviewSummary: z.string().describe('Summary of the review process and decisions made'),
   modifications: z
     .array(FEATURE_BRIEF_MODIFICATION_SCHEMA)
     .optional()

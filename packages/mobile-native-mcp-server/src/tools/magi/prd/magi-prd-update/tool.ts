@@ -42,28 +42,23 @@ You should read the PRD.md file from this path and update it based on the review
 
 ## Review Feedback
 
-**Review Summary**: ${reviewResult.reviewSummary}
-
-**User Feedback**: ${reviewResult.userFeedback || 'No specific feedback provided'}
-
 **Modifications**: ${
       hasModifications
         ? JSON.stringify(reviewResult.modifications, null, 2)
-        : 'No modifications requested - but user feedback indicates changes are needed'
+        : 'No modifications requested - but changes are needed based on review feedback'
     }
 
 # TASK
 
 You must update the PRD.md file to incorporate:
-1. All user feedback provided
-2. All requested modifications
-3. Address any concerns or issues raised during the review
+1. All requested modifications
+2. Address any concerns or issues raised during the review
 
 **CRITICAL REQUIREMENTS**:
 - Read the PRD.md file from the provided path
 - Preserve the overall structure and intent of the original PRD
 - Incorporate changes naturally and coherently
-- Ensure the updated PRD addresses all feedback and modifications
+- Ensure the updated PRD addresses all modifications
 - Keep the markdown formatting consistent
 - Maintain document status section (keep as "draft" if not finalized)
 

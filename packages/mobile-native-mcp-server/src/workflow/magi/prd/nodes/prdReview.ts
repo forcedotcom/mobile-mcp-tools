@@ -44,8 +44,6 @@ export class PRDReviewNode extends PRDAbstractToolNode {
     return {
       isPrdApproved: validatedResult.approved,
       prdModifications: validatedResult.modifications,
-      prdUserFeedback: validatedResult.userFeedback,
-      prdReviewSummary: validatedResult.reviewSummary,
     };
   };
 }

@@ -14,7 +14,6 @@ import { Logger } from '../../../../logging/logger.js';
 
 import {
   getMagiPath,
-  readMagiArtifact,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
 } from '../../../../utils/wellKnownDirectory.js';
@@ -45,8 +44,6 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
     // Construct review result from state
     const reviewResult: z.infer<typeof FEATURE_BRIEF_REVIEW_TOOL.resultSchema> = {
       approved: false, // Always false for update node
-      userFeedback: state.featureBriefUserFeedback,
-      reviewSummary: `Review of feature brief ${state.featureId} - modifications requested`,
       modifications: state.featureBriefModifications,
     };
 
@@ -87,7 +84,6 @@ export class PRDFeatureBriefUpdateNode extends PRDAbstractToolNode {
       featureId: state.featureId,
       // Clear review state when generating new version
       isFeatureBriefApproved: undefined,
-      featureBriefUserFeedback: undefined,
       featureBriefModifications: undefined,
     };
   };

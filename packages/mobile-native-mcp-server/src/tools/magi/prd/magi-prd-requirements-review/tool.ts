@@ -67,9 +67,7 @@ After completing the review, you must return feedback about the review decisions
      - description: New description for the requirement
      - priority: New priority level (high|medium|low)
      - category: New category
-4. **userFeedback**: Optional additional feedback or comments from the user
-5. **reviewSummary**: Summary of what happened in this review session
-6. **userIterationPreference**: Optional boolean indicating if the user wants to finalize:
+4. **userIterationPreference**: Optional boolean indicating if the user wants to finalize:
    - **true**: User wants to finalize and proceed to PRD generation (skip gap analysis and further iterations)
    - **false** or **not provided**: Continue with normal workflow (gap analysis, modifications, etc.)
 

@@ -31,8 +31,6 @@ export class PRDUpdateNode extends PRDAbstractToolNode {
     // Construct review result from state
     const reviewResult: z.infer<typeof PRD_REVIEW_TOOL.resultSchema> = {
       approved: false, // Always false for update node
-      userFeedback: state.prdUserFeedback,
-      reviewSummary: state.prdReviewSummary || 'PRD review feedback applied',
       modifications: state.prdModifications,
     };
 
@@ -66,8 +64,6 @@ export class PRDUpdateNode extends PRDAbstractToolNode {
     return {
       // Clear review state when updating
       prdModifications: undefined,
-      prdUserFeedback: undefined,
-      prdReviewSummary: undefined,
     };
   };
 }

@@ -41,8 +41,6 @@ export const REQUIREMENTS_REVIEW_RESULT_SCHEMA = z.object({
     .array(REQUIREMENT_MODIFICATION_SCHEMA)
     .optional()
     .describe('Array of modification requests for requirements'),
-  userFeedback: z.string().optional().describe('Additional feedback or comments from the user'),
-  reviewSummary: z.string().describe('Summary of the review process and decisions made'),
   userIterationPreference: z
     .boolean()
     .optional()

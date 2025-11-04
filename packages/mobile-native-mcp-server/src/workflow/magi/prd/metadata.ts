@@ -22,7 +22,6 @@ export const PRDGenerationWorkflowState = Annotation.Root({
 
   // Feature Brief Review state
   isFeatureBriefApproved: Annotation<boolean>,
-  featureBriefUserFeedback: Annotation<string>,
   featureBriefModifications: Annotation<
     Array<{
       section: string;
@@ -46,8 +45,6 @@ export const PRDGenerationWorkflowState = Annotation.Root({
       };
     }>
   >,
-  requirementsUserFeedback: Annotation<string>,
-  requirementsReviewSummary: Annotation<string>,
 
   // Gap Analysis state
   gapAnalysisScore: Annotation<number>,
@@ -80,8 +77,6 @@ export const PRDGenerationWorkflowState = Annotation.Root({
       requestedContent: string;
     }>
   >,
-  prdUserFeedback: Annotation<string>,
-  prdReviewSummary: Annotation<string>,
 
   // PRD Generation Results
   prdContent: Annotation<string>,

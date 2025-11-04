@@ -46,8 +46,6 @@ export class PRDRequirementsReviewNode extends PRDAbstractToolNode {
       approvedRequirementIds: validatedResult.approvedRequirementIds,
       rejectedRequirementIds: validatedResult.rejectedRequirementIds,
       requirementModifications: validatedResult.modifications,
-      requirementsUserFeedback: validatedResult.userFeedback,
-      requirementsReviewSummary: validatedResult.reviewSummary,
       userIterationPreference: validatedResult.userIterationPreference,
     };
   };

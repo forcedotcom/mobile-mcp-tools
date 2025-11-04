@@ -44,10 +44,6 @@ You should read the requirements.md file from this path and update it based on t
 
 ## Review Feedback
 
-**Review Summary**: ${reviewResult.reviewSummary}
-
-**User Feedback**: ${reviewResult.userFeedback || 'No specific feedback provided'}
-
 **Approved Requirement IDs**: ${JSON.stringify(reviewResult.approvedRequirementIds)}
 
 **Rejected Requirement IDs**: ${JSON.stringify(reviewResult.rejectedRequirementIds)}
@@ -75,7 +71,6 @@ You must update the requirements.md file to:
 4. **Update Review History**:
    - Add a new entry to the "Review History" section with:
      - Timestamp (ISO format)
-     - Summary: The reviewSummary from the feedback
      - Approved IDs: Comma-separated list of approved requirement IDs
      - Rejected IDs: Comma-separated list of rejected requirement IDs
      - Modified IDs: Comma-separated list of modified requirement IDs
@@ -135,7 +130,6 @@ The requirements.md file should follow this structure:
 ## Review History
 
 ### [timestamp]
-- **Summary**: [summary of review]
 - **Approved IDs**: [comma-separated IDs]
 - **Rejected IDs**: [comma-separated IDs]
 - **Modified IDs**: [comma-separated IDs]

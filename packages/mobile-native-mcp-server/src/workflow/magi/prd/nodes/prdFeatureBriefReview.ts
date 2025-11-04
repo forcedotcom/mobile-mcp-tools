@@ -75,7 +75,6 @@ export class PRDFeatureBriefReviewNode extends PRDAbstractToolNode {
     // Return only the feedback - the update tool will handle file modifications
     return {
       isFeatureBriefApproved: validatedResult.approved,
-      featureBriefUserFeedback: validatedResult.userFeedback,
       featureBriefModifications: validatedResult.modifications,
     };
   }

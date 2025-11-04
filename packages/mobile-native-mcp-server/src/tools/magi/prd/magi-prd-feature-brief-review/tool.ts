@@ -60,44 +60,23 @@ The user can respond in one of the following ways:
 - **"I need to modify [section]"** or **"Can we change..."** - Request modifications
 - **"This doesn't match what I want"** - Request major revisions
 
-## Guidelines
+## Output Format
 
-- Read the feature brief file from the provided path
-- Present the feature brief in a clear, readable format
-- Ask open-ended questions to understand the user's approval or concerns
-- If the user wants modifications, capture the specific sections and requested changes
-- Ensure all modifications are clearly documented
-- Provide a clear summary of the review outcome
+After completing the review, you must return feedback about the review decisions:
+
+1. **approved**: Boolean indicating if the feature brief is approved (true) or modifications are needed (false)
+2. **modifications**: Optional array of modification requests. Each modification should include:
+   - **section**: Section of the feature brief to modify (e.g., "Purpose", "Scope", "User Stories")
+   - **modificationReason**: Reason for the modification request
+   - **requestedContent**: The user's requested content changes
 
 ## CRITICAL WORKFLOW RULES
 
 **MANDATORY**: You MUST follow these rules exactly:
 
-1. **If the user requests ANY modifications** (even minor ones):
-   - You MUST set approved to false
-   - You MUST provide the modifications array
-   - You MUST NOT modify the feature brief file directly
-   - You MUST return control to the workflow to apply the changes
-
-2. **If the user approves the feature brief as-is**:
-   - You MUST set approved to true
-   - You MUST NOT include any modifications in the array
-   - The workflow will proceed to apply the approval status update
-
-3. **ABSOLUTELY FORBIDDEN**:
-   - Modifying the feature brief file directly
-   - Editing files and then approving
-   - Setting approved to true when modifications are requested
-   - Returning updated feature brief content (only return feedback)
-
-## Approval Logic
-
-The logic is simple:
-- IF user requests modifications: set approved to false, provide modifications array
-- IF user approves without changes: set approved to true, omit or empty modifications array
-
-**You cannot approve AND request modifications at the same time.**
-If modifications are requested, approval MUST be false so the workflow can regenerate properly.
+1. **You are ONLY collecting feedback** - Do NOT modify the feature brief file directly
+2. **Return only the review decisions** - The workflow will apply these changes using a separate update tool
+3. **Be specific** - For modifications, provide clear details about what sections need changes and what the new content should be
 
 Begin the review process by reading the feature brief file and asking for the user's approval or requested modifications.
     `;

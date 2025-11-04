@@ -37,8 +37,6 @@ export class PRDRequirementsUpdateNode extends PRDAbstractToolNode {
       approvedRequirementIds: state.approvedRequirementIds || [],
       rejectedRequirementIds: state.rejectedRequirementIds || [],
       modifications: state.requirementModifications,
-      userFeedback: state.requirementsUserFeedback,
-      reviewSummary: state.requirementsReviewSummary || 'Requirements review feedback applied',
     };
 
     const toolInvocationData: MCPToolInvocationData<typeof REQUIREMENTS_UPDATE_TOOL.inputSchema> = {
@@ -77,9 +75,6 @@ export class PRDRequirementsUpdateNode extends PRDAbstractToolNode {
       approvedRequirementIds: undefined,
       rejectedRequirementIds: undefined,
       requirementModifications: undefined,
-      requirementsUserFeedback: undefined,
-      requirementsReviewSummary: undefined,
     };
   };
 }
-

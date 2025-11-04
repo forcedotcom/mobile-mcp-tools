@@ -62,9 +62,7 @@ The user should consider:
 After completing the review, you must return feedback about the review decisions:
 
 1. **approved**: Boolean indicating if the PRD is approved (true) or modifications are needed (false)
-2. **userFeedback**: Optional additional feedback or comments from the user
-3. **reviewSummary**: Summary of what happened in this review session
-4. **modifications**: Optional array of modification requests. Each modification should include:
+2. **modifications**: Optional array of modification requests. Each modification should include:
    - **section**: Section of the PRD to modify (e.g., "Functional Requirements", "Feature Brief")
    - **modificationReason**: Reason for the modification request
    - **requestedContent**: The user's requested content changes

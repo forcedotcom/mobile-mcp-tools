@@ -32,7 +32,7 @@ export class MagiFeatureBriefUpdateTool extends PRDAbstractWorkflowTool<
     return `
 # ROLE
 
-You are a feature brief update tool. Your task is to revise an EXISTING feature brief based on user feedback and requested modifications. This tool is ONLY used when modifications are requested (not for approvals). You must maintain the same feature ID and update the content to address the user's concerns.
+You are a feature brief update tool. Your task is to revise an EXISTING feature brief based on requested modifications. This tool is ONLY used when modifications are requested (not for approvals). You must maintain the same feature ID and update the content based on the requested modifications.
 
 # CONTEXT
 
@@ -46,30 +46,25 @@ You should read the feature brief file from this path and update it based on the
 
 **Status**: draft
 
-**Review Summary**: ${reviewResult.reviewSummary}
-
-**User Feedback**: ${reviewResult.userFeedback || 'No specific feedback provided'}
-
 ## Requested Modifications
 ${
   hasModifications
     ? JSON.stringify(reviewResult.modifications, null, 2)
-    : 'No specific modifications requested - but user feedback indicates changes are needed'
+    : 'No specific modifications requested - but changes are needed based on review feedback'
 }
 
 # TASK
 
 You must update the feature brief to incorporate:
-1. All user feedback provided
-2. All requested modifications
-3. Address any concerns or issues raised during the review
+1. All requested modifications
+2. Address any concerns or issues raised during the review
 
 **CRITICAL REQUIREMENTS**:
 - Read the feature brief file from the provided path
 - Extract the feature ID from the existing brief (must be preserved in the output)
 - Preserve the overall structure and intent of the original brief
 - Incorporate changes naturally and coherently
-- Ensure the updated brief addresses all feedback and modifications
+- Ensure the updated brief addresses all modifications
 - Keep the markdown formatting consistent
 - **MUST include a Status section** with format: '## Status\n**Status**: draft' (near the top, after the title)
 - The status should always be set to "draft" when updating the feature brief (since changes are being made)
@@ -77,10 +72,9 @@ You must update the feature brief to incorporate:
 # UPDATE GUIDELINES
 
 1. **Review the existing content**: Understand what's already there
-2. **Identify changes needed**: Based on feedback and modifications
+2. **Identify changes needed**: Based on requested modifications
 3. **Apply changes systematically**:
    - Update specific sections as requested
-   - Incorporate user feedback into relevant sections
    - Ensure consistency across the document
 4. **Maintain coherence**: The updated brief should read as a unified document, not patched together
 
@@ -89,7 +83,6 @@ You must update the feature brief to incorporate:
 Generate a COMPLETE, updated feature brief in Markdown format that:
 - Includes all sections from the original (with updates applied)
 - Incorporates all requested modifications
-- Addresses all user feedback
 - Maintains professional formatting
 - Preserves the feature ID from the original brief (extract from the file content)
 - **MUST include a Status section** near the top (after the title) with: '## Status\n**Status**: draft'
@@ -99,7 +92,7 @@ Generate a COMPLETE, updated feature brief in Markdown format that:
 # EXAMPLES OF GOOD UPDATES
 
 **Original**: "Users can change theme colors"
-**Feedback**: "Need to support brand identity colors specifically"
+**Modification Request**: "Need to support brand identity colors specifically"
 **Updated**: "Users can change theme colors, with support for brand identity color palettes that maintain visual consistency with company branding guidelines"
 
 **Original Section**: "Basic navigation"

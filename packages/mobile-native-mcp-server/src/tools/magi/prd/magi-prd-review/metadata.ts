@@ -24,8 +24,6 @@ export type PRDReviewInput = z.infer<typeof PRD_REVIEW_INPUT_SCHEMA>;
 
 export const PRD_REVIEW_RESULT_SCHEMA = z.object({
   approved: z.boolean().describe('Whether the PRD is approved by the user'),
-  userFeedback: z.string().optional().describe('User feedback or comments on the PRD'),
-  reviewSummary: z.string().describe('Summary of the review process and decisions made'),
   modifications: z
     .array(PRD_MODIFICATION_SCHEMA)
     .optional()
