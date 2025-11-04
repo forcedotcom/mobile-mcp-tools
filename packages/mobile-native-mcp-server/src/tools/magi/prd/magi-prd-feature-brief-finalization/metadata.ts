@@ -27,10 +27,6 @@ export const FEATURE_BRIEF_FINALIZATION_RESULT_SCHEMA = z.object({
     .describe(
       'The finalized feature brief markdown content with status updated to "approved". Content should remain unchanged, only status section updated.'
     ),
-  finalizationSummary: z
-    .string()
-    .optional()
-    .describe('Optional summary of the finalization process'),
 });
 
 /**

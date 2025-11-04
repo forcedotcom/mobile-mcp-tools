@@ -184,8 +184,6 @@ There are two base node classes in the PRD workflow:
   featureBriefPath: string, // Path to the feature brief file
   reviewResult: {
     approved: boolean, // Always false for update node
-    userFeedback?: string,
-    reviewSummary: string,
     modifications?: Array<{
       section: string,
       modificationReason: string,
@@ -247,8 +245,6 @@ There are two base node classes in the PRD workflow:
 ```typescript
 {
   approved: boolean,
-  userFeedback?: string,
-  reviewSummary: string,
   modifications?: Array<{
     section: string,
     modificationReason: string,
@@ -259,7 +255,6 @@ There are two base node classes in the PRD workflow:
 
 **Key State Updates:**
 - Sets `isFeatureBriefApproved` - approval status
-- Sets `featureBriefUserFeedback` - user feedback
 - Sets `featureBriefModifications` - requested modifications
 
 **Workflow Behavior:**
@@ -296,7 +291,6 @@ There are two base node classes in the PRD workflow:
 ```typescript
 {
   finalizedFeatureBriefContent: string // Updated feature brief with status "approved"
-  finalizationSummary?: string
 }
 ```
 
@@ -386,8 +380,6 @@ There are two base node classes in the PRD workflow:
       category?: string
     }
   }>,
-  userFeedback?: string,
-  reviewSummary: string,
   userIterationPreference?: boolean // Optional: true = finalize now, false/undefined = continue
 }
 ```
@@ -396,8 +388,6 @@ There are two base node classes in the PRD workflow:
 - Sets `approvedRequirementIds` - approved requirement IDs
 - Sets `rejectedRequirementIds` - rejected requirement IDs
 - Sets `requirementModifications` - modification requests
-- Sets `requirementsUserFeedback` - user feedback
-- Sets `requirementsReviewSummary` - review summary
 - Sets `userIterationPreference` - user decision to finalize or continue
 
 **Workflow Behavior:**
@@ -430,9 +420,16 @@ There are two base node classes in the PRD workflow:
   reviewResult: {
     approvedRequirementIds: string[],
     rejectedRequirementIds: string[],
-    modifications?: Array<...>,
-    userFeedback?: string,
-    reviewSummary: string,
+    modifications?: Array<{
+      requirementId: string,
+      modificationReason: string,
+      requestedChanges: {
+        title?: string,
+        description?: string,
+        priority?: 'high' | 'medium' | 'low',
+        category?: string
+      }
+    }>,
     userIterationPreference?: boolean
   }
 }
@@ -471,6 +468,8 @@ There are two base node classes in the PRD workflow:
 - Provides overall gap analysis score
 - **Excludes rejected and out-of-scope requirements** from gap suggestions
 
+**Note:** Gap schemas (`GAP_SCHEMA` and `SUGGESTED_REQUIREMENT_SCHEMA`) are defined in `shared/gapSchemas.ts` and shared between gap analysis and gap requirements generation tools.
+
 **Tool Input:**
 ```typescript
 {
@@ -486,15 +485,26 @@ The tool receives file paths and instructs the LLM to read both files. The tool 
 ```typescript
 {
   gapAnalysisScore: number, // Score from 0-100 (higher is better)
-  identifiedGaps: Array<{
-    id: string,
-    title: string,
-    description: string,
-    severity: 'critical' | 'high' | 'medium' | 'low',
-    category: string,
-    impact: string,
-    suggestedRequirements: Array<SuggestedRequirement>
-  }>
+  identifiedGaps: Array<Gap>
+}
+
+// Gap schema (from shared/gapSchemas.ts):
+type Gap = {
+  id: string, // Unique identifier for the gap
+  title: string, // Title of the identified gap
+  description: string, // Detailed description of the gap
+  severity: 'critical' | 'high' | 'medium' | 'low', // Severity of the gap
+  category: string, // Category of the gap
+  impact: string, // Description of the impact if this gap is not addressed
+  suggestedRequirements: Array<SuggestedRequirement> // Suggested requirements to address this gap
+}
+
+// SuggestedRequirement schema (from shared/gapSchemas.ts):
+type SuggestedRequirement = {
+  title: string, // Suggested requirement title
+  description: string, // Suggested requirement description
+  priority: 'high' | 'medium' | 'low', // Suggested priority
+  category: string // Suggested category
 }
 ```
 
@@ -525,7 +535,7 @@ The tool receives file paths and instructs the LLM to read both files. The tool 
 {
   featureBriefPath: string, // Path to the feature brief file
   requirementsPath: string, // Path to the requirements.md file
-  identifiedGaps: Array<Gap>
+  identifiedGaps: Array<Gap> // Array of Gap objects (from shared/gapSchemas.ts)
 }
 ```
 
@@ -582,7 +592,6 @@ Then generates new requirements addressing gaps while avoiding all excluded item
 ```typescript
 {
   finalizedRequirementsContent: string // Complete requirements.md file content with Status section set to "approved"
-  finalizationSummary?: string // Optional summary of the finalization process
 }
 ```
 
@@ -677,8 +686,6 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 ```typescript
 {
   approved: boolean,
-  userFeedback?: string,
-  reviewSummary: string,
   modifications?: Array<{
     section: string,
     modificationReason: string,
@@ -690,8 +697,6 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 **Key State Updates:**
 - Sets `isPrdApproved` - approval status
 - Sets `prdModifications` - modification requests
-- Sets `prdUserFeedback` - user feedback
-- Sets `prdReviewSummary` - review summary
 
 **Workflow Behavior:**
 - If approved → route to PRD Finalization Node
@@ -721,9 +726,11 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
   prdFilePath: string, // Path to the PRD.md file
   reviewResult: {
     approved: boolean, // Always false for update node
-    userFeedback?: string,
-    reviewSummary: string,
-    modifications?: Array<...>
+    modifications?: Array<{
+      section: string,
+      modificationReason: string,
+      requestedContent: string
+    }>
   }
 }
 ```
@@ -772,7 +779,6 @@ Excluded items (rejected/out-of-scope) are not included in the PRD.
 ```typescript
 {
   finalizedPrdContent: string // Updated PRD with status "finalized"
-  finalizationSummary?: string
 }
 ```
 
@@ -848,7 +854,6 @@ userUtterance: string
 #### Feature Brief Review State
 ```typescript
 isFeatureBriefApproved: boolean // Whether the feature brief is approved
-featureBriefUserFeedback: string // User feedback on the feature brief
 featureBriefModifications: Array<Modification> // Requested modifications from review
 ```
 
@@ -868,8 +873,6 @@ requirementModifications: Array<{
     category?: string
   }
 }> // Modification requests
-requirementsUserFeedback: string // User feedback
-requirementsReviewSummary: string // Review summary
 userIterationPreference: boolean // Optional: true = finalize now, false/undefined = continue
 ```
 
@@ -908,8 +911,6 @@ prdModifications: Array<{
   modificationReason: string,
   requestedContent: string
 }> // Modification requests
-prdUserFeedback: string // User feedback
-prdReviewSummary: string // Review summary
 ```
 
 #### Error Handling State

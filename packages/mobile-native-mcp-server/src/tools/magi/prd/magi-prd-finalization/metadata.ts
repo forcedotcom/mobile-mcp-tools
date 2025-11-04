@@ -27,10 +27,6 @@ export const PRD_FINALIZATION_RESULT_SCHEMA = z.object({
     .describe(
       'The finalized PRD markdown content with status updated to "finalized". Content should remain unchanged, only status section updated.'
     ),
-  finalizationSummary: z
-    .string()
-    .optional()
-    .describe('Optional summary of the finalization process'),
 });
 
 /**
@@ -48,4 +44,3 @@ export const PRD_FINALIZATION_TOOL: WorkflowToolMetadata<
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   resultSchema: PRD_FINALIZATION_RESULT_SCHEMA,
 } as const;
-

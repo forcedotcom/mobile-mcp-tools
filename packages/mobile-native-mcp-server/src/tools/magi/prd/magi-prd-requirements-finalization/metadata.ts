@@ -31,10 +31,6 @@ export const REQUIREMENTS_FINALIZATION_RESULT_SCHEMA = z.object({
     .describe(
       'The finalized requirements.md file content with status updated to "approved". All pending requirements should have been reviewed and moved to appropriate sections.'
     ),
-  finalizationSummary: z
-    .string()
-    .optional()
-    .describe('Optional summary of the finalization process and final state of requirements'),
 });
 
 /**

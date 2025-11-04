@@ -13,19 +13,6 @@ import {
 } from '../../../../common/metadata.js';
 
 /**
- * Functional Requirement Schema
- */
-export const FUNCTIONAL_REQUIREMENT_SCHEMA = z.object({
-  id: z.string().describe('Unique identifier for the requirement'),
-  title: z.string().describe('Short title of the functional requirement'),
-  description: z.string().describe('Detailed description of the functional requirement'),
-  priority: z.enum(['high', 'medium', 'low']).describe('Priority level of the requirement'),
-  category: z
-    .string()
-    .describe('Category of the requirement (e.g., UI/UX, Data, Security, Performance)'),
-});
-
-/**
  * PRD Generation Tool Input Schema
  */
 export const PRD_GENERATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({

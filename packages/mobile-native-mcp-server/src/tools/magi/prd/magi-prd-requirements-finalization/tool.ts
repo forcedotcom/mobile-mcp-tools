@@ -69,11 +69,6 @@ After completing the finalization, you must return:
    - All requirements properly categorized (no pending requirements remaining)
    - All existing sections preserved (Approved Requirements, Modified Requirements, Rejected Requirements, Review History)
 
-2. **finalizationSummary**: A summary of the finalization process, including:
-   - Whether any pending requirements were reviewed
-   - Confirmation that all requirements are now finalized
-   - Readiness for PRD generation
-
 ## Requirements.md File Structure
 
 The finalized requirements.md file should follow this structure:

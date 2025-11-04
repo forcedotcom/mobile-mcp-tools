@@ -79,8 +79,6 @@ After finalization, you must return:
    - All other content preserved exactly as-is
    - All formatting and structure maintained
 
-2. **finalizationSummary**: A brief summary confirming that the PRD has been finalized and is ready for use
-
 ## Important Notes
 
 - This is a simple status update operation
