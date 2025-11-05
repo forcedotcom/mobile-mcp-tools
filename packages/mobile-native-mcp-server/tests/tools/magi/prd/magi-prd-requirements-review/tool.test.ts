@@ -161,7 +161,8 @@ describe('MagiRequirementsReviewTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('Output Format');
+      expect(response.promptForLLM).toContain('output format');
+      expect(response.promptForLLM).toContain('review decisions');
       expect(response.promptForLLM).toContain('approvedRequirementIds');
       expect(response.promptForLLM).toContain('rejectedRequirementIds');
       expect(response.resultSchema).toBeDefined();

@@ -128,9 +128,8 @@ describe('MagiInitialRequirementsTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('Your Task');
-      expect(response.promptForLLM).toContain('Comprehensive Coverage');
-      expect(response.promptForLLM).toContain('Mobile Native Focus');
-      expect(response.promptForLLM).toContain('Salesforce Integration');
+      expect(response.promptForLLM).toContain('Guidelines for Initial Generation');
+      expect(response.promptForLLM).toContain('Cover all major functional areas');
     });
 
     it('should include requirements quality standards', async () => {
