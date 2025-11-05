@@ -70,16 +70,12 @@ For each modification request:
 3. Ensure the modification flows naturally with the rest of the document
 4. Preserve other sections that are not being modified
 
-## Output Format
-
-You must return:
-- **updatedPrdContent**: The complete updated PRD.md file content with all modifications applied
-
 **CRITICAL**: 
 - Maintain all formatting and structure
 - Preserve sections that are not being modified
 - Ensure the updated content is coherent and well-formatted
 - If document status exists, keep it as "draft" (do not change to finalized)
+- **Do NOT modify the PRD.md file directly** - The workflow will apply the changes using a separate update tool
 
 Read the PRD file and apply the review feedback to update the document.
     `;

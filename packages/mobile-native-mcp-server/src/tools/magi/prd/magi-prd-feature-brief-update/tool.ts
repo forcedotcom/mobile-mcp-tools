@@ -100,6 +100,12 @@ Generate a COMPLETE, updated feature brief in Markdown format that:
 **Updated Section**: "Navigation supports standard modes as well as accessibility-focused navigation modes including screen reader optimization and keyboard-only navigation"
 
 Focus on making the updates seamless and natural - the brief should read as if it was written this way from the start.
+
+## CRITICAL RULES
+
+**MANDATORY**: You MUST follow these rules exactly:
+
+1. **Do NOT modify the feature brief file directly** - The workflow will apply the changes using a separate update tool
     `;
   }
 }

@@ -9,7 +9,6 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../../../../logging/logger.js';
 import { INITIAL_REQUIREMENTS_TOOL, InitialRequirementsInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
-import { RequirementsBaseUtility } from '../shared/requirementsBaseUtility.js';
 
 /**
  * Tool for generating initial functional requirements from a feature brief.
@@ -17,11 +16,8 @@ import { RequirementsBaseUtility } from '../shared/requirementsBaseUtility.js';
 export class MagiInitialRequirementsTool extends PRDAbstractWorkflowTool<
   typeof INITIAL_REQUIREMENTS_TOOL
 > {
-  private requirementsUtility: RequirementsBaseUtility;
-
   constructor(server: McpServer, logger?: Logger) {
     super(server, INITIAL_REQUIREMENTS_TOOL, 'InitialRequirementsTool', logger);
-    this.requirementsUtility = new RequirementsBaseUtility();
   }
 
   public handleRequest = async (input: InitialRequirementsInput) => {
@@ -42,20 +38,29 @@ Please read the feature brief file from the path above and use it to generate th
 
 ## Your Task
 
-Your task is to analyze the feature brief and propose an initial set of functional requirements. Focus on:
-
-1. **Comprehensive Coverage**: Ensure all aspects of the feature brief are covered
-2. **Mobile Native Focus**: Consider mobile-specific capabilities and constraints
-3. **Salesforce Integration**: Leverage Salesforce-specific capabilities appropriately
-4. **User Experience**: Include requirements for intuitive user interactions
+Your task is to analyze the feature brief and propose an initial set of functional requirements.
 
 ### Guidelines for Initial Generation:
-- Generate 5-15 functional requirements based on the complexity of the feature
+- Generate functional requirements based on the complexity of the feature
 - Cover all major functional areas (UI/UX, Data, Security, Performance, etc.)
 - Ensure requirements are specific, measurable, and actionable
 - Prioritize requirements based on user value and technical dependencies
 
-${this.requirementsUtility.generateCommonRequirementsGuidance()}
+## Requirements Quality Standards
+
+- **Specific and Actionable**: Each requirement should clearly define what needs to be built
+- **Prioritized**: Assign high/medium/low priority based on business value and user impact
+- **Categorized**: Group requirements by functional area
+- **Comprehensive**: Cover all aspects needed to deliver the feature
+- **Unique IDs**: Use format REQ-XXX for requirement IDs
+
+## Categories to Consider
+
+- **UI/UX**: User interface, navigation, user experience flows
+- **Data**: Data models, API integration, data persistence, synchronization (do not include technical details about the data model, just the functionality)
+- **Security**: Authentication, authorization, data protection, compliance
+- **Performance**: App performance, loading times, memory usage, battery optimization
+- **Integration**: SDKs integration, third-party services, external systems
 
 ## Output Requirements
 
@@ -76,28 +81,24 @@ The requirementsMarkdown MUST follow this structure:
 **Status**: draft
 
 ## Approved Requirements
-
-(Empty - requirements are pending review)
+...
 
 ## Modified Requirements
-
-(Empty - no modifications yet)
+...
 
 ## Rejected Requirements
-
-(Empty - no rejections yet)
+...
 
 ## Pending Review Requirements
+...
 
-### [REQ-001]: [Title]
-- **Priority**: [high|medium|low]
-- **Category**: [category]
-- **Description**: [description]
-- **Status**: Pending Review
-
-### [REQ-002]: [Title]
+## Review History
 ...
 \`\`\`
+
+**Note**: 
+- All generated requirements should be in the "Pending Review Requirements" section
+- Approved Requirements, Modified Requirements, and Rejected Requirements sections should be empty initially
 
 **CRITICAL**: 
 - Include a Status section near the top with format: "## Status\n**Status**: draft"

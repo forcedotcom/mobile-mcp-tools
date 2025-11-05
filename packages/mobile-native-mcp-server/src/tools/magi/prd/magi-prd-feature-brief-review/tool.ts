@@ -36,11 +36,9 @@ The feature brief has been generated from the user's original request and is loc
 
 **File Path**: ${featureBriefPath}
 
-You should read the file from this path and present it to the user for review.
-
 ## Review Process
 
-Present the feature brief clearly and ask the user to make a decision:
+Instruct the user to review the feature brief and provide feedback on whether it is approved or if modifications are needed. Ask the user to make a decision:
 
 1. **APPROVE** - Accept the feature brief as-is and proceed to requirements generation
 2. **REQUEST MODIFICATIONS** - Ask for specific changes to the feature brief before proceeding
@@ -59,16 +57,6 @@ The user can respond in one of the following ways:
 - **"I approve this feature brief"** or **"This looks good, proceed"** - Approve and proceed
 - **"I need to modify [section]"** or **"Can we change..."** - Request modifications
 - **"This doesn't match what I want"** - Request major revisions
-
-## Output Format
-
-After completing the review, you must return feedback about the review decisions:
-
-1. **approved**: Boolean indicating if the feature brief is approved (true) or modifications are needed (false)
-2. **modifications**: Optional array of modification requests. Each modification should include:
-   - **section**: Section of the feature brief to modify (e.g., "Purpose", "Scope", "User Stories")
-   - **modificationReason**: Reason for the modification request
-   - **requestedContent**: The user's requested content changes
 
 ## CRITICAL WORKFLOW RULES
 

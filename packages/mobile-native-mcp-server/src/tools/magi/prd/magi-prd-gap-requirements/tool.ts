@@ -9,17 +9,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '../../../../logging/logger.js';
 import { GAP_REQUIREMENTS_TOOL, GapRequirementsInput } from './metadata.js';
 import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
-import { RequirementsBaseUtility } from '../shared/requirementsBaseUtility.js';
 
 /**
  * Tool for generating functional requirements based on identified gaps.
  */
 export class MagiGapRequirementsTool extends PRDAbstractWorkflowTool<typeof GAP_REQUIREMENTS_TOOL> {
-  private requirementsUtility: RequirementsBaseUtility;
-
   constructor(server: McpServer, logger?: Logger) {
     super(server, GAP_REQUIREMENTS_TOOL, 'GapRequirementsTool', logger);
-    this.requirementsUtility = new RequirementsBaseUtility();
   }
 
   public handleRequest = async (input: GapRequirementsInput) => {
@@ -79,7 +75,23 @@ Your task is to generate NEW functional requirements that address the identified
 - Maintain consistency with existing requirements in terms of format and detail level
 - Assign appropriate priorities based on gap severity
 
-${this.requirementsUtility.generateCommonRequirementsGuidance()}
+## Requirements Quality Standards
+
+- **Specific and Actionable**: Each requirement should clearly define what needs to be built
+- **Prioritized**: Assign high/medium/low priority based on business value and user impact
+- **Categorized**: Group requirements by functional area
+- **Comprehensive**: Cover all aspects needed to deliver the feature
+- **Unique IDs**: Use format REQ-XXX for requirement IDs
+
+## Categories to Consider
+
+- **UI/UX**: User interface, navigation, user experience flows
+- **Data**: Data models, API integration, data persistence, synchronization
+- **Security**: Authentication, authorization, data protection, compliance
+- **Performance**: App performance, loading times, memory usage, battery optimization
+- **Integration**: Salesforce API integration, third-party services, external systems
+- **Platform**: iOS/Android specific features, device capabilities, platform guidelines
+- **Offline**: Offline functionality, data synchronization, conflict resolution
 
 ## Output Requirements
 

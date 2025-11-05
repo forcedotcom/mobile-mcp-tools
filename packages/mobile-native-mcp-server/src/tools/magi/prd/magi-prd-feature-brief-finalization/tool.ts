@@ -53,12 +53,6 @@ The user has approved this feature brief. You must:
 - Adding or removing any sections
 - Altering formatting or structure
 
-**REQUIRED**:
-- Read the feature brief file from the provided path
-- Find the Status section (should be near the top, after the title)
-- Change the status value from "draft" to "approved"
-- Keep everything else exactly the same
-
 ## Status Update Format
 
 The Status section should be updated to:
@@ -68,16 +62,7 @@ The Status section should be updated to:
 **Status**: approved
 \`\`\`
 
-The Status section must be near the top of the document, after the title and Feature ID.
-
-## Output Format
-
-After finalization, you must return:
-
-1. **finalizedFeatureBriefContent**: The complete feature brief markdown content with:
-   - Status section updated to "approved"
-   - All other content preserved exactly as-is
-   - All formatting and structure maintained
+The Status section must be near the top of the document.
 
 ## Important Notes
 

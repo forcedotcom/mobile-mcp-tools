@@ -30,7 +30,7 @@ You are facilitating a PRD review session with the user. Your role is to present
 
 **File Path**: ${input.prdFilePath}
 
-Please read the PRD.md file from the path above and use it to conduct the review session.
+Instruct the user to review the file from the path above and use it to conduct the review session.
 
 ## Review Process
 
@@ -56,16 +56,6 @@ The user should consider:
 1. **APPROVE**: Accept the PRD as-is and proceed to finalization
 2. **MODIFY**: Request specific changes to sections of the PRD
 3. **REJECT**: Reject the PRD and request a complete revision
-
-## Output Format
-
-After completing the review, you must return feedback about the review decisions:
-
-1. **approved**: Boolean indicating if the PRD is approved (true) or modifications are needed (false)
-2. **modifications**: Optional array of modification requests. Each modification should include:
-   - **section**: Section of the PRD to modify (e.g., "Functional Requirements", "Feature Brief")
-   - **modificationReason**: Reason for the modification request
-   - **requestedContent**: The user's requested content changes
 
 ## CRITICAL WORKFLOW RULES
 

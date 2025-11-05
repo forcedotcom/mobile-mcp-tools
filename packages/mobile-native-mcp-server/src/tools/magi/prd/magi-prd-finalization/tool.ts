@@ -68,15 +68,6 @@ The Status section should be updated to:
 
 The Status section must be near the top of the document, after the title.
 
-## Output Format
-
-After finalization, you must return:
-
-1. **finalizedPrdContent**: The complete PRD markdown content with:
-   - Status section updated to "finalized"
-   - All other content preserved exactly as-is
-   - All formatting and structure maintained
-
 ## Important Notes
 
 - This is a simple status update operation
@@ -84,7 +75,8 @@ After finalization, you must return:
 - No content changes are needed, only status update
 - Once finalized, the workflow will complete
 
-Update the Status section to "finalized" while preserving all other content exactly as it is.
+**CRITICAL**: 
+- **Do NOT modify the PRD.md file directly** - The workflow will apply the changes using a separate update tool
     `;
   }
 }

@@ -49,8 +49,6 @@ Generate a complete PRD.md file with the following structure and content:
 ## Required PRD Structure
 
 ### 1. Document Status
-- **Author**: "AI Assistant (Mobile MCP Tools)"
-- **Last Modified**: Current date in YYYY-MM-DD format
 - **Status**: "draft" (since this is the initial generation)
 
 ### 2. Feature Brief
@@ -64,18 +62,16 @@ List all approved requirements with:
 - Category
 - Detailed description
 
-Also include any modified requirements with modification notes.
-
 ### 4. Traceability
 Create a traceability table with the following structure:
 
-| Requirement ID | Technical Requirement IDs | User Story IDs |
+| Requirement ID | Technical Requirement IDs | Task IDs |
 | --------- | -------------- | --------- |
 
 For each approved and modified requirement found in the requirements content, add a row with:
 - Requirement ID: The requirement ID from the requirements document
 - Technical Requirement IDs: "TBD (populated later)"
-- User Story IDs: "TBD (populated later)"
+- Task IDs: "TBD (populated later)"
 
 ## PRD Content Guidelines
 
@@ -92,9 +88,9 @@ For each approved and modified requirement found in the requirements content, ad
 - Maintain consistency in formatting and terminology
 
 ### Traceability Table
-- Include ALL requirements (approved + modified) from the requirements content
+- Include ALL approved requirements from the requirements content
 - Parse requirement IDs from the markdown content
-- Use "TBD (populated later)" for Technical Requirement IDs and User Story IDs
+- Use "TBD (populated later)" for Technical Requirement IDs and Task IDs
 - Ensure Requirement IDs match exactly with the requirements found in the requirements content
 
 Generate a comprehensive, well-structured PRD that serves as the definitive source of truth for this feature's requirements.

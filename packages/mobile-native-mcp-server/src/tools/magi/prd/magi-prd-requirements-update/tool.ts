@@ -78,62 +78,15 @@ You must update the requirements.md file to:
 # CRITICAL REQUIREMENTS
 
 - **Read the requirements.md file** from the provided path first
-- **Preserve existing content** - Keep all existing approved, rejected, and modified requirements
+- **STRICTLY PRESERVE EXISTING FORMAT** - Do NOT change the document structure, formatting, or section organization
+- **Preserve existing content** - Keep all existing approved, rejected, and modified requirements exactly as they are
 - **Preserve the Feature ID** - Do not change the feature ID
 - **Maintain Status section** - Keep Status as "draft" (do not change to approved)
-- **Preserve all formatting** - Maintain markdown structure and formatting
-- **Add to existing sections** - Append new approved/rejected/modified requirements to existing sections
+- **Preserve all formatting** - Maintain the exact markdown structure, indentation, and formatting from the original file
+- **Preserve section order** - Maintain the exact order of sections as they appear in the original file
+- **Add to existing sections** - Append new approved/rejected/modified requirements to existing sections without changing existing entries
 - **Update Review History** - Add new entry to existing review history, don't replace it
-
-## Requirements.md File Structure
-
-The requirements.md file should follow this structure:
-
-\`\`\`markdown
-# Requirements
-
-**Feature ID:** [feature-id]
-
-## Status
-**Status**: draft
-
-## Approved Requirements
-
-### [REQ-ID]: [Title]
-- **Priority**: [high|medium|low]
-- **Category**: [category]
-- **Description**: [description]
-- **Status**: Approved
-
-## Modified Requirements
-
-### [REQ-ID]: [Title]
-- **Original ID**: [original-id]
-- **Priority**: [high|medium|low]
-- **Category**: [category]
-- **Description**: [description]
-- **Modification Notes**: [notes]
-- **Status**: Approved (Modified)
-
-## Rejected Requirements
-
-### [REQ-ID]: [Title]
-- **Priority**: [high|medium|low]
-- **Category**: [category]
-- **Description**: [description]
-- **Status**: Rejected
-
-## Pending Review Requirements
-
-(Any requirements still pending review)
-
-## Review History
-
-### [timestamp]
-- **Approved IDs**: [comma-separated IDs]
-- **Rejected IDs**: [comma-separated IDs]
-- **Modified IDs**: [comma-separated IDs]
-\`\`\`
+- **Match existing format exactly** - Follow the exact format used for requirements entries in the original file (field names, bullet points, spacing, etc.)
 
 ## Modification Handling
 

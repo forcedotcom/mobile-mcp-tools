@@ -32,7 +32,7 @@ You are facilitating a requirements review session with the user. Your role is t
 
 **File Path**: ${input.requirementsPath}
 
-Please read the requirements.md file from the path above and use it to conduct the review session.
+Instruct the user to review the requirements.md file and provide feedback on whether it is approved or if modifications are needed.
 
 ## Review Process
 
@@ -47,29 +47,20 @@ Review each requirement in the document with the user and guide them through dec
 
 **IMPORTANT**: After completing the review, you MUST ask the user if they want to finalize the requirements and proceed to PRD generation.
 
+**CRITICAL**: You MUST clearly inform the user about what happens when they choose to finalize:
+
+If the user chooses to finalize:
+- **ALL pending requirements will be automatically marked as approved** - Any requirements still in the "Pending Review Requirements" section will be moved to "Approved Requirements" and marked as approved
+- **The document status will be changed from "draft" to "approved"** - The requirements document will be finalized
+- **The workflow will proceed to PRD generation** - No further iteration on requirements will be possible
+
 The user may choose to:
-- **Finalize now**: Proceed to PRD generation despite any gaps, pending approvals, or modifications
-- **Continue iteration**: Continue refining requirements (go through gap analysis, apply modifications, etc.)
+- **Finalize now**: Proceed to PRD generation. **All pending requirements will be automatically approved** and the document will be finalized.
+- **Continue iteration**: Continue refining requirements (go through gap analysis, apply modifications, etc.) before finalizing
 
-**Ask the user clearly** if they want to finalize or continue iterating.
+**You MUST explicitly state**: "If you choose to finalize now, any remaining pending requirements will be automatically marked as approved and the document will be finalized. Are you ready to finalize, or would you like to continue iterating?"
 
-## Output Format
-
-After completing the review, you must return feedback about the review decisions:
-
-1. **approvedRequirementIds**: Array of requirement IDs (e.g., ["REQ-001", "REQ-003"]) that were approved in this review session
-2. **rejectedRequirementIds**: Array of requirement IDs that were rejected in this review session
-3. **modifications**: Optional array of modification requests. Each modification should include:
-   - **requirementId**: The ID of the requirement to modify (e.g., "REQ-002")
-   - **modificationReason**: Reason for the modification request
-   - **requestedChanges**: Object with optional fields:
-     - title: New title for the requirement
-     - description: New description for the requirement
-     - priority: New priority level (high|medium|low)
-     - category: New category
-4. **userIterationPreference**: Optional boolean indicating if the user wants to finalize:
-   - **true**: User wants to finalize and proceed to PRD generation (skip gap analysis and further iterations)
-   - **false** or **not provided**: Continue with normal workflow (gap analysis, modifications, etc.)
+**Ask the user clearly** if they want to finalize or continue iterating, making sure they understand the consequences of finalizing.
 
 ## CRITICAL WORKFLOW RULES
 
