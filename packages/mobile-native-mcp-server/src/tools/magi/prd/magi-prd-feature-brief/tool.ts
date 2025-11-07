@@ -45,10 +45,7 @@ ${JSON.stringify(input.currentFeatureIds)}
 
 # OUTPUT REQUIREMENTS
 
-1. **Feature Brief Markdown**: Generate a concise feature brief in Markdown format that includes:
-   - A "Status" section near the top of the document (after the title) with format: '## Status\n**Status**: draft'
-   - Original user utterance
-   - Feature overview and purpose
+1. **Feature Brief Markdown**: Generate a concise feature brief in Markdown format following the exact template below.
 
 2. **Recommended Feature ID**: Generate a kebab-case feature ID that:
    - Is descriptive and meaningful
@@ -56,14 +53,44 @@ ${JSON.stringify(input.currentFeatureIds)}
    - Is unique and not already in the existing feature IDs list
    - Accurately represents the feature being described
 
-# EXAMPLES
+# FEATURE BRIEF TEMPLATE
 
-- User utterance: "Add user authentication with login and logout"
-- Recommended feature ID: "user-authentication"
-- User utterance: "Implement push notifications for order updates"
-- Recommended feature ID: "push-notifications"
-- User utterance: "Create a shopping cart with add/remove items"
-- Recommended feature ID: "shopping-cart"
+Follow this exact structure and format for the feature brief:
+
+\`\`\`markdown
+# [Feature Title - Use Title Case]
+
+## Status
+**Status**: draft
+
+## User Utterance
+[The original user utterance that initiated this feature request]
+
+## Overview
+[A clear, concise description of the feature and its purpose. Explain what the feature does and why it's needed.]
+
+## Goals
+- [Primary goal or objective]
+- [Secondary goal if applicable]
+- [Any additional goals]
+
+## Scope
+[Define what is included in this feature and what is explicitly out of scope]
+
+## Success Criteria
+- [Measurable criterion for success]
+- [Additional success criteria]
+\`\`\`
+
+**Important Formatting Rules:**
+- The title must be in Title Case (capitalize major words)
+- The Status section must appear immediately after the title
+- Status must always be set to "draft" for new feature briefs
+- Use proper Markdown formatting throughout
+- Keep sections concise but informative
+- Use bullet points for Goals and Success Criteria
+- Ensure all sections are present, even if brief
+
 
 # VALIDATION
 
