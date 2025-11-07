@@ -15,7 +15,7 @@ import {
   getMagiPath,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
+} from '../../../../utils/magiDirectory.js';
 
 /**
  * Workflow node for finalizing requirements before proceeding to PRD generation.

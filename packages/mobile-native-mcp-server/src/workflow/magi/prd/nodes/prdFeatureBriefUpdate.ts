@@ -16,7 +16,7 @@ import {
   getMagiPath,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
+} from '../../../../utils/magiDirectory.js';
 import { FEATURE_BRIEF_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-feature-brief-review/metadata.js';
 import z from 'zod';
 

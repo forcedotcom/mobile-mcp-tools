@@ -11,13 +11,8 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { REQUIREMENTS_UPDATE_TOOL } from '../../../../tools/magi/prd/magi-prd-requirements-update/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import {
-  getMagiPath,
-  writeMagiArtifact,
-  MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
-import { REQUIREMENTS_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-requirements-review/metadata.js';
-import z from 'zod';
+import { getMagiPath, writeMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/magiDirectory.js';
+import { RequirementsReviewResult } from '../../../../tools/magi/prd/magi-prd-requirements-review/metadata.js';
 
 export class PRDRequirementsUpdateNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
@@ -33,7 +28,7 @@ export class PRDRequirementsUpdateNode extends PRDAbstractToolNode {
     );
 
     // Construct review result from state
-    const reviewResult: z.infer<typeof REQUIREMENTS_REVIEW_TOOL.resultSchema> = {
+    const reviewResult: RequirementsReviewResult = {
       approvedRequirementIds: state.approvedRequirementIds || [],
       rejectedRequirementIds: state.rejectedRequirementIds || [],
       modifications: state.requirementModifications,

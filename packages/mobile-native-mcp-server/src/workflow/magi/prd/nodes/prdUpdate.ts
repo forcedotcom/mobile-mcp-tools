@@ -15,7 +15,7 @@ import {
   getMagiPath,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
+} from '../../../../utils/magiDirectory.js';
 import { PRD_REVIEW_TOOL } from '../../../../tools/magi/prd/magi-prd-review/metadata.js';
 import z from 'zod';
 

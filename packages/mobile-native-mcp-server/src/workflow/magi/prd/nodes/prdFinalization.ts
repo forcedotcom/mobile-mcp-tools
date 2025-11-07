@@ -15,7 +15,7 @@ import {
   getMagiPath,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
+} from '../../../../utils/magiDirectory.js';
 
 export class PRDFinalizationNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {

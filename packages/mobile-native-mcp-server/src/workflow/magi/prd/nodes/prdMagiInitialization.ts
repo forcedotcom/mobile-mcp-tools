@@ -9,7 +9,7 @@ import { PRDState } from '../metadata.js';
 import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import { ensureMagiSddDirectory } from '../../../../utils/wellKnownDirectory.js';
+import { ensureMagiSddDirectory } from '../../../../utils/magiDirectory.js';
 
 export class PRDMagiInitializationNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {

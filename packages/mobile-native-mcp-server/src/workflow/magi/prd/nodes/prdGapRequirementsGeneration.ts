@@ -15,7 +15,7 @@ import {
   getMagiPath,
   writeMagiArtifact,
   MAGI_ARTIFACTS,
-} from '../../../../utils/wellKnownDirectory.js';
+} from '../../../../utils/magiDirectory.js';
 
 /**
  * Workflow node for generating functional requirements based on identified gaps.

@@ -15,7 +15,7 @@ import {
   MAGI_ARTIFACTS,
   getMagiPath,
   writeMagiArtifact,
-} from '../../../../utils/wellKnownDirectory.js';
+} from '../../../../utils/magiDirectory.js';
 import z from 'zod';
 
 export class PRDGenerationNode extends PRDAbstractToolNode {

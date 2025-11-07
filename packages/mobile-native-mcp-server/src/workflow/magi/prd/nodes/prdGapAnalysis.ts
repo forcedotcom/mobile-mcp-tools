@@ -11,7 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { GAP_ANALYSIS_TOOL } from '../../../../tools/magi/prd/magi-prd-gap-analysis/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/wellKnownDirectory.js';
+import { getMagiPath, MAGI_ARTIFACTS } from '../../../../utils/magiDirectory.js';
 
 export class PRDGapAnalysisNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {

@@ -11,13 +11,12 @@ import { MockLogger } from '../../../../utils/MockLogger.js';
 import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { PRD_FINALIZATION_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-finalization/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
-  getWorkflowLogsPath: vi.fn().mockReturnValue('/tmp/workflow_logs.json'),
   MAGI_ARTIFACTS: {
     PRD: 'prd.md',
   },
@@ -57,10 +56,10 @@ describe('PRDFinalizationNode', () => {
         featureId: 'test-feature',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/test-feature/prd.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/test-feature/prd.md'
       );
 
@@ -79,10 +78,10 @@ describe('PRDFinalizationNode', () => {
         featureId: 'test-feature',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/test-feature/prd.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/test-feature/prd.md'
       );
 
@@ -105,10 +104,10 @@ describe('PRDFinalizationNode', () => {
         isPrdApproved: true,
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/test-feature/prd.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/test-feature/prd.md'
       );
 
