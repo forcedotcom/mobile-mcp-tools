@@ -19,7 +19,7 @@ export const REQUIREMENTS_FINALIZATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_S
   requirementsPath: z
     .string()
     .describe(
-      'The path to the requirements.md file containing all requirements (approved, rejected, modified, pending review)'
+      'The path to the requirements file containing all requirements (approved, rejected, modified, pending review)'
     ),
 });
 
@@ -29,7 +29,7 @@ export const REQUIREMENTS_FINALIZATION_RESULT_SCHEMA = z.object({
   finalizedRequirementsContent: z
     .string()
     .describe(
-      'The finalized requirements.md file content with status updated to "approved". All pending requirements should have been reviewed and moved to appropriate sections.'
+      'The finalized requirements file content with status updated to "approved". All pending requirements should have been reviewed and moved to appropriate sections.'
     ),
 });
 
@@ -43,7 +43,7 @@ export const REQUIREMENTS_FINALIZATION_TOOL: WorkflowToolMetadata<
   toolId: 'magi-prd-requirements-finalization',
   title: 'Magi - Finalize Requirements for PRD Generation',
   description:
-    'Finalizes the requirements.md file by ensuring all requirements are reviewed and updating status to "approved" before proceeding to PRD generation.',
+    'Finalizes the requirements file by ensuring all requirements are reviewed and updating status to "approved" before proceeding to PRD generation.',
   inputSchema: REQUIREMENTS_FINALIZATION_INPUT_SCHEMA,
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   resultSchema: REQUIREMENTS_FINALIZATION_RESULT_SCHEMA,

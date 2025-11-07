@@ -34,7 +34,7 @@ You are finalizing the requirements document before proceeding to PRD generation
 
 **File Path**: ${requirementsPath}
 
-Please read the requirements.md file from the path above.
+Please read the requirements file from the path above.
 
 ## Finalization Process
 
@@ -47,7 +47,7 @@ Since the user has explicitly requested finalization, you must:
 
 ## What to Do
 
-1. **Read the requirements.md file** from the provided path
+1. **Read the requirements file** from the provided path
 2. **Move all pending requirements** from "Pending Review Requirements" to "Approved Requirements" section
    - Preserve the exact format of each requirement entry
    - Update the Status field of each moved requirement to "Approved"
@@ -59,7 +59,7 @@ Since the user has explicitly requested finalization, you must:
 
 After completing the finalization, you must return:
 
-1. **finalizedRequirementsContent**: The complete finalized requirements.md file content that includes:
+1. **finalizedRequirementsContent**: The complete finalized requirements file content that includes:
    - Status section updated to "approved"
    - All pending requirements moved to "Approved Requirements" section
    - "Pending Review Requirements" section empty or removed
@@ -77,7 +77,7 @@ After completing the finalization, you must return:
 
 ## Status Management
 
-**CRITICAL**: The requirements.md file MUST have its Status section updated:
+**CRITICAL**: The requirements file MUST have its Status section updated:
 - **Status Update Format**: "## Status\n**Status**: approved"
 - **The Status section must be near the top**, after the title and Feature ID
 

@@ -26,13 +26,13 @@ export class MagiRequirementsReviewTool extends PRDAbstractWorkflowTool<
 
   private generateRequirementsReviewGuidance(input: RequirementsReviewInput) {
     return `
-You are facilitating a requirements review session with the user. Your role is to review the requirements.md file with the user and facilitate their decisions.
+You are facilitating a requirements review session with the user. Your role is to review the requirements file with the user and facilitate their decisions.
 
 ## Current Requirements Document
 
 **File Path**: ${input.requirementsPath}
 
-Instruct the user to review the requirements.md file and provide feedback on whether it is approved or if modifications are needed.
+Instruct the user to review the requirements file and provide feedback on whether it is approved or if modifications are needed.
 
 ## Review Process
 
@@ -66,7 +66,7 @@ The user may choose to:
 
 **MANDATORY**: You MUST follow these rules exactly:
 
-1. **You are ONLY collecting feedback** - Do NOT modify the requirements.md file directly
+1. **You are ONLY collecting feedback** - Do NOT modify the requirements file directly
 2. **Return only the review decisions** - The workflow will apply these changes using a separate update tool
 3. **Be specific** - Include exact requirement IDs for approved, rejected, and modified requirements
 4. **For modifications** - Provide clear details about what changes are requested
@@ -77,16 +77,16 @@ The user may choose to:
 - Ask clarifying questions if the user's intent is unclear
 - Capture all decisions accurately with correct requirement IDs
 - For modifications, get specific details about what should change
-- Ensure requirement IDs match exactly what's in the requirements.md file
+- Ensure requirement IDs match exactly what's in the requirements file
 
 ## Important Notes
 
-- **Approved requirements** will be marked as approved in the requirements.md file
+- **Approved requirements** will be marked as approved in the requirements file
 - **Rejected requirements** will be moved to the rejected section
 - **Modified requirements** will be updated with the requested changes and linked to their original ID
-- All decisions will be applied to the requirements.md file by a separate update tool
+- All decisions will be applied to the requirements file by a separate update tool
 
-**Remember**: You are collecting feedback only. Do NOT return updated requirements.md content. Return only the review decisions as specified in the output format.
+**Remember**: You are collecting feedback only. Do NOT return updated requirements content. Return only the review decisions as specified in the output format.
 
 Begin the review process by presenting the requirements from the document and asking for the user's decisions.
     `;

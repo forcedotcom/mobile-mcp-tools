@@ -19,13 +19,13 @@ export const PRD_GENERATION_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.exten
   featureBriefPath: z.string().describe('The path to the approved feature brief file'),
   requirementsPath: z
     .string()
-    .describe('The path to the requirements.md file containing all requirements'),
+    .describe('The path to the requirements file containing all requirements'),
 });
 
 export type PRDGenerationInput = z.infer<typeof PRD_GENERATION_INPUT_SCHEMA>;
 
 export const PRD_GENERATION_RESULT_SCHEMA = z.object({
-  prdContent: z.string().describe('The complete PRD.md file content'),
+  prdContent: z.string().describe('The complete PRD file content'),
 });
 
 /**
@@ -38,7 +38,7 @@ export const PRD_GENERATION_TOOL: WorkflowToolMetadata<
   toolId: 'magi-prd-generation',
   title: 'Magi - PRD Generation',
   description:
-    'Generates a comprehensive Product Requirements Document (PRD.md) from approved feature brief and requirements',
+    'Generates a comprehensive Product Requirements Document (PRD) from approved feature brief and requirements',
   inputSchema: PRD_GENERATION_INPUT_SCHEMA,
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   resultSchema: PRD_GENERATION_RESULT_SCHEMA,

@@ -15,10 +15,10 @@ import { PRD_REVIEW_RESULT_SCHEMA } from '../shared/prdSchemas.js';
 
 /**
  * PRD Update Tool Input Schema
- * This tool is specifically for updating PRD.md based on review feedback
+ * This tool is specifically for updating PRD based on review feedback
  */
 export const PRD_UPDATE_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
-  prdFilePath: z.string().describe('The path to the PRD.md file to update'),
+  prdFilePath: z.string().describe('The path to the PRD file to update'),
   reviewResult: PRD_REVIEW_RESULT_SCHEMA.describe(
     'The output from the PRD review tool containing feedback and modifications'
   ),
@@ -29,7 +29,7 @@ export type PRDUpdateInput = z.infer<typeof PRD_UPDATE_INPUT_SCHEMA>;
 export const PRD_UPDATE_RESULT_SCHEMA = z.object({
   updatedPrdContent: z
     .string()
-    .describe('The updated PRD.md file content incorporating feedback and modifications'),
+    .describe('The updated PRD file content incorporating feedback and modifications'),
 });
 
 export type PRDUpdateResult = z.infer<typeof PRD_UPDATE_RESULT_SCHEMA>;
@@ -44,7 +44,7 @@ export const PRD_UPDATE_TOOL: WorkflowToolMetadata<
   toolId: 'magi-prd-update',
   title: 'Magi - Update PRD',
   description:
-    'Updates the PRD.md file based on review feedback. Applies modifications requested during the review process.',
+    'Updates the PRD file based on review feedback. Applies modifications requested during the review process.',
   inputSchema: PRD_UPDATE_INPUT_SCHEMA,
   outputSchema: MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   resultSchema: PRD_UPDATE_RESULT_SCHEMA,

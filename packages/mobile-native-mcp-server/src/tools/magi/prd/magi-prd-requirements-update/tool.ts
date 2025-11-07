@@ -32,7 +32,7 @@ export class MagiRequirementsUpdateTool extends PRDAbstractWorkflowTool<
     return `
 # ROLE
 
-You are a requirements update tool. Your task is to update an EXISTING requirements.md file based on review feedback. You must read the current requirements file, apply the review decisions, and return the updated content.
+You are a requirements update tool. Your task is to update an EXISTING requirements file based on review feedback. You must read the current requirements file, apply the review decisions, and return the updated content.
 
 # CONTEXT
 
@@ -40,7 +40,7 @@ You are a requirements update tool. Your task is to update an EXISTING requireme
 
 **File Path**: ${requirementsPath}
 
-You should read the requirements.md file from this path and update it based on the review feedback.
+You should read the requirements file from this path and update it based on the review feedback.
 
 ## Review Feedback
 
@@ -56,7 +56,7 @@ You should read the requirements.md file from this path and update it based on t
 
 # TASK
 
-You must update the requirements.md file to:
+You must update the requirements file to:
 
 1. **Move approved requirements** from "Pending Review Requirements" to "Approved Requirements" section
 2. **Move rejected requirements** from "Pending Review Requirements" to "Rejected Requirements" section
@@ -77,7 +77,7 @@ You must update the requirements.md file to:
 
 # CRITICAL REQUIREMENTS
 
-- **Read the requirements.md file** from the provided path first
+- **Read the requirements file** from the provided path first
 - **STRICTLY PRESERVE EXISTING FORMAT** - Do NOT change the document structure, formatting, or section organization
 - **Preserve existing content** - Keep all existing approved, rejected, and modified requirements exactly as they are
 - **Preserve the Feature ID** - Do not change the feature ID
@@ -103,7 +103,7 @@ For each modification request:
 ## Output Format
 
 You must return:
-- **updatedRequirementsContent**: The complete updated requirements.md file content with all review decisions applied
+- **updatedRequirementsContent**: The complete updated requirements file content with all review decisions applied
 
 **CRITICAL**: 
 - Include a Status section near the top with format: "## Status\n**Status**: draft"

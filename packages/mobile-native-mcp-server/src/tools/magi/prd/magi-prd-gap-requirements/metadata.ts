@@ -20,7 +20,7 @@ export const GAP_REQUIREMENTS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.ext
   featureBriefPath: z.string().describe('The path to the feature brief file'),
   requirementsPath: z
     .string()
-    .describe('The path to the requirements.md file containing all requirements'),
+    .describe('The path to the requirements file containing all requirements'),
   identifiedGaps: z.array(GAP_SCHEMA).describe('Identified gaps that need to be addressed'),
 });
 
@@ -30,7 +30,7 @@ export const GAP_REQUIREMENTS_RESULT_SCHEMA = z.object({
   updatedRequirementsMarkdown: z
     .string()
     .describe(
-      'Complete updated requirements.md file content in markdown format. This should include all existing requirements plus the new requirements appended to the "Pending Review Requirements" section. Status should remain "draft".'
+      'Complete updated requirements file content in markdown format. This should include all existing requirements plus the new requirements appended to the "Pending Review Requirements" section. Status should remain "draft".'
     ),
 });
 

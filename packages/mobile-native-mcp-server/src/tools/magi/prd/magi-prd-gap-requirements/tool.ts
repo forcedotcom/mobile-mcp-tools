@@ -49,7 +49,7 @@ Please read the feature brief file from the path above.
 
 **File Path**: ${input.requirementsPath}
 
-Please read the requirements.md file from the path above.
+Please read the requirements file from the path above.
 
 ## Gap Analysis Context
 
@@ -97,7 +97,7 @@ Your task is to generate NEW functional requirements that address the identified
 
 You MUST return the updated requirements markdown:
 
-**updatedRequirementsMarkdown**: Complete updated requirements.md file content
+**updatedRequirementsMarkdown**: Complete updated requirements file content
 
 ### Updated Requirements Markdown Format
 

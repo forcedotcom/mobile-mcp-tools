@@ -76,7 +76,7 @@ The Status section must be near the top of the document, after the title.
 - Once finalized, the workflow will complete
 
 **CRITICAL**: 
-- **Do NOT modify the PRD.md file directly** - The workflow will apply the changes using a separate update tool
+- **Do NOT modify the PRD file directly** - The workflow will apply the changes using a separate update tool
     `;
   }
 }

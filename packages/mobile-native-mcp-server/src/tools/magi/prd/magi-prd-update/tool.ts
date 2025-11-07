@@ -30,7 +30,7 @@ export class MagiPRDUpdateTool extends PRDAbstractWorkflowTool<typeof PRD_UPDATE
     return `
 # ROLE
 
-You are a PRD update tool. Your task is to update an EXISTING PRD.md file based on review feedback. You must read the current PRD file, apply the requested modifications, and return the updated content.
+You are a PRD update tool. Your task is to update an EXISTING PRD file based on review feedback. You must read the current PRD file, apply the requested modifications, and return the updated content.
 
 # CONTEXT
 
@@ -38,7 +38,7 @@ You are a PRD update tool. Your task is to update an EXISTING PRD.md file based 
 
 **File Path**: ${prdPath}
 
-You should read the PRD.md file from this path and update it based on the review feedback.
+You should read the PRD file from this path and update it based on the review feedback.
 
 ## Review Feedback
 
@@ -50,12 +50,12 @@ You should read the PRD.md file from this path and update it based on the review
 
 # TASK
 
-You must update the PRD.md file to incorporate:
+You must update the PRD file to incorporate:
 1. All requested modifications
 2. Address any concerns or issues raised during the review
 
 **CRITICAL REQUIREMENTS**:
-- Read the PRD.md file from the provided path
+- Read the PRD file from the provided path
 - Preserve the overall structure and intent of the original PRD
 - Incorporate changes naturally and coherently
 - Ensure the updated PRD addresses all modifications
@@ -75,7 +75,7 @@ For each modification request:
 - Preserve sections that are not being modified
 - Ensure the updated content is coherent and well-formatted
 - If document status exists, keep it as "draft" (do not change to finalized)
-- **Do NOT modify the PRD.md file directly** - The workflow will apply the changes using a separate update tool
+- **Do NOT modify the PRD file directly** - The workflow will apply the changes using a separate update tool
 
 Read the PRD file and apply the review feedback to update the document.
     `;

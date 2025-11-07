@@ -61,7 +61,7 @@ The user should consider:
 
 **MANDATORY**: You MUST follow these rules exactly:
 
-1. **You are ONLY collecting feedback** - Do NOT modify the PRD.md file directly
+1. **You are ONLY collecting feedback** - Do NOT modify the PRD file directly
 2. **Return only the review decisions** - The workflow will apply these changes using a separate update tool
 3. **Be specific** - For modifications, provide clear details about what sections need changes and what the new content should be
 
@@ -72,7 +72,7 @@ The user should consider:
 - **Rejected PRD** will require significant revision and regeneration
 - All decisions should be clearly documented for future reference
 
-**Remember**: You are collecting feedback only. Do NOT return updated PRD.md content. Return only the review decisions as specified in the output format.
+**Remember**: You are collecting feedback only. Do NOT return updated PRD content. Return only the review decisions as specified in the output format.
 
 Begin the review process by reading the PRD file and asking for the user's decision.
     `;

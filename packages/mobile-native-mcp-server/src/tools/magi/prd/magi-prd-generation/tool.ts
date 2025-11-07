@@ -38,13 +38,13 @@ Please read the feature brief file from the path above.
 
 **File Path**: ${input.requirementsPath}
 
-Please read the requirements.md file from the path above.
+Please read the requirements file from the path above.
 
 **Important**: When generating the PRD, focus on **approved requirements** and **modified requirements**. Ignore **rejected requirements** and **out-of-scope requirements** as they have been explicitly excluded from the feature scope.
 
 ## Your Task
 
-Generate a complete PRD.md file with the following structure and content:
+Generate a complete PRD file with the following structure and content:
 
 ## Required PRD Structure
 

@@ -66,7 +66,7 @@ Your task is to analyze the feature brief and propose an initial set of function
 
 You MUST return the requirements markdown:
 
-**requirementsMarkdown**: Complete requirements.md file content in markdown format
+**requirementsMarkdown**: Complete requirements file content in markdown format
 
 ### Requirements Markdown Format
 

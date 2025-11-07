@@ -25,7 +25,7 @@ export const INITIAL_REQUIREMENTS_RESULT_SCHEMA = z.object({
   requirementsMarkdown: z
     .string()
     .describe(
-      'Complete requirements.md file content in markdown format, including Status section with "draft" status. Must follow the requirements.md structure with all requirements marked as pending review.'
+      'Complete requirements file content in markdown format, including Status section with "draft" status. Must follow the requirements structure with all requirements marked as pending review.'
     ),
 });
 

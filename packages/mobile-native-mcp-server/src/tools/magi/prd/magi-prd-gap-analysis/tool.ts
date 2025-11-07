@@ -38,7 +38,7 @@ Please read the feature brief file from the path above.
 
 **File Path**: ${input.requirementsPath}
 
-Please read the requirements.md file from the path above.
+Please read the requirements file from the path above.
 
 ## Your Task
 

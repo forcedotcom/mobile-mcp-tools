@@ -20,7 +20,7 @@ export const GAP_ANALYSIS_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend(
   featureBriefPath: z.string().describe('The path to the feature brief file'),
   requirementsPath: z
     .string()
-    .describe('The path to the requirements.md file containing all requirements'),
+    .describe('The path to the requirements file containing all requirements'),
 });
 
 export type GapAnalysisInput = z.infer<typeof GAP_ANALYSIS_INPUT_SCHEMA>;
