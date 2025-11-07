@@ -484,9 +484,15 @@ The tool receives file paths and instructs the LLM to read both files. The tool 
 **Tool Output:**
 ```typescript
 {
-  gapAnalysisScore: number, // Score from 0-100 (higher is better)
+  gapAnalysisEvaluation: 'Excellent' | 'Good' | 'Fair' | 'Poor', // Textual evaluation of requirements quality
   identifiedGaps: Array<Gap>
 }
+
+// The textual evaluation is converted to a numeric score (0-100) internally:
+// - Excellent: 90
+// - Good: 75
+// - Fair: 60
+// - Poor: 40
 
 // Gap schema (from shared/gapSchemas.ts):
 type Gap = {
@@ -509,8 +515,10 @@ type SuggestedRequirement = {
 ```
 
 **Key State Updates:**
-- Sets `gapAnalysisScore` - overall gap analysis score (0-100)
+- Sets `gapAnalysisScore` - numeric score (0-100) extracted from textual evaluation
 - Sets `identifiedGaps` - array of identified gaps (excludes rejected/out-of-scope items)
+
+**Note:** The tool uses textual evaluations ("Excellent", "Good", "Fair", "Poor") instead of direct numeric scoring, as textual evaluations are more reliable for LLMs. The textual evaluation is converted to a numeric score internally for workflow routing decisions.
 
 **Note:** The `userIterationPreference` decision is now captured during Requirements Review, not during Gap Analysis.
 
@@ -606,7 +614,7 @@ Then generates new requirements addressing gaps while avoiding all excluded item
 **Workflow Behavior:**
 - This node is executed when:
   - User explicitly wants to finalize (`userIterationPreference === true` during review), OR
-  - Gap analysis score is >= 80 (automatic threshold)
+  - Gap analysis score is >= 80 (automatic threshold, where score is extracted from textual evaluation)
 - It serves as the explicit point where requirements are finalized before PRD generation
 - After finalization, the workflow proceeds to PRD generation
 
@@ -883,9 +891,15 @@ userIterationPreference: boolean // Optional: true = finalize now, false/undefin
 
 #### Gap Analysis State
 ```typescript
-gapAnalysisScore: number // Score from 0-100
+gapAnalysisScore: number // Score from 0-100, extracted from textual evaluation
 identifiedGaps: Array<Gap>
 ```
+
+**Note:** `gapAnalysisScore` is derived from a textual evaluation ("Excellent", "Good", "Fair", or "Poor") provided by the LLM. This approach is more reliable than asking LLMs to provide direct numeric scores. The conversion mapping is:
+- Excellent → 90
+- Good → 75
+- Fair → 60
+- Poor → 40
 
 **Note:** `userIterationPreference` is now captured during Requirements Review, not during Gap Analysis.
 
@@ -1054,7 +1068,7 @@ The Requirements Review Node sets `userIterationPreference` based on user feedba
 ```
 
 **Decision Logic:**
-Uses automatic threshold based on gap analysis score:
+Uses automatic threshold based on gap analysis score (extracted from textual evaluation):
 - If `gapScore < 80` → generate gap-based requirements
 - If `gapScore >= 80` → proceed to requirements finalization
 
@@ -1062,7 +1076,7 @@ Uses automatic threshold based on gap analysis score:
 - If score < 80 → Gap Requirements Generation Node → Requirements Review Node
 - If score >= 80 → Requirements Finalization Node
 
-**Note:** This decision is automatic based on gap score. User preference override happens during Requirements Review.
+**Note:** This decision is automatic based on gap score. User preference override happens during Requirements Review. The gap score is extracted from a textual evaluation ("Excellent", "Good", "Fair", or "Poor") provided by the LLM, which is more reliable than direct numeric scoring.
 
 #### Requirements Finalization → PRD Generation
 Linear progression after requirements are finalized:

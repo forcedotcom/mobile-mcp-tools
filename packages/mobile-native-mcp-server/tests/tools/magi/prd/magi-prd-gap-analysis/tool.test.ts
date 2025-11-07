@@ -31,7 +31,7 @@ describe('MagiGapAnalysisTool', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-gap-analysis');
       expect(tool.toolMetadata.title).toBe('Magi - Gap Analysis');
       expect(tool.toolMetadata.description).toBe(
-        'Analyzes current functional requirements against the feature brief to identify gaps, score requirement strengths, and provide improvement recommendations'
+        'Analyzes current functional requirements against the feature brief to identify gaps, evaluate requirement quality using textual assessments, and provide improvement recommendations'
       );
       expect(tool.toolMetadata.inputSchema).toBeDefined();
       expect(tool.toolMetadata.outputSchema).toBeDefined();
@@ -74,9 +74,9 @@ describe('MagiGapAnalysisTool', () => {
   });
 
   describe('Result Schema Validation', () => {
-    it('should validate result with all required fields', () => {
+    it('should validate result with textual evaluation and convert to numeric score', () => {
       const validResult = {
-        gapAnalysisScore: 75,
+        gapAnalysisEvaluation: 'Good' as const,
         identifiedGaps: [
           {
             id: 'GAP-001',
@@ -98,29 +98,44 @@ describe('MagiGapAnalysisTool', () => {
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
+      if (result.success) {
+        // Verify that the schema accepts textual evaluation
+        expect(result.data.gapAnalysisEvaluation).toBe('Good');
+        expect(result.data.identifiedGaps).toHaveLength(1);
+      }
     });
 
     it('should validate result with empty gaps array', () => {
       const validResult = {
-        gapAnalysisScore: 100,
+        gapAnalysisEvaluation: 'Excellent' as const,
         identifiedGaps: [],
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.gapAnalysisEvaluation).toBe('Excellent');
+      }
     });
 
-    it('should validate score within 0-100 range', () => {
-      const validResult = {
-        gapAnalysisScore: 0,
-        identifiedGaps: [],
-      };
-      const result = tool.toolMetadata.resultSchema.safeParse(validResult);
-      expect(result.success).toBe(true);
+    it('should validate all evaluation levels', () => {
+      const evaluations = ['Excellent', 'Good', 'Fair', 'Poor'] as const;
+
+      evaluations.forEach(evaluation => {
+        const validResult = {
+          gapAnalysisEvaluation: evaluation,
+          identifiedGaps: [],
+        };
+        const result = tool.toolMetadata.resultSchema.safeParse(validResult);
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.gapAnalysisEvaluation).toBe(evaluation);
+        }
+      });
     });
 
-    it('should reject score outside 0-100 range', () => {
+    it('should reject invalid evaluation level', () => {
       const invalidResult = {
-        gapAnalysisScore: 101,
+        gapAnalysisEvaluation: 'Invalid',
         identifiedGaps: [],
       };
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
@@ -196,7 +211,11 @@ describe('MagiGapAnalysisTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('identifiedGaps');
-      expect(response.promptForLLM).toContain('gapAnalysisScore');
+      expect(response.promptForLLM).toContain('gapAnalysisEvaluation');
+      expect(response.promptForLLM).toContain('Excellent');
+      expect(response.promptForLLM).toContain('Good');
+      expect(response.promptForLLM).toContain('Fair');
+      expect(response.promptForLLM).toContain('Poor');
       expect(response.promptForLLM).toContain('severity');
       expect(response.resultSchema).toBeDefined();
     });

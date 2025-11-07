@@ -53,7 +53,7 @@ describe('PRDGapAnalysisNode', () => {
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
-        gapAnalysisScore: 75,
+        gapAnalysisEvaluation: 'Good',
         identifiedGaps: [],
       });
 
@@ -77,7 +77,7 @@ describe('PRDGapAnalysisNode', () => {
         .mockReturnValueOnce(requirementsPath); // requirements path
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
-        gapAnalysisScore: 80,
+        gapAnalysisEvaluation: 'Good',
         identifiedGaps: [],
       });
 
@@ -111,12 +111,13 @@ describe('PRDGapAnalysisNode', () => {
       ];
 
       mockToolExecutor.setResult(GAP_ANALYSIS_TOOL.toolId, {
-        gapAnalysisScore: 75,
+        gapAnalysisEvaluation: 'Good',
         identifiedGaps: gaps,
       });
 
       const result = node.execute(inputState);
 
+      // The schema transform converts 'Good' to score 75
       expect(result.gapAnalysisScore).toBe(75);
       expect(result.identifiedGaps).toEqual(gaps);
     });

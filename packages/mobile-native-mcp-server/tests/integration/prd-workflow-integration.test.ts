@@ -295,7 +295,7 @@ describe('PRD Workflow Integration Test', () => {
     const orchestratorInput6: PRDOrchestratorInput = {
       userInput: {
         // Tool result format (what the gap analysis tool returns)
-        gapAnalysisScore: 85,
+        gapAnalysisEvaluation: 'Excellent', // Maps to score 90, which is >= 80 threshold
         identifiedGaps: [
           {
             id: 'GAP-001',

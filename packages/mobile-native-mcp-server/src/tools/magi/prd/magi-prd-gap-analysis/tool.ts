@@ -61,12 +61,18 @@ Conduct a comprehensive gap analysis examining:
 - **Medium**: Nice-to-have functionality missing
 - **Low**: Minor enhancements missing
 
-### Gap Analysis Score (0-100)
-Score based on:
+### Gap Analysis Evaluation
+Provide a textual evaluation of the overall requirements quality based on:
 - **Coverage**: How well requirements cover the feature brief
 - **Completeness**: Whether all necessary components and flows are covered
 - **Clarity**: Whether requirements are specific, measurable, and actionable
 - **Feasibility**: Whether requirements are realistic for mobile native app
+
+**Evaluation Levels:**
+- **Excellent**: Requirements are comprehensive and well-defined, covering all aspects of the feature brief with clarity and feasibility
+- **Good**: Requirements are mostly complete with minor gaps or areas that could be improved
+- **Fair**: Requirements have some notable gaps but are workable and address the core functionality
+- **Poor**: Requirements have significant gaps that need substantial attention before proceeding
 
 Provide detailed, actionable feedback to improve requirements quality and completeness.
 `;
