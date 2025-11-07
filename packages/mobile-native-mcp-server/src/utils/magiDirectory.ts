@@ -130,13 +130,6 @@ export function createFeatureDirectory(
   featureId: string,
   reuseExisting = true
 ): string {
-  // Validate feature ID format
-  if (!/^[a-z0-9-]+$/.test(featureId)) {
-    throw new Error(
-      `Invalid feature ID format: "${featureId}". Must be in kebab-case (lowercase letters, numbers, and hyphens only)`
-    );
-  }
-
   // Check if we should reuse an existing directory
   if (reuseExisting) {
     const existingDir = findExistingFeatureDirectory(magiSddPath, featureId);

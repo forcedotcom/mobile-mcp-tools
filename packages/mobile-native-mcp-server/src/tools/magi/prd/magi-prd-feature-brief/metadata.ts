@@ -30,6 +30,10 @@ export const FEATURE_BRIEF_WORKFLOW_RESULT_SCHEMA = z.object({
     .describe('The feature brief Markdown content generated from the user utterance'),
   recommendedFeatureId: z
     .string()
+    .regex(
+      /^[a-z0-9-]+$/,
+      'Feature ID must be in kebab-case format (lowercase letters, numbers, and hyphens only)'
+    )
     .describe(
       'The recommended feature id for the feature brief. Must be unique and follow kebab-case naming conventions.'
     ),
