@@ -131,6 +131,158 @@ describe('MagiFeatureBriefGenerationTool', () => {
       const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
       expect(result.success).toBe(false);
     });
+
+    describe('Feature ID Format Validation', () => {
+      it('should accept valid feature IDs starting with lowercase letter', () => {
+        const validIds = [
+          'user-authentication',
+          'push-notifications',
+          'shopping-cart',
+          'feature-123',
+          'a',
+          'abc',
+          'test-feature-123',
+        ];
+
+        validIds.forEach(featureId => {
+          const validResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(validResult);
+          expect(result.success).toBe(true);
+        });
+      });
+
+      it('should reject feature IDs starting with a number', () => {
+        const invalidIds = ['123-feature', '0test', '9abc-def'];
+
+        invalidIds.forEach(featureId => {
+          const invalidResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
+          expect(result.success).toBe(false);
+          if (!result.success) {
+            expect(result.error.issues[0].message).toContain('kebab-case');
+          }
+        });
+      });
+
+      it('should reject feature IDs starting with a hyphen', () => {
+        const invalidIds = ['-feature', '-test-feature', '-abc'];
+
+        invalidIds.forEach(featureId => {
+          const invalidResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
+          expect(result.success).toBe(false);
+        });
+      });
+
+      it('should reject feature IDs with uppercase letters', () => {
+        const invalidIds = ['User-Authentication', 'PUSH-notifications', 'test-Feature', 'ABC-def'];
+
+        invalidIds.forEach(featureId => {
+          const invalidResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
+          expect(result.success).toBe(false);
+        });
+      });
+
+      it('should reject feature IDs with special characters', () => {
+        const invalidIds = [
+          'user_authentication',
+          'test.feature',
+          'feature@123',
+          'test feature',
+          'feature#123',
+          'test$feature',
+        ];
+
+        invalidIds.forEach(featureId => {
+          const invalidResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
+          expect(result.success).toBe(false);
+        });
+      });
+
+      it('should accept feature IDs with numbers in the middle or end', () => {
+        const validIds = [
+          'feature-123',
+          'test-456-feature',
+          'user-auth-2024',
+          'abc123',
+          'test-1-2-3',
+        ];
+
+        validIds.forEach(featureId => {
+          const validResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(validResult);
+          expect(result.success).toBe(true);
+        });
+      });
+
+      it('should accept single lowercase letter feature ID', () => {
+        const validResult = {
+          featureBriefMarkdown: '# Feature Brief',
+          recommendedFeatureId: 'a',
+        };
+        const result = tool.toolMetadata.resultSchema.safeParse(validResult);
+        expect(result.success).toBe(true);
+      });
+
+      it('should reject empty string feature ID', () => {
+        const invalidResult = {
+          featureBriefMarkdown: '# Feature Brief',
+          recommendedFeatureId: '',
+        };
+        const result = tool.toolMetadata.resultSchema.safeParse(invalidResult);
+        expect(result.success).toBe(false);
+      });
+
+      it('should accept feature IDs with consecutive hyphens (currently allowed by regex)', () => {
+        const validIds = ['test--feature', 'feature---123', 'a--b'];
+
+        validIds.forEach(featureId => {
+          const validResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(validResult);
+          // Note: The regex /^[a-z][a-z0-9-]*$/ allows consecutive hyphens
+          // If we want to prevent this, we'd need a more complex regex
+          expect(result.success).toBe(true);
+        });
+      });
+
+      it('should accept feature IDs ending with a hyphen (currently allowed by regex)', () => {
+        const validIds = ['test-feature-', 'abc-', 'feature-123-'];
+
+        validIds.forEach(featureId => {
+          const validResult = {
+            featureBriefMarkdown: '# Feature Brief',
+            recommendedFeatureId: featureId,
+          };
+          const result = tool.toolMetadata.resultSchema.safeParse(validResult);
+          // Note: The regex /^[a-z][a-z0-9-]*$/ allows trailing hyphens
+          // If we want to prevent this, we'd need a more complex regex
+          expect(result.success).toBe(true);
+        });
+      });
+    });
   });
 
   describe('Feature Brief Guidance Generation', () => {
@@ -167,7 +319,7 @@ describe('MagiFeatureBriefGenerationTool', () => {
 
       expect(response.promptForLLM).toContain('kebab-case');
       expect(response.promptForLLM).toContain('unique');
-      expect(response.promptForLLM).toContain('EXAMPLES');
+      expect(response.promptForLLM).toContain('Must start with a lowercase letter');
     });
 
     it('should include validation requirements', async () => {

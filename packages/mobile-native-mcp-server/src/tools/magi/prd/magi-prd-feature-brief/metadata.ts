@@ -31,11 +31,11 @@ export const FEATURE_BRIEF_WORKFLOW_RESULT_SCHEMA = z.object({
   recommendedFeatureId: z
     .string()
     .regex(
-      /^[a-z0-9-]+$/,
-      'Feature ID must be in kebab-case format (lowercase letters, numbers, and hyphens only)'
+      /^[a-z][a-z0-9-]*$/,
+      'Feature ID must be in kebab-case format (must start with a lowercase letter, followed by lowercase letters, numbers, and hyphens only)'
     )
     .describe(
-      'The recommended feature id for the feature brief. Must be unique and follow kebab-case naming conventions.'
+      'The recommended feature id for the feature brief. Must be unique and follow kebab-case naming conventions. Must start with a lowercase letter.'
     ),
 });
 

@@ -48,6 +48,7 @@ ${JSON.stringify(input.currentFeatureIds)}
 1. **Feature Brief Markdown**: Generate a concise feature brief in Markdown format following the exact template below.
 
 2. **Recommended Feature ID**: Generate a kebab-case feature ID that:
+   - Must start with a lowercase letter (cannot start with a number or hyphen)
    - Is descriptive and meaningful
    - Follows kebab-case format (lowercase letters, numbers, and hyphens only)
    - Is unique and not already in the existing feature IDs list
@@ -95,6 +96,7 @@ Follow this exact structure and format for the feature brief:
 # VALIDATION
 
 Ensure the recommended feature ID:
+- Must start with a lowercase letter (cannot start with a number or hyphen)
 - Contains only lowercase letters, numbers, and hyphens
 - Is not already in the currentFeatureIds array
 - Is descriptive and meaningful
