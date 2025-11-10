@@ -21,6 +21,7 @@ Thumbs.db
 
 .sfdx/
 .cursor/rules/nx-rules.mdc
+.cursor/mcp.json
 .sfdx/
 .github/instructions/nx.instructions.md
 

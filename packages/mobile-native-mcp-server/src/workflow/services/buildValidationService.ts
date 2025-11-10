@@ -8,7 +8,7 @@
 import { MCPToolInvocationData } from '../../common/metadata.js';
 import { ToolExecutor, LangGraphToolExecutor } from '../nodes/toolExecutor.js';
 import { Logger, createComponentLogger } from '../../logging/logger.js';
-import { BUILD_TOOL } from '../../tools/plan/sfmobile-native-build/metadata.js';
+import { BUILD_EXECUTOR_TOOL } from '../../tools/run/sfmobile-native-build-executor/metadata.js';
 import { PlatformEnum } from '../../common/schemas.js';
 
 /**
@@ -67,26 +67,28 @@ export class BuildValidationService implements BuildValidationServiceProvider {
       projectPath: params.projectPath,
     });
 
-    const toolInvocationData: MCPToolInvocationData<typeof BUILD_TOOL.inputSchema> = {
+    const toolInvocationData: MCPToolInvocationData<typeof BUILD_EXECUTOR_TOOL.inputSchema> = {
       llmMetadata: {
-        name: BUILD_TOOL.toolId,
-        description: BUILD_TOOL.description,
-        inputSchema: BUILD_TOOL.inputSchema,
+        name: BUILD_EXECUTOR_TOOL.toolId,
+        description: BUILD_EXECUTOR_TOOL.description,
+        inputSchema: BUILD_EXECUTOR_TOOL.inputSchema,
       },
       input: {
         platform: params.platform,
         projectPath: params.projectPath,
-        projectName: params.projectName,
       },
     };
 
     const rawResult = this.toolExecutor.execute(toolInvocationData);
-    const validatedResult = BUILD_TOOL.resultSchema.parse(rawResult);
+    const validatedResult = BUILD_EXECUTOR_TOOL.resultSchema.parse(rawResult);
 
     this.logger.info('Build completed', {
-      buildSuccessful: validatedResult.buildSuccessful,
+      buildSuccessful: validatedResult.success,
     });
 
-    return validatedResult;
+    return {
+      buildSuccessful: validatedResult.success,
+      buildOutputFilePath: validatedResult.buildOutputFilePath,
+    };
   }
 }
