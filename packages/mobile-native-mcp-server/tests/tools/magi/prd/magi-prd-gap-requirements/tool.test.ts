@@ -188,10 +188,15 @@ describe('MagiGapRequirementsTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('1. **Gap 1**');
-      expect(response.promptForLLM).toContain('2. **Gap 2**');
+      // The tool uses JSON.stringify for gaps, so check for JSON representation
       expect(response.promptForLLM).toContain('GAP-001');
       expect(response.promptForLLM).toContain('GAP-002');
+      expect(response.promptForLLM).toContain('Gap 1');
+      expect(response.promptForLLM).toContain('Gap 2');
+      expect(response.promptForLLM).toContain('Description 1');
+      expect(response.promptForLLM).toContain('Description 2');
+      expect(response.promptForLLM).toContain('high');
+      expect(response.promptForLLM).toContain('medium');
     });
 
     it('should include requirement filtering instructions', async () => {

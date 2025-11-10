@@ -10,10 +10,10 @@ import { PRDMagiInitializationNode } from '../../../../../src/workflow/magi/prd/
 import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   ensureMagiSddDirectory: vi.fn(),
 }));
 
@@ -54,9 +54,7 @@ describe('PRDMagiInitializationNode', () => {
         },
       });
 
-      vi.mocked(wellKnownDirectory.ensureMagiSddDirectory).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
+      vi.mocked(magiDirectory.ensureMagiSddDirectory).mockReturnValue('/path/to/project/magi-sdd');
 
       const result = node.execute(inputState);
 
@@ -73,13 +71,11 @@ describe('PRDMagiInitializationNode', () => {
         },
       });
 
-      vi.mocked(wellKnownDirectory.ensureMagiSddDirectory).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
+      vi.mocked(magiDirectory.ensureMagiSddDirectory).mockReturnValue('/path/to/project/magi-sdd');
 
       node.execute(inputState);
 
-      expect(wellKnownDirectory.ensureMagiSddDirectory).toHaveBeenCalledWith(projectPath);
+      expect(magiDirectory.ensureMagiSddDirectory).toHaveBeenCalledWith(projectPath);
     });
 
     it('should log directory creation', () => {
@@ -91,9 +87,7 @@ describe('PRDMagiInitializationNode', () => {
         },
       });
 
-      vi.mocked(wellKnownDirectory.ensureMagiSddDirectory).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
+      vi.mocked(magiDirectory.ensureMagiSddDirectory).mockReturnValue('/path/to/project/magi-sdd');
       mockLogger.reset();
 
       node.execute(inputState);
@@ -150,7 +144,7 @@ describe('PRDMagiInitializationNode', () => {
       });
 
       const errorMessage = 'Permission denied';
-      vi.mocked(wellKnownDirectory.ensureMagiSddDirectory).mockImplementation(() => {
+      vi.mocked(magiDirectory.ensureMagiSddDirectory).mockImplementation(() => {
         throw new Error(errorMessage);
       });
 
@@ -169,7 +163,7 @@ describe('PRDMagiInitializationNode', () => {
         },
       });
 
-      vi.mocked(wellKnownDirectory.ensureMagiSddDirectory).mockImplementation(() => {
+      vi.mocked(magiDirectory.ensureMagiSddDirectory).mockImplementation(() => {
         throw new Error('Directory creation failed');
       });
       mockLogger.reset();

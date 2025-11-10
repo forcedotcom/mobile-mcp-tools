@@ -11,15 +11,14 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { GAP_ANALYSIS_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-gap-analysis/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
-  readMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    FEATURE_BRIEF: 'feature-brief.md',
-    REQUIREMENTS: 'requirements.md',
+    FEATURE_BRIEF: 'feature-brief',
+    REQUIREMENTS: 'requirements',
   },
 }));
 
@@ -48,7 +47,7 @@ describe('PRDGapAnalysisNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 
@@ -72,7 +71,7 @@ describe('PRDGapAnalysisNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce(featureBriefPath) // feature brief path
         .mockReturnValueOnce(requirementsPath); // requirements path
 
@@ -94,7 +93,7 @@ describe('PRDGapAnalysisNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 

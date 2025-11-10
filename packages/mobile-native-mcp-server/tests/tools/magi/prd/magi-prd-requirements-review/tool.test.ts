@@ -31,7 +31,7 @@ describe('MagiRequirementsReviewTool', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-requirements-review');
       expect(tool.toolMetadata.title).toBe('Magi - Requirements Review and Approval');
       expect(tool.toolMetadata.description).toBe(
-        'Reviews the requirements.md file with the user, facilitating approval, rejection, or modification of requirements. Returns review feedback including approved/rejected IDs and modification requests.'
+        'Reviews the requirements file with the user, facilitating approval, rejection, or modification of requirements. Returns review feedback including approved/rejected IDs and modification requests.'
       );
       expect(tool.toolMetadata.inputSchema).toBeDefined();
       expect(tool.toolMetadata.outputSchema).toBeDefined();

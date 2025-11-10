@@ -25,17 +25,6 @@ export class MagiGapRequirementsTool extends PRDAbstractWorkflowTool<typeof GAP_
   };
 
   private generateGapRequirementsGuidance(input: GapRequirementsInput) {
-    const gapsList = input.identifiedGaps
-      .map(
-        (gap, index) => `${index + 1}. **${gap.title}** (${gap.severity} severity)
-- ID: ${gap.id}
-- Category: ${gap.category}
-- Description: ${gap.description}
-- Impact: ${gap.impact}
-- Suggested Requirements: ${gap.suggestedRequirements.map(req => req.title).join(', ')}`
-      )
-      .join('\n\n');
-
     return `
 You are a product requirements analyst tasked with generating additional functional requirements for a Salesforce mobile native app based on identified gaps.
 
@@ -55,7 +44,7 @@ Please read the requirements file from the path above.
 
 The following gaps have been identified in the current requirements that need to be addressed:
 
-${gapsList}
+${JSON.stringify(input.identifiedGaps)}
 
 ## Your Task
 
@@ -69,7 +58,7 @@ Your task is to generate NEW functional requirements that address the identified
 **Important**: When analyzing existing requirements, focus on **approved requirements** and **modified requirements**. Ignore **rejected requirements** and **out-of-scope requirements** as they have been explicitly excluded from the feature scope.
 
 ### Guidelines for Gap-Based Generation:
-- Generate 3-8 new requirements based on the identified gaps
+- Generate new requirements based on the identified gaps
 - Use the suggested requirements from the gap analysis as starting points
 - Ensure each new requirement addresses at least one identified gap
 - Maintain consistency with existing requirements in terms of format and detail level

@@ -11,11 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { PRD_FINALIZATION_TOOL } from '../../../../tools/magi/prd/magi-prd-finalization/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import {
-  getMagiPath,
-  writeMagiArtifact,
-  MAGI_ARTIFACTS,
-} from '../../../../utils/magiDirectory.js';
+import { getMagiPath, writeMagiArtifact, MAGI_ARTIFACTS } from '../../../../utils/magiDirectory.js';
 
 export class PRDFinalizationNode extends PRDAbstractToolNode {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {

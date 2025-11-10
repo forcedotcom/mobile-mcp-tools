@@ -48,10 +48,10 @@ export class PRDGapAnalysisNode extends PRDAbstractToolNode {
       toolInvocationData,
       GAP_ANALYSIS_TOOL.resultSchema
     );
-    
+
     // Convert textual evaluation to numeric score
     const gapAnalysisScore = evaluationToScore(validatedResult.gapAnalysisEvaluation);
-    
+
     return {
       gapAnalysisScore,
       identifiedGaps: validatedResult.identifiedGaps,

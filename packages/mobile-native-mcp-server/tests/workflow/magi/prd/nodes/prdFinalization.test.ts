@@ -18,7 +18,7 @@ vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    PRD: 'prd.md',
+    PRD: 'prd',
   },
 }));
 

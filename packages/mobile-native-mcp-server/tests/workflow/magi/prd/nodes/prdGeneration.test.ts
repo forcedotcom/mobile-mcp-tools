@@ -11,16 +11,16 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { PRD_GENERATION_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-generation/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    FEATURE_BRIEF: 'feature-brief.md',
-    REQUIREMENTS: 'requirements.md',
-    PRD: 'prd.md',
+    FEATURE_BRIEF: 'feature-brief',
+    REQUIREMENTS: 'requirements',
+    PRD: 'prd',
   },
 }));
 
@@ -50,10 +50,10 @@ describe('PRDGenerationNode', () => {
         userUtterance: 'Add authentication',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent: '# PRD\n\nContent',
@@ -75,10 +75,10 @@ describe('PRDGenerationNode', () => {
         userUtterance: 'Add authentication feature',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce(featureBriefPath) // feature brief path
         .mockReturnValueOnce(requirementsPath); // requirements path
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/prd.md');
 
       mockToolExecutor.setResult(PRD_GENERATION_TOOL.toolId, {
         prdContent: '# PRD',
@@ -98,10 +98,10 @@ describe('PRDGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/prd.md'
       );
 
@@ -112,7 +112,7 @@ describe('PRDGenerationNode', () => {
 
       node.execute(inputState);
 
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+      expect(magiDirectory.writeMagiArtifact).toHaveBeenCalledWith(
         '/path/to/project',
         'feature-123',
         expect.anything(),
@@ -127,10 +127,10 @@ describe('PRDGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/prd.md'
       );
 

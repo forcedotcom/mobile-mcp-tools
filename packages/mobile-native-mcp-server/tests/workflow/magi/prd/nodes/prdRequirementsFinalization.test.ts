@@ -11,14 +11,14 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { REQUIREMENTS_FINALIZATION_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-requirements-finalization/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    REQUIREMENTS: 'requirements.md',
+    REQUIREMENTS: 'requirements',
   },
 }));
 
@@ -47,10 +47,10 @@ describe('PRDRequirementsFinalizationNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/requirements.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       const finalizedContent = '# Requirements\n\n## Status\n**Status**: approved';
       mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
@@ -72,8 +72,8 @@ describe('PRDRequirementsFinalizationNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(requirementsPath);
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(requirementsPath);
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
         finalizedRequirementsContent: '# Requirements\n\n## Status\n**Status**: approved',
@@ -92,10 +92,10 @@ describe('PRDRequirementsFinalizationNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/requirements.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(REQUIREMENTS_FINALIZATION_TOOL.toolId, {
         finalizedRequirementsContent: finalizedContent,
@@ -103,7 +103,7 @@ describe('PRDRequirementsFinalizationNode', () => {
 
       const result = node.execute(inputState);
 
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+      expect(magiDirectory.writeMagiArtifact).toHaveBeenCalledWith(
         '/path/to/project',
         'feature-123',
         expect.anything(),

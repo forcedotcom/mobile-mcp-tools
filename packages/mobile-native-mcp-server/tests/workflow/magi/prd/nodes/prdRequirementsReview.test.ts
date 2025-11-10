@@ -11,13 +11,13 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { REQUIREMENTS_REVIEW_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-requirements-review/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   MAGI_ARTIFACTS: {
-    REQUIREMENTS: 'requirements.md',
+    REQUIREMENTS: 'requirements',
   },
 }));
 
@@ -46,7 +46,7 @@ describe('PRDRequirementsReviewNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/requirements.md'
       );
 
@@ -69,7 +69,7 @@ describe('PRDRequirementsReviewNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(requirementsPath);
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(requirementsPath);
 
       mockToolExecutor.setResult(REQUIREMENTS_REVIEW_TOOL.toolId, {
         approvedRequirementIds: ['REQ-001'],
@@ -88,7 +88,7 @@ describe('PRDRequirementsReviewNode', () => {
         featureId: 'feature-123',
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/requirements.md'
       );
 

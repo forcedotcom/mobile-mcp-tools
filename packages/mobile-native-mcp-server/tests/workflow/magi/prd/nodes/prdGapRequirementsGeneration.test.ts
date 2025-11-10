@@ -11,15 +11,15 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { GAP_REQUIREMENTS_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-gap-requirements/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    FEATURE_BRIEF: 'feature-brief.md',
-    REQUIREMENTS: 'requirements.md',
+    FEATURE_BRIEF: 'feature-brief',
+    REQUIREMENTS: 'requirements',
   },
 }));
 
@@ -60,12 +60,12 @@ describe('PRDGapRequirementsGenerationNode', () => {
         ],
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 
       const updatedRequirementsMarkdown = '# Requirements\n\nUpdated';
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(GAP_REQUIREMENTS_TOOL.toolId, {
         updatedRequirementsMarkdown,
@@ -100,10 +100,10 @@ describe('PRDGapRequirementsGenerationNode', () => {
 
       const featureBriefPath = '/path/to/project/magi-sdd/feature-123/feature-brief.md';
       const requirementsPath = '/path/to/project/magi-sdd/feature-123/requirements.md';
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce(featureBriefPath) // feature brief path
         .mockReturnValueOnce(requirementsPath); // requirements path
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(GAP_REQUIREMENTS_TOOL.toolId, {
         updatedRequirementsMarkdown: '# Requirements\n\nUpdated',
@@ -135,12 +135,12 @@ describe('PRDGapRequirementsGenerationNode', () => {
         ],
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath)
+      vi.mocked(magiDirectory.getMagiPath)
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/feature-brief.md') // feature brief path
         .mockReturnValueOnce('/path/to/project/magi-sdd/feature-123/requirements.md'); // requirements path
 
       const updatedRequirementsMarkdown = '# Requirements\n\nUpdated';
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue('/path/to/requirements.md');
 
       mockToolExecutor.setResult(GAP_REQUIREMENTS_TOOL.toolId, {
         updatedRequirementsMarkdown,
@@ -148,7 +148,7 @@ describe('PRDGapRequirementsGenerationNode', () => {
 
       const result = node.execute(inputState);
 
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+      expect(magiDirectory.writeMagiArtifact).toHaveBeenCalledWith(
         '/path/to/project',
         'feature-123',
         expect.anything(),

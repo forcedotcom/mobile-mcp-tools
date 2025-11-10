@@ -11,14 +11,14 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { FEATURE_BRIEF_UPDATE_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-feature-brief-update/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getMagiPath: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    FEATURE_BRIEF: 'feature-brief.md',
+    FEATURE_BRIEF: 'feature-brief',
   },
 }));
 
@@ -55,10 +55,10 @@ describe('PRDFeatureBriefUpdateNode', () => {
         ],
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -88,8 +88,8 @@ describe('PRDFeatureBriefUpdateNode', () => {
         ],
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(featureBriefPath);
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(featureBriefPath);
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(featureBriefPath);
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(featureBriefPath);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_UPDATE_TOOL.toolId, {
         featureBriefMarkdown: '# Updated Brief',
@@ -117,10 +117,10 @@ describe('PRDFeatureBriefUpdateNode', () => {
         ],
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -133,7 +133,7 @@ describe('PRDFeatureBriefUpdateNode', () => {
 
       expect(result.featureId).toBe('feature-123'); // Same feature ID
       expect(result.isFeatureBriefApproved).toBeUndefined(); // Cleared
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+      expect(magiDirectory.writeMagiArtifact).toHaveBeenCalledWith(
         '/path/to/project',
         'feature-123',
         expect.anything(),
@@ -150,7 +150,7 @@ describe('PRDFeatureBriefUpdateNode', () => {
         isFeatureBriefApproved: false,
       });
 
-      vi.mocked(wellKnownDirectory.getMagiPath).mockReturnValue(
+      vi.mocked(magiDirectory.getMagiPath).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 

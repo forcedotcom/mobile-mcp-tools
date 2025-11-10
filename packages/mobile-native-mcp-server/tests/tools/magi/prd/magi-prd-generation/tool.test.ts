@@ -31,7 +31,7 @@ describe('MagiPRDGenerationTool', () => {
       expect(tool.toolMetadata.toolId).toBe('magi-prd-generation');
       expect(tool.toolMetadata.title).toBe('Magi - PRD Generation');
       expect(tool.toolMetadata.description).toBe(
-        'Generates a comprehensive Product Requirements Document (PRD.md) from approved feature brief and requirements'
+        'Generates a comprehensive Product Requirements Document (PRD) from approved feature brief and requirements'
       );
       expect(tool.toolMetadata.inputSchema).toBeDefined();
       expect(tool.toolMetadata.outputSchema).toBeDefined();

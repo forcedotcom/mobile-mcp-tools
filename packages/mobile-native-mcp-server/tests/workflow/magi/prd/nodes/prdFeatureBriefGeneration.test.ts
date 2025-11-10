@@ -11,16 +11,16 @@ import { MockToolExecutor } from '../../../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../../../utils/MockLogger.js';
 import { createPRDTestState } from '../../../utils/prdStateBuilders.js';
 import { FEATURE_BRIEF_TOOL } from '../../../../../src/tools/magi/prd/magi-prd-feature-brief/metadata.js';
-import * as wellKnownDirectory from '../../../../../src/utils/wellKnownDirectory.js';
+import * as magiDirectory from '../../../../../src/utils/magiDirectory.js';
 
-// Mock wellKnownDirectory utilities
-vi.mock('../../../../../src/utils/wellKnownDirectory.js', () => ({
+// Mock magiDirectory utilities
+vi.mock('../../../../../src/utils/magiDirectory.js', () => ({
   getPrdWorkspacePath: vi.fn(),
   getExistingFeatureIds: vi.fn(),
   createFeatureDirectory: vi.fn(),
   writeMagiArtifact: vi.fn(),
   MAGI_ARTIFACTS: {
-    FEATURE_BRIEF: 'feature-brief.md',
+    FEATURE_BRIEF: 'feature-brief',
   },
 }));
 
@@ -49,14 +49,12 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add authentication',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue(['existing-feature']);
-      vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(magiDirectory.getExistingFeatureIds).mockReturnValue(['existing-feature']);
+      vi.mocked(magiDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -78,17 +76,12 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add authentication feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([
-        'feature-1',
-        'feature-2',
-      ]);
-      vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(magiDirectory.getExistingFeatureIds).mockReturnValue(['feature-1', 'feature-2']);
+      vi.mocked(magiDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -110,14 +103,12 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([]);
-      vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(magiDirectory.getExistingFeatureIds).mockReturnValue([]);
+      vi.mocked(magiDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -128,7 +119,7 @@ describe('PRDFeatureBriefGenerationNode', () => {
 
       node.execute(inputState);
 
-      expect(wellKnownDirectory.createFeatureDirectory).toHaveBeenCalled();
+      expect(magiDirectory.createFeatureDirectory).toHaveBeenCalled();
     });
 
     it('should write feature brief file and return featureId', () => {
@@ -137,14 +128,12 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([]);
-      vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(magiDirectory.getExistingFeatureIds).mockReturnValue([]);
+      vi.mocked(magiDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -157,7 +146,7 @@ describe('PRDFeatureBriefGenerationNode', () => {
       const result = node.execute(inputState);
 
       expect(result.featureId).toBe('feature-123');
-      expect(wellKnownDirectory.writeMagiArtifact).toHaveBeenCalledWith(
+      expect(magiDirectory.writeMagiArtifact).toHaveBeenCalledWith(
         '/path/to/project',
         'feature-123',
         expect.anything(),
@@ -173,7 +162,7 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockImplementation(() => {
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockImplementation(() => {
         throw new Error('projectPath is required');
       });
 
@@ -189,14 +178,12 @@ describe('PRDFeatureBriefGenerationNode', () => {
         featureId: 'existing-feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue(['existing-feature']);
-      vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(magiDirectory.getExistingFeatureIds).mockReturnValue(['existing-feature']);
+      vi.mocked(magiDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 
@@ -217,14 +204,12 @@ describe('PRDFeatureBriefGenerationNode', () => {
         userUtterance: 'Add feature',
       });
 
-      vi.mocked(wellKnownDirectory.getPrdWorkspacePath).mockReturnValue(
-        '/path/to/project/magi-sdd'
-      );
-      vi.mocked(wellKnownDirectory.getExistingFeatureIds).mockReturnValue([]);
-      vi.mocked(wellKnownDirectory.createFeatureDirectory).mockReturnValue(
+      vi.mocked(magiDirectory.getPrdWorkspacePath).mockReturnValue('/path/to/project/magi-sdd');
+      vi.mocked(magiDirectory.getExistingFeatureIds).mockReturnValue([]);
+      vi.mocked(magiDirectory.createFeatureDirectory).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123'
       );
-      vi.mocked(wellKnownDirectory.writeMagiArtifact).mockReturnValue(
+      vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(
         '/path/to/project/magi-sdd/feature-123/feature-brief.md'
       );
 

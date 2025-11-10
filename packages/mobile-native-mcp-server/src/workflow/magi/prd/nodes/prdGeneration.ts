@@ -11,11 +11,7 @@ import { PRDAbstractToolNode } from './prdAbstractToolNode.js';
 import { PRD_GENERATION_TOOL } from '../../../../tools/magi/prd/magi-prd-generation/metadata.js';
 import { ToolExecutor } from '../../../nodes/toolExecutor.js';
 import { Logger } from '../../../../logging/logger.js';
-import {
-  MAGI_ARTIFACTS,
-  getMagiPath,
-  writeMagiArtifact,
-} from '../../../../utils/magiDirectory.js';
+import { MAGI_ARTIFACTS, getMagiPath, writeMagiArtifact } from '../../../../utils/magiDirectory.js';
 import z from 'zod';
 
 export class PRDGenerationNode extends PRDAbstractToolNode {
