@@ -6,34 +6,15 @@
  */
 
 import { StateType, StateDefinition } from '@langchain/langgraph';
-import z from 'zod';
 import { BaseNode } from './abstractBaseNode.js';
 import { PropertyMetadataCollection } from '../common/propertyMetadata.js';
-import {
-  GET_INPUT_PROPERTY_SCHEMA,
-  GET_INPUT_WORKFLOW_INPUT_SCHEMA,
-  GET_INPUT_WORKFLOW_RESULT_SCHEMA,
-} from '../tools/utilities/getInput/metadata.js';
 import { ToolExecutor, LangGraphToolExecutor } from './toolExecutor.js';
 import { Logger, createComponentLogger } from '../logging/logger.js';
-import { MCPToolInvocationData } from '../common/metadata.js';
-import { executeToolWithLogging } from '../utils/toolExecutionUtils.js';
-
-export type GetInputProperty = z.infer<typeof GET_INPUT_PROPERTY_SCHEMA>;
-
-/**
- * Provider interface for user input service.
- * Allows for dependency injection and testing with mock implementations.
- */
-export interface GetInputServiceProvider {
-  /**
-   * Solicits user input for unfulfilled properties.
-   *
-   * @param unfulfilledProperties - Array of properties that need user input
-   * @returns The user's response (can be any type)
-   */
-  getInput(unfulfilledProperties: GetInputProperty[]): unknown;
-}
+import {
+  GetInputProperty,
+  GetInputService,
+  GetInputServiceProvider,
+} from '../services/getInputService.js';
 
 /**
  * Configuration options for creating a Get User Input Node
@@ -48,7 +29,7 @@ export interface GetUserInputNodeOptions<TState = StateType<StateDefinition>> {
    * Tool ID for the get input tool (e.g., 'magen-get-input', 'sfmobile-native-get-input')
    * Required if getInputService is not provided
    */
-  toolId?: string;
+  toolId: string;
 
   /**
    * Service provider for getting user input (injectable for testing)
@@ -77,6 +58,36 @@ export interface GetUserInputNodeOptions<TState = StateType<StateDefinition>> {
    * Default: expects state.userInput
    */
   getUserInput?: (state: TState) => unknown;
+}
+
+class GetUserInputNode<TState> extends BaseNode<TState> {
+  constructor(
+    private readonly getInputService: GetInputServiceProvider,
+    private readonly requiredProperties: PropertyMetadataCollection,
+    private readonly isPropertyFulfilled: (state: TState, propertyName: string) => boolean
+  ) {
+    super('getUserInput');
+  }
+
+  execute = (state: TState): Partial<TState> => {
+    const unfulfilledProperties = this.getUnfulfilledProperties(state);
+    const userResponse = this.getInputService.getInput(unfulfilledProperties);
+    return { userInput: userResponse } as unknown as Partial<TState>;
+  };
+
+  private getUnfulfilledProperties(state: TState): GetInputProperty[] {
+    const propertyArray: GetInputProperty[] = [];
+    for (const [propertyName, metadata] of Object.entries(this.requiredProperties)) {
+      if (!this.isPropertyFulfilled(state, propertyName)) {
+        propertyArray.push({
+          propertyName,
+          friendlyName: metadata.friendlyName,
+          description: metadata.description,
+        });
+      }
+    }
+    return propertyArray;
+  }
 }
 
 /**
@@ -133,73 +144,7 @@ export function createGetUserInputNode<TState = StateType<StateDefinition>>(
 
   // Create default service implementation if not provided
   const service: GetInputServiceProvider =
-    getInputService ??
-    (() => {
-      if (!toolId) {
-        throw new Error(
-          'Either toolId or getInputService must be provided to createGetUserInputNode'
-        );
-      }
+    getInputService ?? new GetInputService(toolId, toolExecutor, logger);
 
-      return {
-        getInput: (unfulfilledProperties: GetInputProperty[]): unknown => {
-          logger.debug('Starting input request with properties', {
-            unfulfilledProperties,
-          });
-
-          const toolInvocationData: MCPToolInvocationData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> =
-            {
-              llmMetadata: {
-                name: toolId,
-                description:
-                  'Provides a prompt to the user to elicit their input for a set of properties',
-                inputSchema: GET_INPUT_WORKFLOW_INPUT_SCHEMA,
-              },
-              input: {
-                propertiesRequiringInput: unfulfilledProperties,
-              },
-            };
-
-          const validatedResult = executeToolWithLogging(
-            toolExecutor,
-            logger,
-            toolInvocationData,
-            GET_INPUT_WORKFLOW_RESULT_SCHEMA
-          );
-
-          return validatedResult.userUtterance;
-        },
-      };
-    })();
-
-  class GetUserInputNode extends BaseNode<TState> {
-    private readonly getInputService: GetInputServiceProvider;
-
-    constructor() {
-      super('getUserInput');
-      this.getInputService = service;
-    }
-
-    execute = (state: TState): Partial<TState> => {
-      const unfulfilledProperties = this.getUnfulfilledProperties(state);
-      const userResponse = this.getInputService.getInput(unfulfilledProperties);
-      return { userInput: userResponse } as unknown as Partial<TState>;
-    };
-
-    private getUnfulfilledProperties(state: TState): GetInputProperty[] {
-      const propertyArray: GetInputProperty[] = [];
-      for (const [propertyName, metadata] of Object.entries(requiredProperties)) {
-        if (!isPropertyFulfilled(state, propertyName)) {
-          propertyArray.push({
-            propertyName,
-            friendlyName: metadata.friendlyName,
-            description: metadata.description,
-          });
-        }
-      }
-      return propertyArray;
-    }
-  }
-
-  return new GetUserInputNode();
+  return new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
 }

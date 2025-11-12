@@ -25,15 +25,17 @@ import {
   createUserInputExtractionNode,
 } from '@salesforce/magen-mcp-workflow';
 import { State, WORKFLOW_USER_INPUT_PROPERTIES } from './metadata.js';
+import { SFMOBILE_NATIVE_GET_INPUT_TOOL_ID } from '../tools/utils/sfmobile-native-get-input/metadata.js';
+import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../tools/utils/sfmobile-native-input-extraction/metadata.js';
 
 const initialUserInputExtractionNode = createUserInputExtractionNode<State>({
   requiredProperties: WORKFLOW_USER_INPUT_PROPERTIES,
-  toolId: 'sfmobile-native-input-extraction',
+  toolId: SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID,
 });
 
 const userInputNode = createGetUserInputNode<State>({
   requiredProperties: WORKFLOW_USER_INPUT_PROPERTIES,
-  toolId: 'sfmobile-native-get-input',
+  toolId: SFMOBILE_NATIVE_GET_INPUT_TOOL_ID,
 });
 const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();

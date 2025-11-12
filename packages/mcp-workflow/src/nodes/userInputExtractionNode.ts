@@ -6,38 +6,14 @@
  */
 
 import { StateType, StateDefinition } from '@langchain/langgraph';
-import z from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import { BaseNode } from './abstractBaseNode.js';
 import { PropertyMetadataCollection } from '../common/propertyMetadata.js';
-import { INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA } from '../tools/utilities/inputExtraction/metadata.js';
 import { ToolExecutor, LangGraphToolExecutor } from './toolExecutor.js';
 import { Logger, createComponentLogger } from '../logging/logger.js';
-import { MCPToolInvocationData } from '../common/metadata.js';
-import { executeToolWithLogging } from '../utils/toolExecutionUtils.js';
-
-/**
- * Result from property extraction containing validated properties.
- */
-export interface ExtractionResult {
-  /** Record of extracted properties, keyed by property name */
-  extractedProperties: Record<string, unknown>;
-}
-
-/**
- * Interface for property extraction service.
- * Allows for dependency injection and testing with mock implementations.
- */
-export interface InputExtractionServiceProvider {
-  /**
-   * Extracts structured properties from user input.
-   *
-   * @param userInput - Raw user input (string, object, or any format)
-   * @param properties - Collection of properties to extract with their metadata
-   * @returns ExtractionResult containing validated extracted properties
-   */
-  extractProperties(userInput: unknown, properties: PropertyMetadataCollection): ExtractionResult;
-}
+import {
+  InputExtractionService,
+  InputExtractionServiceProvider,
+} from '../services/inputExtractionService.js';
 
 /**
  * Configuration options for creating a User Input Extraction Node
@@ -52,7 +28,7 @@ export interface UserInputExtractionNodeOptions<TState = StateType<StateDefiniti
    * Tool ID for the input extraction tool (e.g., 'magen-input-extraction', 'sfmobile-native-input-extraction')
    * Required if extractionService is not provided
    */
-  toolId?: string;
+  toolId: string;
 
   /**
    * Service provider for property extraction (injectable for testing)
@@ -75,6 +51,22 @@ export interface UserInputExtractionNodeOptions<TState = StateType<StateDefiniti
    * Default: expects state.userInput
    */
   getUserInput?: (state: TState) => unknown;
+}
+
+class UserInputExtractionNode<TState> extends BaseNode<TState> {
+  constructor(
+    private readonly extractionService: InputExtractionServiceProvider,
+    private readonly requiredProperties: PropertyMetadataCollection,
+    private readonly getUserInput: (state: TState) => unknown
+  ) {
+    super('userInputExtraction');
+  }
+
+  execute = (state: TState): Partial<TState> => {
+    const userInput = this.getUserInput(state);
+    const result = this.extractionService.extractProperties(userInput, this.requiredProperties);
+    return result.extractedProperties as unknown as Partial<TState>;
+  };
 }
 
 /**
@@ -129,173 +121,9 @@ export function createUserInputExtractionNode<TState = StateType<StateDefinition
     },
   } = options;
 
-  // Helper functions for default service implementation
-  const preparePropertiesForExtraction = (
-    properties: PropertyMetadataCollection
-  ): Array<{ propertyName: string; description: string }> => {
-    const propertiesToExtract: Array<{ propertyName: string; description: string }> = [];
-
-    for (const [propertyName, metadata] of Object.entries(properties)) {
-      propertiesToExtract.push({
-        propertyName,
-        description: metadata.description,
-      });
-    }
-
-    logger.debug('Prepared properties for extraction', {
-      count: propertiesToExtract.length,
-      properties: propertiesToExtract.map(p => p.propertyName),
-    });
-
-    return propertiesToExtract;
-  };
-
-  const preparePropertyResultsSchema = (
-    properties: PropertyMetadataCollection
-  ): z.ZodObject<{ extractedProperties: z.ZodObject<z.ZodRawShape> }> => {
-    const extractedPropertiesShape: Record<string, z.ZodType> = {};
-
-    for (const [propertyName, metadata] of Object.entries(properties)) {
-      extractedPropertiesShape[propertyName] = metadata.zodType
-        .describe(metadata.description)
-        .nullable()
-        .catch((ctx: { input: unknown }) => ctx.input);
-    }
-
-    return z.object({ extractedProperties: z.object(extractedPropertiesShape).passthrough() });
-  };
-
-  const validateAndFilterResult = (
-    rawResult: unknown,
-    properties: PropertyMetadataCollection,
-    resultSchema: z.ZodObject<{ extractedProperties: z.ZodObject<z.ZodRawShape> }>
-  ): ExtractionResult => {
-    const structureValidated = resultSchema.parse(rawResult);
-    const { extractedProperties } = structureValidated;
-
-    logger.debug('Validating extracted properties', {
-      extractedProperties,
-    });
-
-    const validatedProperties: Record<string, unknown> = {};
-    const invalidProperties: string[] = [];
-
-    for (const [propertyName, propertyValue] of Object.entries(extractedProperties)) {
-      if (propertyValue == null) {
-        logger.debug(`Skipping property with null/undefined value`, { propertyName });
-        continue;
-      }
-
-      const propertyMetadata = properties[propertyName];
-      if (!propertyMetadata) {
-        logger.warn(`Unknown property in extraction result`, { propertyName });
-        continue;
-      }
-
-      try {
-        const validatedValue = propertyMetadata.zodType.parse(propertyValue);
-        validatedProperties[propertyName] = validatedValue;
-        logger.debug(`Property validated successfully`, {
-          propertyName,
-          value: validatedValue,
-        });
-      } catch (error) {
-        invalidProperties.push(propertyName);
-        if (error instanceof z.ZodError) {
-          logger.debug(`Property validation failed`, {
-            propertyName,
-            value: propertyValue,
-            errors: error.errors,
-          });
-        } else {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          logger.error(`Unexpected validation error for ${propertyName}: ${errorMsg}`);
-          throw error;
-        }
-      }
-    }
-
-    if (invalidProperties.length > 0) {
-      logger.info(`Some properties failed validation`, {
-        invalidProperties,
-        validCount: Object.keys(validatedProperties).length,
-      });
-    }
-
-    return { extractedProperties: validatedProperties };
-  };
-
   // Create default service implementation if not provided
   const service: InputExtractionServiceProvider =
-    extractionService ??
-    (() => {
-      if (!toolId) {
-        throw new Error(
-          'Either toolId or extractionService must be provided to createUserInputExtractionNode'
-        );
-      }
+    extractionService ?? new InputExtractionService(toolId, toolExecutor, logger);
 
-      return {
-        extractProperties: (
-          userInput: unknown,
-          properties: PropertyMetadataCollection
-        ): ExtractionResult => {
-          logger.debug('Starting property extraction', {
-            userInput,
-            propertyCount: Object.keys(properties).length,
-          });
-
-          const propertiesToExtract = preparePropertiesForExtraction(properties);
-          const resultSchema = preparePropertyResultsSchema(properties);
-          const resultSchemaString = JSON.stringify(zodToJsonSchema(resultSchema));
-
-          const toolInvocationData: MCPToolInvocationData<
-            typeof INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA
-          > = {
-            llmMetadata: {
-              name: toolId,
-              description: 'Parses user input and extracts structured project properties',
-              inputSchema: INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA,
-            },
-            input: {
-              userUtterance: userInput,
-              propertiesToExtract,
-              resultSchema: resultSchemaString,
-            },
-          };
-
-          const validatedResult = executeToolWithLogging(
-            toolExecutor,
-            logger,
-            toolInvocationData,
-            resultSchema,
-            (rawResult, schema) => validateAndFilterResult(rawResult, properties, schema)
-          );
-
-          logger.info('Property extraction completed', {
-            extractedCount: Object.keys(validatedResult.extractedProperties).length,
-            properties: Object.keys(validatedResult.extractedProperties),
-          });
-
-          return validatedResult;
-        },
-      };
-    })();
-
-  class UserInputExtractionNode extends BaseNode<TState> {
-    private readonly extractionService: InputExtractionServiceProvider;
-
-    constructor() {
-      super('userInputExtraction');
-      this.extractionService = service;
-    }
-
-    execute = (state: TState): Partial<TState> => {
-      const userInput = getUserInput(state);
-      const result = this.extractionService.extractProperties(userInput, requiredProperties);
-      return result.extractedProperties as unknown as Partial<TState>;
-    };
-  }
-
-  return new UserInputExtractionNode();
+  return new UserInputExtractionNode(service, requiredProperties, getUserInput);
 }

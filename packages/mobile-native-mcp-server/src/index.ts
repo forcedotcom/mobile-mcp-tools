@@ -10,9 +10,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { SFMobileNativeTemplateDiscoveryTool } from './tools/plan/sfmobile-native-template-discovery/tool.js';
-import { GetInputTool } from '@salesforce/magen-mcp-workflow';
-import { InputExtractionTool } from '@salesforce/magen-mcp-workflow';
 import { UtilsXcodeAddFilesTool } from './tools/utils/utils-xcode-add-files/tool.js';
+
 import { SFMobileNativeDeploymentTool } from './tools/run/sfmobile-native-deployment/tool.js';
 import { SFMobileNativeBuildTool } from './tools/plan/sfmobile-native-build/tool.js';
 import { SFMobileNativeBuildRecoveryTool } from './tools/plan/sfmobile-native-build-recovery/tool.js';
@@ -40,6 +39,8 @@ const version = packageJson.version;
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { MobileAppProjectPrompt } from './prompts/index.js';
 import { MagiFeatureBriefFinalizationTool } from './tools/magi/prd/magi-prd-feature-brief-finalization/tool.js';
+import { createSFMobileNativeGetInputTool } from './tools/utils/sfmobile-native-get-input/factory.js';
+import { createSFMobileNativeInputExtractionTool } from './tools/utils/sfmobile-native-input-extraction/factory.js';
 
 const server = new McpServer({
   name: 'sfdc-mobile-native-mcp-server',
@@ -64,17 +65,8 @@ const orchestratorAnnotations: ToolAnnotations = {
 // Initialize tools
 const orchestrator = new MobileNativeOrchestrator(server);
 const prdOrchestrator = new PRDGenerationOrchestrator(server);
-const getInputTool = new GetInputTool(
-  server,
-  'sfmobile-native-get-input',
-  'sfmobile-native-project-manager'
-);
-// Create input extraction tool with the exact tool ID expected by the workflow
-const inputExtractionTool = new InputExtractionTool(
-  server,
-  'sfmobile-native-input-extraction',
-  'sfmobile-native-project-manager'
-);
+const getInputTool = createSFMobileNativeGetInputTool(server);
+const inputExtractionTool = createSFMobileNativeInputExtractionTool(server);
 const templateDiscoveryTool = new SFMobileNativeTemplateDiscoveryTool(server);
 const projectGenerationTool = new SFMobileNativeProjectGenerationTool(server);
 const buildTool = new SFMobileNativeBuildTool(server);

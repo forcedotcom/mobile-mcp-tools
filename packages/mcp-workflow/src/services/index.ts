@@ -6,3 +6,9 @@
  */
 
 export { AbstractService } from './abstractService.js';
+export {
+  InputExtractionService,
+  InputExtractionServiceProvider,
+  ExtractionResult,
+} from './inputExtractionService.js';
+export { GetInputService, GetInputServiceProvider, GetInputProperty } from './getInputService.js';
