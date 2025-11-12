@@ -18,7 +18,7 @@ import {
   NodeFileSystemOperations,
 } from '@salesforce/magen-mcp-workflow';
 import { XCODE_ADD_FILES_TOOL, XcodeAddFilesWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
+import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
 
 interface XcodeAddFilesResult {
   success: boolean;
@@ -30,7 +30,9 @@ interface XcodeAddFilesResult {
   error?: string;
 }
 
-export class UtilsXcodeAddFilesTool extends AbstractWorkflowTool<typeof XCODE_ADD_FILES_TOOL> {
+export class UtilsXcodeAddFilesTool extends AbstractNativeProjectManagerTool<
+  typeof XCODE_ADD_FILES_TOOL
+> {
   private readonly fs: FileSystemOperations;
 
   constructor(
@@ -38,13 +40,7 @@ export class UtilsXcodeAddFilesTool extends AbstractWorkflowTool<typeof XCODE_AD
     logger?: Logger,
     fileSystemOperations: FileSystemOperations = new NodeFileSystemOperations()
   ) {
-    super(
-      server,
-      XCODE_ADD_FILES_TOOL,
-      'sfmobile-native-project-manager',
-      'XcodeAddFilesTool',
-      logger
-    );
+    super(server, XCODE_ADD_FILES_TOOL, 'XcodeAddFilesTool', logger);
     this.fs = fileSystemOperations;
   }
 

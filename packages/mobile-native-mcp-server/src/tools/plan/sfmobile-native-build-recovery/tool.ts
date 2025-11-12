@@ -9,19 +9,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import dedent from 'dedent';
 import { Logger } from '@salesforce/magen-mcp-workflow';
 import { BUILD_RECOVERY_TOOL, BuildRecoveryWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
+import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
 
-export class SFMobileNativeBuildRecoveryTool extends AbstractWorkflowTool<
+export class SFMobileNativeBuildRecoveryTool extends AbstractNativeProjectManagerTool<
   typeof BUILD_RECOVERY_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {
-    super(
-      server,
-      BUILD_RECOVERY_TOOL,
-      'sfmobile-native-project-manager',
-      'BuildRecoveryTool',
-      logger
-    );
+    super(server, BUILD_RECOVERY_TOOL, 'BuildRecoveryTool', logger);
   }
 
   public handleRequest = async (input: BuildRecoveryWorkflowInput) => {

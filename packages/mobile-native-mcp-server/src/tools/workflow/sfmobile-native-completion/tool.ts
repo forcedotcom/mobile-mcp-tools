@@ -8,11 +8,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '@salesforce/magen-mcp-workflow';
 import { FINISH_TOOL, FinishWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
+import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
 
-export class SFMobileNativeCompletionTool extends AbstractWorkflowTool<typeof FINISH_TOOL> {
+export class SFMobileNativeCompletionTool extends AbstractNativeProjectManagerTool<
+  typeof FINISH_TOOL
+> {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, FINISH_TOOL, 'sfmobile-native-project-manager', 'FinishTool', logger);
+    super(server, FINISH_TOOL, 'FinishTool', logger);
   }
 
   public handleRequest = async (input: FinishWorkflowInput) => {

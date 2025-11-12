@@ -9,10 +9,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import dedent from 'dedent';
 import { Logger } from '@salesforce/magen-mcp-workflow';
 import { BUILD_TOOL, BuildWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
+import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
 import { TempDirectoryManager, defaultTempDirectoryManager } from '../../../common.js';
 
-export class SFMobileNativeBuildTool extends AbstractWorkflowTool<typeof BUILD_TOOL> {
+export class SFMobileNativeBuildTool extends AbstractNativeProjectManagerTool<typeof BUILD_TOOL> {
   private readonly tempDirManager: TempDirectoryManager;
 
   constructor(
@@ -20,7 +20,7 @@ export class SFMobileNativeBuildTool extends AbstractWorkflowTool<typeof BUILD_T
     tempDirManager: TempDirectoryManager = defaultTempDirectoryManager,
     logger?: Logger
   ) {
-    super(server, BUILD_TOOL, 'sfmobile-native-project-manager', 'BuildTool', logger);
+    super(server, BUILD_TOOL, 'BuildTool', logger);
     this.tempDirManager = tempDirManager;
   }
 

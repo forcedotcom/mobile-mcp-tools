@@ -10,19 +10,13 @@ import dedent from 'dedent';
 import { MOBILE_SDK_TEMPLATES_PATH } from '../../../common.js';
 import { Logger } from '@salesforce/magen-mcp-workflow';
 import { TEMPLATE_DISCOVERY_TOOL, TemplateDiscoveryWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
+import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
 
-export class SFMobileNativeTemplateDiscoveryTool extends AbstractWorkflowTool<
+export class SFMobileNativeTemplateDiscoveryTool extends AbstractNativeProjectManagerTool<
   typeof TEMPLATE_DISCOVERY_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {
-    super(
-      server,
-      TEMPLATE_DISCOVERY_TOOL,
-      'sfmobile-native-project-manager',
-      'TemplateDiscoveryTool',
-      logger
-    );
+    super(server, TEMPLATE_DISCOVERY_TOOL, 'TemplateDiscoveryTool', logger);
   }
 
   public handleRequest = async (input: TemplateDiscoveryWorkflowInput) => {

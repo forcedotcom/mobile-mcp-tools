@@ -8,11 +8,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { Logger } from '@salesforce/magen-mcp-workflow';
 import { FAILURE_TOOL, FailureWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
+import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
 
-export class SFMobileNativeFailureTool extends AbstractWorkflowTool<typeof FAILURE_TOOL> {
+export class SFMobileNativeFailureTool extends AbstractNativeProjectManagerTool<
+  typeof FAILURE_TOOL
+> {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, FAILURE_TOOL, 'sfmobile-native-project-manager', 'FailureTool', logger);
+    super(server, FAILURE_TOOL, 'FailureTool', logger);
   }
 
   public handleRequest = async (input: FailureWorkflowInput) => {
