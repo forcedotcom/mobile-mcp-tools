@@ -15,7 +15,7 @@ import { GetInputProperty, GetInputServiceProvider } from '../../services/getInp
 /**
  * Configuration options for creating a Get User Input Node
  */
-export interface GetUserInputNodeOptions<TState = StateType<StateDefinition>> {
+export interface GetUserInputNodeOptions<TState extends StateType<StateDefinition>> {
   /**
    * Collection of properties that must be collected from the user
    */

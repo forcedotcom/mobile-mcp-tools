@@ -15,7 +15,7 @@ import { InputExtractionServiceProvider } from '../../services/inputExtractionSe
 /**
  * Configuration options for creating a User Input Extraction Node
  */
-export interface UserInputExtractionNodeOptions<TState = StateType<StateDefinition>> {
+export interface UserInputExtractionNodeOptions<TState extends StateType<StateDefinition>> {
   /**
    * Collection of properties that must be collected from user
    */

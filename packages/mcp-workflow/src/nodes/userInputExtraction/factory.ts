@@ -53,7 +53,7 @@ import { UserInputExtractionNodeOptions, UserInputExtractionNode } from './node.
  * });
  * ```
  */
-export function createUserInputExtractionNode<TState = StateType<StateDefinition>>(
+export function createUserInputExtractionNode<TState extends StateType<StateDefinition>>(
   options: UserInputExtractionNodeOptions<TState>
 ): BaseNode<TState> {
   const {
