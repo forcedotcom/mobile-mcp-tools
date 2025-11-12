@@ -85,10 +85,6 @@ export {
   createUserInputExtractionNode,
   type GetUserInputNodeOptions,
   type UserInputExtractionNodeOptions,
-  type GetInputServiceProvider,
-  type InputExtractionServiceProvider,
-  type GetInputProperty,
-  type ExtractionResult,
 } from './nodes/index.js';
 
 // Base Service Classes

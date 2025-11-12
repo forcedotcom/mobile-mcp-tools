@@ -10,7 +10,10 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { ToolExecutor } from '../nodes/toolExecutor.js';
 import { AbstractService } from './abstractService.js';
 import { PropertyMetadataCollection } from '../common/propertyMetadata.js';
-import { INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA } from '../tools/utilities/index.js';
+import {
+  createInputExtractionMetadata,
+  INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA,
+} from '../tools/utilities/index.js';
 import { Logger } from '../logging/logger.js';
 import { MCPToolInvocationData } from '../common/metadata.js';
 
@@ -71,13 +74,14 @@ export class InputExtractionService
     const propertiesToExtract = this.preparePropertiesForExtraction(properties);
     const resultSchema = this.preparePropertyResultsSchema(properties);
     const resultSchemaString = JSON.stringify(zodToJsonSchema(resultSchema));
+    const metadata = createInputExtractionMetadata(this.toolId);
 
     const toolInvocationData: MCPToolInvocationData<typeof INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA> =
       {
         llmMetadata: {
-          name: this.toolId,
-          description: 'Parses user input and extracts structured project properties',
-          inputSchema: INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA,
+          name: metadata.title,
+          description: metadata.description,
+          inputSchema: metadata.inputSchema,
         },
         input: {
           userUtterance: userInput,

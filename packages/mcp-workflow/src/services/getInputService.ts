@@ -9,6 +9,7 @@ import z from 'zod';
 import { ToolExecutor } from '../nodes/toolExecutor.js';
 import { AbstractService } from './abstractService.js';
 import {
+  createGetInputMetadata,
   GET_INPUT_PROPERTY_SCHEMA,
   GET_INPUT_WORKFLOW_INPUT_SCHEMA,
   GET_INPUT_WORKFLOW_RESULT_SCHEMA,
@@ -58,12 +59,13 @@ export class GetInputService extends AbstractService implements GetInputServiceP
       unfulfilledProperties,
     });
 
+    const metadata = createGetInputMetadata(this.toolId);
     // Create tool invocation data
     const toolInvocationData: MCPToolInvocationData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> = {
       llmMetadata: {
-        name: this.toolId,
-        description: 'Provides a prompt to the user to elicit their input for a set of properties',
-        inputSchema: GET_INPUT_WORKFLOW_INPUT_SCHEMA,
+        name: metadata.title,
+        description: metadata.description,
+        inputSchema: metadata.inputSchema,
       },
       input: {
         propertiesRequiringInput: unfulfilledProperties,
