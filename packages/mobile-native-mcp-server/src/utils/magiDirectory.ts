@@ -23,12 +23,29 @@
 
 import fs from 'fs';
 import path from 'path';
-import { ensureProjectWellKnownDirectory } from './wellKnownDirectory.js';
 
 /**
  * Well-known directory name for magi-sdd workspace
  */
 export const MAGI_SDD_DIR_NAME = 'magi-sdd';
+
+/**
+ * Ensure a specific well-known directory exists within a project path
+ * Safe to call multiple times - idempotent operation
+ *
+ * @param projectPath - The project root path
+ * @param directoryName - Name of the directory to create/verify
+ * @returns Absolute path to the directory
+ */
+function ensureProjectWellKnownDirectory(projectPath: string, directoryName: string): string {
+  const fullPath = path.join(projectPath, directoryName);
+
+  if (!fs.existsSync(fullPath)) {
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
+
+  return fullPath;
+}
 
 /**
  * Ensure the magi-sdd directory exists within a project path

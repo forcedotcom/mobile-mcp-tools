@@ -6,15 +6,20 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../../logging/logger.js';
+import { Logger, AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
 import { FEATURE_BRIEF_TOOL, FeatureBriefWorkflowInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class MagiFeatureBriefGenerationTool extends PRDAbstractWorkflowTool<
+export class MagiFeatureBriefGenerationTool extends AbstractWorkflowTool<
   typeof FEATURE_BRIEF_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, FEATURE_BRIEF_TOOL, 'FeatureBriefGenerationTool', logger);
+    super(
+      server,
+      FEATURE_BRIEF_TOOL,
+      'magi-prd-orchestrator',
+      'FeatureBriefGenerationTool',
+      logger
+    );
   }
 
   public handleRequest = async (input: FeatureBriefWorkflowInput) => {

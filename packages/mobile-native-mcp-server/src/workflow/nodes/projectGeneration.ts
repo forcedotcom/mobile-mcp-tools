@@ -5,14 +5,14 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../common/metadata.js';
+import { MCPToolInvocationData } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
-import { AbstractToolNode } from './abstractToolNode.js';
+import { AbstractToolNode } from '@salesforce/magen-mcp-workflow';
 import { PROJECT_GENERATION_TOOL } from '../../tools/plan/sfmobile-native-project-generation/metadata.js';
-import { ToolExecutor } from './toolExecutor.js';
-import { Logger } from '../../logging/logger.js';
+import { ToolExecutor } from '@salesforce/magen-mcp-workflow';
+import { Logger } from '@salesforce/magen-mcp-workflow';
 
-export class ProjectGenerationNode extends AbstractToolNode {
+export class ProjectGenerationNode extends AbstractToolNode<State> {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
     super('generateProject', toolExecutor, logger);
   }

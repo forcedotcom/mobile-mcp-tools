@@ -11,7 +11,7 @@ import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '@salesforce/magen-mcp-workflow';
 
 /**
  * Project Generation Tool Input Schema

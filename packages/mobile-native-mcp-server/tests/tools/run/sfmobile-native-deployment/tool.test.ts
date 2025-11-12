@@ -11,7 +11,7 @@ import { SFMobileNativeDeploymentTool } from '../../../../src/tools/run/sfmobile
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { DeploymentWorkflowInput } from '../../../../src/tools/run/sfmobile-native-deployment/metadata.js';
 import { TempDirectoryManager } from '../../../../src/common.js';
-import { MockFileSystemProvider } from '../../../utils/MockFileSystemProvider.js';
+import { MockFileSystemOperations } from '../../../utils/MockFileSystemProvider.js';
 
 describe('SFMobileNativeDeploymentTool', () => {
   let tool: SFMobileNativeDeploymentTool;
@@ -22,7 +22,7 @@ describe('SFMobileNativeDeploymentTool', () => {
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
     mockLogger = new MockLogger();
-    const mockFs = new MockFileSystemProvider('/mock/temp');
+    const mockFs = new MockFileSystemOperations('/mock/temp');
     mockTempDirManager = new TempDirectoryManager(mockFs);
     tool = new SFMobileNativeDeploymentTool(mockServer, mockTempDirManager, mockLogger);
   });

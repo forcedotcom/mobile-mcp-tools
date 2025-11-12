@@ -6,7 +6,7 @@
  */
 
 import { State, WORKFLOW_USER_INPUT_PROPERTIES } from '../metadata.js';
-import { PropertyMetadataCollection } from '../../common/propertyMetadata.js';
+import { PropertyMetadataCollection } from '@salesforce/magen-mcp-workflow';
 
 /**
  * Conditional router edge to see whether all required properties have been collected.

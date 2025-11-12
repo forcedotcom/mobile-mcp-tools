@@ -5,9 +5,9 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../common/metadata.js';
-import { ToolExecutor, LangGraphToolExecutor } from '../nodes/toolExecutor.js';
-import { Logger, createComponentLogger } from '../../logging/logger.js';
+import { MCPToolInvocationData } from '@salesforce/magen-mcp-workflow';
+import { ToolExecutor, LangGraphToolExecutor } from '@salesforce/magen-mcp-workflow';
+import { Logger, createComponentLogger } from '@salesforce/magen-mcp-workflow';
 import { BUILD_RECOVERY_TOOL } from '../../tools/plan/sfmobile-native-build-recovery/metadata.js';
 import { PlatformEnum } from '../../common/schemas.js';
 

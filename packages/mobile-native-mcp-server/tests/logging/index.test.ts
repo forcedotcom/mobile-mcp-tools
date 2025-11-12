@@ -11,7 +11,7 @@ import {
   createLogger,
   createComponentLogger,
   createWorkflowLogger,
-} from '../../src/logging/logger.js';
+} from '@salesforce/magen-mcp-workflow';
 
 describe('Logging Module Exports', () => {
   it('should export all logger types and factories', () => {

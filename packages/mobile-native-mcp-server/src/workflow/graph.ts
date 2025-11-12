@@ -15,16 +15,26 @@ import { BuildRecoveryNode } from './nodes/buildRecovery.js';
 import { CheckBuildSuccessfulRouter } from './nodes/checkBuildSuccessfulRouter.js';
 import { DeploymentNode } from './nodes/deploymentNode.js';
 import { CompletionNode } from './nodes/completionNode.js';
-import { UserInputExtractionNode } from './nodes/userInputExtraction.js';
 import { CheckPropertiesFulFilledRouter } from './nodes/checkPropertiesFulfilledRouter.js';
-import { GetUserInputNode } from './nodes/getUserInput.js';
 import { FailureNode } from './nodes/failureNode.js';
 import { CheckEnvironmentValidatedRouter } from './nodes/checkEnvironmentValidated.js';
 import { PlatformCheckNode } from './nodes/checkPlatformSetup.js';
 import { CheckSetupValidatedRouter } from './nodes/checkSetupValidatedRouter.js';
+import {
+  createGetUserInputNode,
+  createUserInputExtractionNode,
+} from '@salesforce/magen-mcp-workflow';
+import { State, WORKFLOW_USER_INPUT_PROPERTIES } from './metadata.js';
 
-const initialUserInputExtractionNode = new UserInputExtractionNode();
-const userInputNode = new GetUserInputNode();
+const initialUserInputExtractionNode = createUserInputExtractionNode<State>({
+  requiredProperties: WORKFLOW_USER_INPUT_PROPERTIES,
+  toolId: 'sfmobile-native-input-extraction',
+});
+
+const userInputNode = createGetUserInputNode<State>({
+  requiredProperties: WORKFLOW_USER_INPUT_PROPERTIES,
+  toolId: 'sfmobile-native-get-input',
+});
 const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
 const templateDiscoveryNode = new TemplateDiscoveryNode();

@@ -11,7 +11,7 @@ import {
   PinoLogger,
   createLogger,
   createComponentLogger,
-} from '../../src/logging/logger.js';
+} from '@salesforce/magen-mcp-workflow';
 import pino from 'pino';
 
 describe('Logger Implementation', () => {

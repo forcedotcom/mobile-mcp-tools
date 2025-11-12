@@ -170,7 +170,7 @@ describe('MobileNativeOrchestrator', () => {
         log.message.includes('Processing orchestrator request')
       );
       expect(processingLog).toBeDefined();
-      expect((processingLog?.data as any)?.threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect((processingLog?.data as any)?.threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
 
     it('should handle missing workflowStateData and use default', async () => {
@@ -197,7 +197,7 @@ describe('MobileNativeOrchestrator', () => {
         log.message.includes('Processing orchestrator request')
       );
       expect(processingLog).toBeDefined();
-      expect((processingLog?.data as any)?.threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect((processingLog?.data as any)?.threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
 
     it('should handle workflowStateData with empty thread_id', async () => {
@@ -224,7 +224,7 @@ describe('MobileNativeOrchestrator', () => {
         log.message.includes('Processing orchestrator request')
       );
       expect(processingLog).toBeDefined();
-      expect((processingLog?.data as any)?.threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect((processingLog?.data as any)?.threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
 
     it('should handle workflowStateData with missing thread_id property', async () => {
@@ -252,7 +252,7 @@ describe('MobileNativeOrchestrator', () => {
         log.message.includes('Processing orchestrator request')
       );
       expect(processingLog).toBeDefined();
-      expect((processingLog?.data as any)?.threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect((processingLog?.data as any)?.threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
 
     it('should handle workflowStateData with null thread_id', async () => {
@@ -280,7 +280,7 @@ describe('MobileNativeOrchestrator', () => {
         log.message.includes('Processing orchestrator request')
       );
       expect(processingLog).toBeDefined();
-      expect((processingLog?.data as any)?.threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect((processingLog?.data as any)?.threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
 
     it('should preserve valid thread_id when provided correctly', async () => {
@@ -365,7 +365,7 @@ describe('MobileNativeOrchestrator', () => {
         log.message.includes('Processing orchestrator request')
       );
       expect(processingLog).toBeDefined();
-      expect((processingLog?.data as any)?.threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect((processingLog?.data as any)?.threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
 
     it('should handle input with extra unknown fields', async () => {
@@ -430,7 +430,7 @@ describe('MobileNativeOrchestrator', () => {
 
       // All should match the expected format
       threadIds.forEach(threadId => {
-        expect(threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+        expect(threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
       });
     });
 
@@ -724,7 +724,7 @@ describe('MobileNativeOrchestrator', () => {
 
       const threadId = (threadLogs[0].data as { threadId: string }).threadId;
       expect(typeof threadId).toBe('string');
-      expect(threadId).toMatch(/^mobile-\d+-[a-z0-9]{6}$/);
+      expect(threadId).toMatch(/^mmw-\d+-[a-z0-9]{6}$/);
     });
   });
 

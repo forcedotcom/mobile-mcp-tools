@@ -12,13 +12,13 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import dedent from 'dedent';
 import * as path from 'path';
-import { Logger } from '../../../logging/logger.js';
-import { XCODE_ADD_FILES_TOOL, XcodeAddFilesWorkflowInput } from './metadata.js';
-import { AbstractWorkflowTool } from '../../base/abstractWorkflowTool.js';
 import {
-  FileSystemProvider,
-  defaultFileSystemProvider,
-} from '../../../utils/FileSystemProvider.js';
+  Logger,
+  FileSystemOperations,
+  NodeFileSystemOperations,
+} from '@salesforce/magen-mcp-workflow';
+import { XCODE_ADD_FILES_TOOL, XcodeAddFilesWorkflowInput } from './metadata.js';
+import { AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
 
 interface XcodeAddFilesResult {
   success: boolean;
@@ -31,12 +31,21 @@ interface XcodeAddFilesResult {
 }
 
 export class UtilsXcodeAddFilesTool extends AbstractWorkflowTool<typeof XCODE_ADD_FILES_TOOL> {
+  private readonly fs: FileSystemOperations;
+
   constructor(
     server: McpServer,
     logger?: Logger,
-    private readonly fileSystem: FileSystemProvider = defaultFileSystemProvider
+    fileSystemOperations: FileSystemOperations = new NodeFileSystemOperations()
   ) {
-    super(server, XCODE_ADD_FILES_TOOL, 'XcodeAddFilesTool', logger);
+    super(
+      server,
+      XCODE_ADD_FILES_TOOL,
+      'sfmobile-native-project-manager',
+      'XcodeAddFilesTool',
+      logger
+    );
+    this.fs = fileSystemOperations;
   }
 
   public handleRequest = async (input: XcodeAddFilesWorkflowInput) => {
@@ -89,7 +98,7 @@ export class UtilsXcodeAddFilesTool extends AbstractWorkflowTool<typeof XCODE_AD
     const pbxprojPath = path.join(fullXcodeProjectPath, 'project.pbxproj');
 
     // Validate inputs
-    if (!this.fileSystem.existsSync(pbxprojPath)) {
+    if (!this.fs.existsSync(pbxprojPath)) {
       throw new Error(`Project file not found: ${pbxprojPath}`);
     }
 

@@ -8,7 +8,7 @@
 import { Annotation } from '@langchain/langgraph';
 import z from 'zod';
 import { PLATFORM_ENUM, PROJECT_NAME_FIELD } from '../common/schemas.js';
-import { PropertyMetadata, PropertyMetadataCollection } from '../common/propertyMetadata.js';
+import { PropertyMetadata, PropertyMetadataCollection } from '@salesforce/magen-mcp-workflow';
 
 /**
  * Definition of all user input properties required by the mobile native workflow.

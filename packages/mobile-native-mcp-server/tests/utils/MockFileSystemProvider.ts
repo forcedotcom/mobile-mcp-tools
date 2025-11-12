@@ -5,16 +5,18 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { FileSystemProvider } from '../../src/utils/FileSystemProvider.js';
+import { FileSystemOperations } from '@salesforce/magen-mcp-workflow';
+import fs from 'fs';
 
 /**
- * Mock implementation of FileSystemProvider for testing
+ * Mock implementation of FileSystemOperations for testing
  * Allows tests to control directory paths without creating real directories
  * Tracks calls for verification
  */
-export class MockFileSystemProvider implements FileSystemProvider {
+export class MockFileSystemOperations implements FileSystemOperations {
   private mockTempDir: string;
   private tempDirCounter = 0;
+  private existingFiles = new Set<string>();
   public rmSyncCalls: Array<{ path: string; options?: { recursive?: boolean; force?: boolean } }> =
     [];
 
@@ -22,9 +24,12 @@ export class MockFileSystemProvider implements FileSystemProvider {
     this.mockTempDir = mockTempDir;
   }
 
-  existsSync(_filePath: string): boolean {
-    // For testing, always return true to avoid filesystem checks
-    return true;
+  existsSync(filePath: string): boolean {
+    return this.existingFiles.has(filePath);
+  }
+
+  mkdirSync(_path: string, _options?: fs.MakeDirectoryOptions): void {
+    // No-op for testing
   }
 
   mkdtempSync(prefix: string): string {
@@ -42,11 +47,63 @@ export class MockFileSystemProvider implements FileSystemProvider {
     return this.mockTempDir;
   }
 
+  // Async methods - not used in current tests, but required by interface
+  async access(_path: string): Promise<void> {
+    // No-op for testing
+  }
+
+  async readFile(_path: string, _encoding: BufferEncoding): Promise<string> {
+    return '';
+  }
+
+  async writeFile(_path: string, _data: string, _encoding: BufferEncoding): Promise<void> {
+    // No-op for testing
+  }
+
+  async rename(_oldPath: string, _newPath: string): Promise<void> {
+    // No-op for testing
+  }
+
+  async unlink(_path: string): Promise<void> {
+    // No-op for testing
+  }
+
+  async mkdir(_path: string, _options?: fs.MakeDirectoryOptions): Promise<void> {
+    // No-op for testing
+  }
+
+  async stat(_path: string): Promise<fs.Stats> {
+    throw new Error('Not implemented in mock');
+  }
+
+  /**
+   * Set which files should be considered as existing
+   */
+  setExistingFiles(filePaths: string[]): void {
+    this.existingFiles.clear();
+    filePaths.forEach(path => this.existingFiles.add(path));
+  }
+
+  /**
+   * Add a file to the existing files set
+   */
+  addExistingFile(filePath: string): void {
+    this.existingFiles.add(filePath);
+  }
+
+  /**
+   * Clear all existing files
+   */
+  clearExistingFiles(): void {
+    this.existingFiles.clear();
+  }
+
   /**
    * Reset the counter and call tracking for predictable test behavior
    */
   reset(): void {
     this.tempDirCounter = 0;
     this.rmSyncCalls = [];
+    this.existingFiles.clear();
   }
 }

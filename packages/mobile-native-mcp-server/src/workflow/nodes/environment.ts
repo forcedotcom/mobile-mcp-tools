@@ -6,9 +6,9 @@
  */
 
 import { State } from '../metadata.js';
-import { BaseNode } from './abstractBaseNode.js';
+import { BaseNode } from '@salesforce/magen-mcp-workflow';
 
-export class EnvironmentValidationNode extends BaseNode {
+export class EnvironmentValidationNode extends BaseNode<State> {
   constructor() {
     super('validateEnvironment');
   }

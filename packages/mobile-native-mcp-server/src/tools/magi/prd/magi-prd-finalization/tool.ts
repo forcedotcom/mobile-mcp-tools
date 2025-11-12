@@ -6,13 +6,12 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../../logging/logger.js';
+import { Logger, AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
 import { PRD_FINALIZATION_TOOL, PRDFinalizationInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class MagiPRDFinalizationTool extends PRDAbstractWorkflowTool<typeof PRD_FINALIZATION_TOOL> {
+export class MagiPRDFinalizationTool extends AbstractWorkflowTool<typeof PRD_FINALIZATION_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, PRD_FINALIZATION_TOOL, 'PRDFinalizationTool', logger);
+    super(server, PRD_FINALIZATION_TOOL, 'magi-prd-orchestrator', 'PRDFinalizationTool', logger);
   }
 
   public handleRequest = async (input: PRDFinalizationInput) => {

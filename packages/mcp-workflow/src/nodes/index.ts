@@ -8,3 +8,15 @@
 export { BaseNode } from './abstractBaseNode.js';
 export { AbstractToolNode } from './abstractToolNode.js';
 export { type ToolExecutor, LangGraphToolExecutor } from './toolExecutor.js';
+export {
+  createGetUserInputNode,
+  type GetUserInputNodeOptions,
+  type GetInputServiceProvider,
+  type GetInputProperty,
+} from './getUserInputNode.js';
+export {
+  createUserInputExtractionNode,
+  type UserInputExtractionNodeOptions,
+  type InputExtractionServiceProvider,
+  type ExtractionResult,
+} from './userInputExtractionNode.js';

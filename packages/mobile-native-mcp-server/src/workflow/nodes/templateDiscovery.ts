@@ -5,14 +5,14 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '../../common/metadata.js';
+import { MCPToolInvocationData } from '@salesforce/magen-mcp-workflow';
 import { TEMPLATE_DISCOVERY_TOOL } from '../../tools/plan/sfmobile-native-template-discovery/metadata.js';
 import { State } from '../metadata.js';
-import { AbstractToolNode } from './abstractToolNode.js';
-import { ToolExecutor } from './toolExecutor.js';
-import { Logger } from '../../logging/logger.js';
+import { AbstractToolNode } from '@salesforce/magen-mcp-workflow';
+import { ToolExecutor } from '@salesforce/magen-mcp-workflow';
+import { Logger } from '@salesforce/magen-mcp-workflow';
 
-export class TemplateDiscoveryNode extends AbstractToolNode {
+export class TemplateDiscoveryNode extends AbstractToolNode<State> {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
     super('discoverTemplates', toolExecutor, logger);
   }

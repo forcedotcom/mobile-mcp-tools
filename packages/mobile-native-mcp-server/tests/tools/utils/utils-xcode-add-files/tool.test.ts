@@ -9,16 +9,16 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import path from 'path';
 import { UtilsXcodeAddFilesTool } from '../../../../src/tools/utils/utils-xcode-add-files/tool.js';
-import { MockFileSystemProvider } from './MockFileSystemProvider.js';
+import { MockFileSystemOperations } from '../../../utils/MockFileSystemProvider.js';
 
 describe('UtilsXcodeAddFilesTool', () => {
   let tool: UtilsXcodeAddFilesTool;
   let mockServer: McpServer;
-  let mockFileSystem: MockFileSystemProvider;
+  let mockFileSystem: MockFileSystemOperations;
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
-    mockFileSystem = new MockFileSystemProvider();
+    mockFileSystem = new MockFileSystemOperations();
     tool = new UtilsXcodeAddFilesTool(mockServer, undefined, mockFileSystem);
   });
 

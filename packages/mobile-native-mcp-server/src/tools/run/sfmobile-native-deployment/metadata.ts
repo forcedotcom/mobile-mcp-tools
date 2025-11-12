@@ -11,7 +11,7 @@ import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../common/metadata.js';
+} from '@salesforce/magen-mcp-workflow';
 
 /**
  * Deployment Tool Input Schema

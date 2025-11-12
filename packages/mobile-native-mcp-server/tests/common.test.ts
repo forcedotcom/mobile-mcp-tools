@@ -8,16 +8,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import path from 'path';
 import { MOBILE_SDK_TEMPLATES_PATH, TempDirectoryManager } from '../src/common.js';
-import { MockFileSystemProvider } from './utils/MockFileSystemProvider.js';
+import { MockFileSystemOperations } from './utils/MockFileSystemProvider.js';
+
+const mockTempDir = path.resolve('/mock/temp/dir');
 
 describe('Common Module', () => {
-  let mockFs: MockFileSystemProvider;
   let manager: TempDirectoryManager;
-  const mockTempDir = path.resolve('/mock/temp/dir');
+  let mockFs: MockFileSystemOperations;
 
   beforeEach(() => {
     // Create a fresh mock filesystem and manager for each test
-    mockFs = new MockFileSystemProvider(mockTempDir);
+    mockFs = new MockFileSystemOperations(mockTempDir);
     manager = new TempDirectoryManager(mockFs);
   });
 

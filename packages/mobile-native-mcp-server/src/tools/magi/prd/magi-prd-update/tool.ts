@@ -6,13 +6,12 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../../logging/logger.js';
+import { Logger, AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
 import { PRD_UPDATE_TOOL, PRDUpdateInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
-export class MagiPRDUpdateTool extends PRDAbstractWorkflowTool<typeof PRD_UPDATE_TOOL> {
+export class MagiPRDUpdateTool extends AbstractWorkflowTool<typeof PRD_UPDATE_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, PRD_UPDATE_TOOL, 'PRDUpdateTool', logger);
+    super(server, PRD_UPDATE_TOOL, 'magi-prd-orchestrator', 'PRDUpdateTool', logger);
   }
 
   public handleRequest = async (input: PRDUpdateInput) => {

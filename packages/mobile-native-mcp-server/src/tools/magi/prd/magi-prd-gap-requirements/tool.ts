@@ -6,16 +6,15 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../../logging/logger.js';
+import { Logger, AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
 import { GAP_REQUIREMENTS_TOOL, GapRequirementsInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
 /**
  * Tool for generating functional requirements based on identified gaps.
  */
-export class MagiGapRequirementsTool extends PRDAbstractWorkflowTool<typeof GAP_REQUIREMENTS_TOOL> {
+export class MagiGapRequirementsTool extends AbstractWorkflowTool<typeof GAP_REQUIREMENTS_TOOL> {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, GAP_REQUIREMENTS_TOOL, 'GapRequirementsTool', logger);
+    super(server, GAP_REQUIREMENTS_TOOL, 'magi-prd-orchestrator', 'GapRequirementsTool', logger);
   }
 
   public handleRequest = async (input: GapRequirementsInput) => {

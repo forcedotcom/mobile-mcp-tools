@@ -7,9 +7,9 @@
 
 import { PropertyMetadataCollection } from '../../src/common/propertyMetadata.js';
 import {
-  ExtractionResult,
-  InputExtractionServiceProvider,
-} from '../../src/workflow/services/inputExtractionService.js';
+  type ExtractionResult,
+  type InputExtractionServiceProvider,
+} from '@salesforce/magen-mcp-workflow';
 
 /**
  * Test implementation of IInputExtractionService that returns pre-configured results.

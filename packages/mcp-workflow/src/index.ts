@@ -78,7 +78,18 @@ export {
 } from './tools/utilities/index.js';
 
 // Base Node Classes
-export { BaseNode, AbstractToolNode } from './nodes/index.js';
+export {
+  BaseNode,
+  AbstractToolNode,
+  createGetUserInputNode,
+  createUserInputExtractionNode,
+  type GetUserInputNodeOptions,
+  type UserInputExtractionNodeOptions,
+  type GetInputServiceProvider,
+  type InputExtractionServiceProvider,
+  type GetInputProperty,
+  type ExtractionResult,
+} from './nodes/index.js';
 
 // Base Service Classes
 export { AbstractService } from './services/index.js';

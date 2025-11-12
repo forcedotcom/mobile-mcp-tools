@@ -10,7 +10,7 @@ import {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   WorkflowToolMetadata,
-} from '../../../../common/metadata.js';
+} from '@salesforce/magen-mcp-workflow';
 import { FEATURE_BRIEF_REVIEW_RESULT_SCHEMA } from '../shared/featureBriefSchemas.js';
 
 /**

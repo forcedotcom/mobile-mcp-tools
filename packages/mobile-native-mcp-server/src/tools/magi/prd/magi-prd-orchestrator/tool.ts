@@ -9,18 +9,18 @@ import z from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { BaseCheckpointSaver, Command, MemorySaver } from '@langchain/langgraph';
-import { getWorkflowStateStorePath } from '../../../../utils/wellKnownDirectory.js';
+import { WellKnownDirectoryManager } from '@salesforce/magen-mcp-workflow';
 import { PRD_ORCHESTRATOR_TOOL, PRDOrchestratorInput, PRDOrchestratorOutput } from './metadata.js';
-import { Logger, createWorkflowLogger } from '../../../../logging/logger.js';
-import { AbstractTool } from '../../../base/abstractTool.js';
+import { Logger, createWorkflowLogger } from '@salesforce/magen-mcp-workflow';
+import { AbstractTool } from '@salesforce/magen-mcp-workflow';
 import {
   MCPToolInvocationData,
   WORKFLOW_PROPERTY_NAMES,
   WorkflowStateData,
-} from '../../../../common/metadata.js';
+} from '@salesforce/magen-mcp-workflow';
 import { PRDState } from '../../../../workflow/magi/prd/metadata.js';
-import { JsonCheckpointSaver } from '../../../../workflow/jsonCheckpointer.js';
-import { WorkflowStatePersistence } from '../../../../workflow/workflowStatePersistence.js';
+import { JsonCheckpointSaver } from '@salesforce/magen-mcp-workflow';
+import { WorkflowStatePersistence } from '@salesforce/magen-mcp-workflow';
 import { prdGenerationWorkflow } from '../../../../workflow/magi/prd/graph.js';
 
 /**
@@ -211,7 +211,8 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
     }
 
     // Load checkpointer store data from .magen directory
-    const workflowStateStorePath = getWorkflowStateStorePath();
+    const wellKnownDirManager = new WellKnownDirectoryManager();
+    const workflowStateStorePath = wellKnownDirManager.getWorkflowStateStorePath();
     const checkpointer = new JsonCheckpointSaver();
     const statePersistence = new WorkflowStatePersistence(workflowStateStorePath);
 
@@ -238,7 +239,8 @@ export class PRDGenerationOrchestrator extends AbstractTool<typeof PRD_ORCHESTRA
     // our state to disk.
     if (checkpointer instanceof JsonCheckpointSaver) {
       const exportedState = await checkpointer.exportState();
-      const workflowStateStorePath = getWorkflowStateStorePath();
+      const wellKnownDirManager = new WellKnownDirectoryManager();
+      const workflowStateStorePath = wellKnownDirManager.getWorkflowStateStorePath();
       const statePersistence = new WorkflowStatePersistence(workflowStateStorePath);
       await statePersistence.writeState(exportedState);
       this.logger.info('Checkpointer state successfully persisted');

@@ -14,6 +14,7 @@
 
 import fs from 'fs';
 import fsPromises from 'fs/promises';
+import os from 'os';
 
 /**
  * Interface for filesystem operations - enables dependency injection for testing
@@ -38,6 +39,26 @@ export interface FileSystemOperations {
    * @param options Options for directory creation (e.g., recursive, mode)
    */
   mkdirSync(path: string, options?: fs.MakeDirectoryOptions): void;
+
+  /**
+   * Create a temporary directory with a given prefix (sync)
+   * @param prefix Prefix for the temp directory name
+   * @returns Full path to the created directory
+   */
+  mkdtempSync(prefix: string): string;
+
+  /**
+   * Remove a file or directory (sync)
+   * @param path Path to remove
+   * @param options Options for removal (recursive, force, etc.)
+   */
+  rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+
+  /**
+   * Get the OS temp directory path (sync)
+   * @returns Path to the OS temp directory
+   */
+  tmpdir(): string;
 
   // Asynchronous operations
   /**
@@ -104,6 +125,18 @@ export class NodeFileSystemOperations implements FileSystemOperations {
 
   mkdirSync(path: string, options?: fs.MakeDirectoryOptions): void {
     fs.mkdirSync(path, options);
+  }
+
+  mkdtempSync(prefix: string): string {
+    return fs.mkdtempSync(prefix);
+  }
+
+  rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void {
+    fs.rmSync(path, options);
+  }
+
+  tmpdir(): string {
+    return os.tmpdir();
   }
 
   // Asynchronous operations

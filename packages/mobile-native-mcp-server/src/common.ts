@@ -7,8 +7,8 @@
 
 import { resolve, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { FileSystemOperations, NodeFileSystemOperations } from '@salesforce/magen-mcp-workflow';
 import { PlatformEnum } from './common/schemas.js';
-import { FileSystemProvider, defaultFileSystemProvider } from './utils/FileSystemProvider.js';
 
 // Shared template source path for Salesforce Mobile SDK commands
 export const MOBILE_SDK_TEMPLATES_PATH = resolve(
@@ -23,10 +23,10 @@ export const MOBILE_SDK_TEMPLATES_PATH = resolve(
  */
 export class TempDirectoryManager {
   private tempWorkingDirectory: string | undefined;
-  private readonly fs: FileSystemProvider;
+  private readonly fs: FileSystemOperations;
 
-  constructor(fileSystemProvider: FileSystemProvider = defaultFileSystemProvider) {
-    this.fs = fileSystemProvider;
+  constructor(fileSystemOperations: FileSystemOperations = new NodeFileSystemOperations()) {
+    this.fs = fileSystemOperations;
   }
 
   /**

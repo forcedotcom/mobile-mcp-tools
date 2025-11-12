@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SFMobileNativeBuildTool } from '../../../../src/tools/plan/sfmobile-native-build/tool.js';
 import { TempDirectoryManager } from '../../../../src/common.js';
-import { MockFileSystemProvider } from '../../../utils/MockFileSystemProvider.js';
+import { MockFileSystemOperations } from '../../../utils/MockFileSystemProvider.js';
 
 describe('SFMobileNativeBuildTool', () => {
   let tool: SFMobileNativeBuildTool;
@@ -18,7 +18,7 @@ describe('SFMobileNativeBuildTool', () => {
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
-    const mockFs = new MockFileSystemProvider('/mock/temp');
+    const mockFs = new MockFileSystemOperations('/mock/temp');
     mockTempDirManager = new TempDirectoryManager(mockFs);
     tool = new SFMobileNativeBuildTool(mockServer, mockTempDirManager);
   });

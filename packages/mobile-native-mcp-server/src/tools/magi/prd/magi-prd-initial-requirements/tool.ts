@@ -6,18 +6,23 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../../logging/logger.js';
+import { Logger, AbstractWorkflowTool } from '@salesforce/magen-mcp-workflow';
 import { INITIAL_REQUIREMENTS_TOOL, InitialRequirementsInput } from './metadata.js';
-import { PRDAbstractWorkflowTool } from '../../../base/prdAbstractWorkflowTool.js';
 
 /**
  * Tool for generating initial functional requirements from a feature brief.
  */
-export class MagiInitialRequirementsTool extends PRDAbstractWorkflowTool<
+export class MagiInitialRequirementsTool extends AbstractWorkflowTool<
   typeof INITIAL_REQUIREMENTS_TOOL
 > {
   constructor(server: McpServer, logger?: Logger) {
-    super(server, INITIAL_REQUIREMENTS_TOOL, 'InitialRequirementsTool', logger);
+    super(
+      server,
+      INITIAL_REQUIREMENTS_TOOL,
+      'magi-prd-orchestrator',
+      'InitialRequirementsTool',
+      logger
+    );
   }
 
   public handleRequest = async (input: InitialRequirementsInput) => {

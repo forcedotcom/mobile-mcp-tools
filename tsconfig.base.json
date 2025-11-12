@@ -12,7 +12,10 @@
     "lib": ["ESNext", "DOM"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@salesforce/magen-mcp-workflow": ["./packages/mcp-workflow/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }

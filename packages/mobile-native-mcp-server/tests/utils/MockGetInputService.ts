@@ -6,9 +6,9 @@
  */
 
 import {
-  GetInputProperty,
-  GetInputServiceProvider,
-} from '../../src/workflow/services/getInputService.js';
+  type GetInputProperty,
+  type GetInputServiceProvider,
+} from '@salesforce/magen-mcp-workflow';
 
 /**
  * Test implementation of GetInputServiceProvider that returns pre-configured user input.
