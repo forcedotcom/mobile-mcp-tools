@@ -29,7 +29,6 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:magi": "npm test -- tests/integration/prd-workflow-integration.test.ts",
     "lint": "eslint --max-warnings 0 --config ../../eslint.config.mjs \"{src,tests}/**/*.ts\"",
     "format": "prettier --write \"{src,tests}/**/*.ts\"",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
