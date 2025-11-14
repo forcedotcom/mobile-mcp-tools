@@ -11,6 +11,7 @@ import z from 'zod';
 import { GetUserInputNode } from '../../../src/nodes/getUserInput/node.js';
 import { GetInputServiceProvider } from '../../../src/services/getInputService.js';
 import { PropertyMetadataCollection } from '../../../src/common/propertyMetadata.js';
+import { PropertyFulfilledResult } from '../../../src/common/types.js';
 
 // Test state type
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -46,11 +47,26 @@ describe('GetUserInputNode', () => {
 
   describe('Constructor', () => {
     it('should initialize with correct name', () => {
-      const isPropertyFulfilled = (state: TestStateType, propertyName: string) => {
-        return !!(state as Record<string, unknown>)[propertyName];
+      const isPropertyFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
+        const isFulfilled = !!(state as Record<string, unknown>)[propertyName];
+        if (isFulfilled) {
+          return { isFulfilled: true };
+        }
+        return {
+          isFulfilled: false,
+          reason: `Property '${propertyName}' is missing from the workflow state.`,
+        };
       };
 
-      const node = new GetUserInputNode(mockService, requiredProperties, isPropertyFulfilled);
+      const node = new GetUserInputNode(
+        mockService,
+        requiredProperties,
+        isPropertyFulfilled,
+        'userInput'
+      );
 
       expect(node.name).toBe('getUserInput');
     });
@@ -63,11 +79,26 @@ describe('GetUserInputNode', () => {
         getInput: () => userResponse,
       };
 
-      const isPropertyFulfilled = (state: TestStateType, propertyName: string) => {
-        return !!(state as Record<string, unknown>)[propertyName];
+      const isPropertyFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
+        const isFulfilled = !!(state as Record<string, unknown>)[propertyName];
+        if (isFulfilled) {
+          return { isFulfilled: true };
+        }
+        return {
+          isFulfilled: false,
+          reason: `Property '${propertyName}' is missing from the workflow state.`,
+        };
       };
 
-      const node = new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
+      const node = new GetUserInputNode(
+        service,
+        requiredProperties,
+        isPropertyFulfilled,
+        'userInput'
+      );
 
       const state: TestStateType = {
         userInput: undefined,
@@ -89,11 +120,26 @@ describe('GetUserInputNode', () => {
         },
       };
 
-      const isPropertyFulfilled = (state: TestStateType, propertyName: string) => {
-        return !!(state as Record<string, unknown>)[propertyName];
+      const isPropertyFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
+        const isFulfilled = !!(state as Record<string, unknown>)[propertyName];
+        if (isFulfilled) {
+          return { isFulfilled: true };
+        }
+        return {
+          isFulfilled: false,
+          reason: `Property '${propertyName}' is missing from the workflow state.`,
+        };
       };
 
-      const node = new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
+      const node = new GetUserInputNode(
+        service,
+        requiredProperties,
+        isPropertyFulfilled,
+        'userInput'
+      );
 
       const state: TestStateType = {
         userInput: undefined,
@@ -117,11 +163,26 @@ describe('GetUserInputNode', () => {
         },
       };
 
-      const isPropertyFulfilled = (state: TestStateType, propertyName: string) => {
-        return !!(state as Record<string, unknown>)[propertyName];
+      const isPropertyFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
+        const isFulfilled = !!(state as Record<string, unknown>)[propertyName];
+        if (isFulfilled) {
+          return { isFulfilled: true };
+        }
+        return {
+          isFulfilled: false,
+          reason: `Property '${propertyName}' is missing from the workflow state.`,
+        };
       };
 
-      const node = new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
+      const node = new GetUserInputNode(
+        service,
+        requiredProperties,
+        isPropertyFulfilled,
+        'userInput'
+      );
 
       const state: TestStateType = {
         userInput: undefined,
@@ -145,11 +206,26 @@ describe('GetUserInputNode', () => {
         },
       };
 
-      const isPropertyFulfilled = (state: TestStateType, propertyName: string) => {
-        return !!(state as Record<string, unknown>)[propertyName];
+      const isPropertyFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
+        const isFulfilled = !!(state as Record<string, unknown>)[propertyName];
+        if (isFulfilled) {
+          return { isFulfilled: true };
+        }
+        return {
+          isFulfilled: false,
+          reason: `Property '${propertyName}' is missing from the workflow state.`,
+        };
       };
 
-      const node = new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
+      const node = new GetUserInputNode(
+        service,
+        requiredProperties,
+        isPropertyFulfilled,
+        'userInput'
+      );
 
       const state: TestStateType = {
         userInput: undefined,
@@ -179,11 +255,26 @@ describe('GetUserInputNode', () => {
         },
       };
 
-      const isPropertyFulfilled = (state: TestStateType, propertyName: string) => {
-        return !!(state as Record<string, unknown>)[propertyName];
+      const isPropertyFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
+        const isFulfilled = !!(state as Record<string, unknown>)[propertyName];
+        if (isFulfilled) {
+          return { isFulfilled: true };
+        }
+        return {
+          isFulfilled: false,
+          reason: `Property '${propertyName}' is missing from the workflow state.`,
+        };
       };
 
-      const node = new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
+      const node = new GetUserInputNode(
+        service,
+        requiredProperties,
+        isPropertyFulfilled,
+        'userInput'
+      );
 
       const state: TestStateType = {
         userInput: undefined,

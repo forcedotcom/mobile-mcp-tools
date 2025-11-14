@@ -13,6 +13,7 @@ import { GetInputServiceProvider } from '../../../src/services/getInputService.j
 import { MockToolExecutor } from '../../utils/MockToolExecutor.js';
 import { MockLogger } from '../../utils/MockLogger.js';
 import { PropertyMetadataCollection } from '../../../src/common/propertyMetadata.js';
+import { PropertyFulfilledResult } from '../../../src/common/types.js';
 
 // Test state type
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -51,6 +52,7 @@ describe('createGetUserInputNode', () => {
       const node = createGetUserInputNode({
         requiredProperties,
         toolId: 'test-get-input',
+        userInputProperty: 'userInput',
       });
 
       expect(node).toBeDefined();
@@ -66,6 +68,7 @@ describe('createGetUserInputNode', () => {
         requiredProperties,
         toolId: 'test-get-input',
         getInputService: mockService,
+        userInputProperty: 'userInput',
       });
 
       expect(node).toBeDefined();
@@ -77,6 +80,7 @@ describe('createGetUserInputNode', () => {
         requiredProperties,
         toolId: 'test-get-input',
         toolExecutor: mockToolExecutor,
+        userInputProperty: 'userInput',
       });
 
       expect(node).toBeDefined();
@@ -87,23 +91,40 @@ describe('createGetUserInputNode', () => {
         requiredProperties,
         toolId: 'test-get-input',
         logger: mockLogger,
+        userInputProperty: 'userInput',
       });
 
       expect(node).toBeDefined();
     });
 
     it('should use custom isPropertyFulfilled function', () => {
-      const customIsFulfilled = (state: TestStateType, propertyName: string) => {
+      const customIsFulfilled = (
+        state: TestStateType,
+        propertyName: string
+      ): PropertyFulfilledResult => {
         if (propertyName === 'platform') {
-          return state.platform === 'iOS';
+          const isFulfilled = state.platform === 'iOS';
+          return isFulfilled
+            ? { isFulfilled: true }
+            : {
+                isFulfilled: false,
+                reason: `Property '${propertyName}' is not 'iOS'.`,
+              };
         }
-        return !!state.projectName;
+        const isFulfilled = !!state.projectName;
+        return isFulfilled
+          ? { isFulfilled: true }
+          : {
+              isFulfilled: false,
+              reason: `Property '${propertyName}' is missing from the workflow state.`,
+            };
       };
 
       const node = createGetUserInputNode({
         requiredProperties,
         toolId: 'test-get-input',
         isPropertyFulfilled: customIsFulfilled,
+        userInputProperty: 'userInput',
       });
 
       expect(node).toBeDefined();
@@ -120,6 +141,7 @@ describe('createGetUserInputNode', () => {
         toolId,
         toolExecutor: mockToolExecutor,
         logger: mockLogger,
+        userInputProperty: 'userInput',
       });
 
       const state: TestStateType = {
@@ -147,6 +169,7 @@ describe('createGetUserInputNode', () => {
         toolId,
         toolExecutor: mockToolExecutor,
         logger: mockLogger,
+        userInputProperty: 'userInput',
       });
 
       const state: TestStateType = {
@@ -172,6 +195,7 @@ describe('createGetUserInputNode', () => {
         toolId,
         toolExecutor: mockToolExecutor,
         logger: mockLogger,
+        userInputProperty: 'userInput',
       });
 
       const state: TestStateType = {
@@ -195,6 +219,7 @@ describe('createGetUserInputNode', () => {
         toolId,
         toolExecutor: mockToolExecutor,
         logger: mockLogger,
+        userInputProperty: 'userInput',
       });
 
       const state: TestStateType = {
@@ -218,6 +243,7 @@ describe('createGetUserInputNode', () => {
         requiredProperties,
         toolId: 'test-get-input',
         getInputService: mockService,
+        userInputProperty: 'userInput',
       });
 
       const state: TestStateType = {
@@ -243,6 +269,7 @@ describe('createGetUserInputNode', () => {
         requiredProperties,
         toolId: 'test-get-input',
         getInputService: mockService,
+        userInputProperty: 'userInput',
       });
 
       const state: TestStateType = {
