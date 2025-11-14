@@ -241,8 +241,29 @@ export class ReleaseOrchestrator {
 
       if (!dryRun) {
         this.reporter.step('Updating GitHub release');
-        await this.githubUtils.updateRelease(this.context, release.id, { prerelease: false });
-        this.reporter.success('Release updated - prerelease flag removed');
+
+        // Update release description for published package
+        const publishedReleaseNotes = `✅ **Published to NPM**
+
+${packageInfo.packageFullName} v${packageVersion} has been successfully published to NPM.
+
+## Installation
+
+\`\`\`bash
+npm install ${packageInfo.packageFullName}@${packageVersion}
+\`\`\`
+
+## NPM Package
+[View on NPM](https://www.npmjs.com/package/${packageInfo.packageFullName}/v/${packageVersion})
+
+## What's Changed
+See the automatically generated release notes below for details on changes in this version.`;
+
+        await this.githubUtils.updateRelease(this.context, release.id, {
+          prerelease: false,
+          body: publishedReleaseNotes,
+        });
+        this.reporter.success('Release updated - marked as published with updated description');
 
         this.reporter.success('Package published successfully!');
         this.reporter.info('📋 Publication Details:');

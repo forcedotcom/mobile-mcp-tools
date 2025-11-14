@@ -1,0 +1,15 @@
+name: Magen MCP Workflow Engine - Create Release
+run-name: Create release for Magen MCP Workflow Engine
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    uses: ./.github/workflows/base-create-release.yml
+    with:
+      package_display_name: 'Magen MCP Workflow Engine'
+      package_path: 'packages/mcp-workflow'
+    permissions:
+      contents: write
+      packages: write
