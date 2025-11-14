@@ -23,7 +23,7 @@ describe('MobileNativeOrchestrator', () => {
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
     mockLogger = new MockLogger();
-    orchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, true);
+    orchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, 'test');
     annotations = {
       readOnlyHint: false,
       destructiveHint: false,
@@ -496,7 +496,7 @@ describe('MobileNativeOrchestrator', () => {
       process.env.PROJECT_PATH = tempDir;
 
       // Create orchestrator without memory mode (file mode)
-      fileOrchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, false);
+      fileOrchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, 'production');
     });
 
     afterEach(async () => {
@@ -558,7 +558,7 @@ describe('MobileNativeOrchestrator', () => {
         await fileOrchestrator.handleRequest(initialInput);
 
         // Create new orchestrator instance (simulating restart)
-        const newOrchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, false);
+        const newOrchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, 'production');
 
         // Resume with structured mock data that matches workflow expectations
         const resumeInput = {
