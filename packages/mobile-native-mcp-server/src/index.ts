@@ -19,26 +19,12 @@ import { SFMobileNativeProjectGenerationTool } from './tools/plan/sfmobile-nativ
 import { MobileNativeOrchestrator } from './tools/workflow/sfmobile-native-project-manager/tool.js';
 import { SFMobileNativeCompletionTool } from './tools/workflow/sfmobile-native-completion/tool.js';
 import { SFMobileNativeFailureTool } from './tools/workflow/sfmobile-native-failure/tool.js';
-import { PRDGenerationOrchestrator } from './tools/magi/prd/magi-prd-orchestrator/tool.js';
-import { MagiFeatureBriefGenerationTool } from './tools/magi/prd/magi-prd-feature-brief/tool.js';
-import { MagiFeatureBriefUpdateTool } from './tools/magi/prd/magi-prd-feature-brief-update/tool.js';
-import { MagiFeatureBriefReviewTool } from './tools/magi/prd/magi-prd-feature-brief-review/tool.js';
-import { MagiInitialRequirementsTool } from './tools/magi/prd/magi-prd-initial-requirements/tool.js';
-import { MagiGapRequirementsTool } from './tools/magi/prd/magi-prd-gap-requirements/tool.js';
-import { MagiRequirementsReviewTool } from './tools/magi/prd/magi-prd-requirements-review/tool.js';
-import { MagiRequirementsUpdateTool } from './tools/magi/prd/magi-prd-requirements-update/tool.js';
-import { MagiGapAnalysisTool } from './tools/magi/prd/magi-prd-gap-analysis/tool.js';
-import { MagiPRDGenerationTool } from './tools/magi/prd/magi-prd-generation/tool.js';
-import { MagiPRDReviewTool } from './tools/magi/prd/magi-prd-review/tool.js';
-import { MagiPRDUpdateTool } from './tools/magi/prd/magi-prd-update/tool.js';
-import { MagiPRDFinalizationTool } from './tools/magi/prd/magi-prd-finalization/tool.js';
-import { PRDFailureTool } from './tools/magi/prd/magi-prd-failure/tool.js';
+import { registerMagiMcpTools } from '@salesforce/workflow-magi';
 
 import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { MobileAppProjectPrompt } from './prompts/index.js';
-import { MagiFeatureBriefFinalizationTool } from './tools/magi/prd/magi-prd-feature-brief-finalization/tool.js';
 import { createSFMobileNativeGetInputTool } from './tools/utils/sfmobile-native-get-input/factory.js';
 import { createSFMobileNativeInputExtractionTool } from './tools/utils/sfmobile-native-input-extraction/factory.js';
 
@@ -64,7 +50,6 @@ const orchestratorAnnotations: ToolAnnotations = {
 
 // Initialize tools
 const orchestrator = new MobileNativeOrchestrator(server);
-const prdOrchestrator = new PRDGenerationOrchestrator(server);
 const getInputTool = createSFMobileNativeGetInputTool(server);
 const inputExtractionTool = createSFMobileNativeInputExtractionTool(server);
 const templateDiscoveryTool = new SFMobileNativeTemplateDiscoveryTool(server);
@@ -75,27 +60,15 @@ const deploymentTool = new SFMobileNativeDeploymentTool(server);
 const xcodeAddFilesTool = new UtilsXcodeAddFilesTool(server);
 const completionTool = new SFMobileNativeCompletionTool(server);
 const failureTool = new SFMobileNativeFailureTool(server);
-const featureBriefTool = new MagiFeatureBriefGenerationTool(server);
-const featureBriefUpdateTool = new MagiFeatureBriefUpdateTool(server);
-const featureBriefReviewTool = new MagiFeatureBriefReviewTool(server);
-const featureBriefFinalizationTool = new MagiFeatureBriefFinalizationTool(server);
-const initialRequirementsTool = new MagiInitialRequirementsTool(server);
-const gapRequirementsTool = new MagiGapRequirementsTool(server);
-const requirementsReviewTool = new MagiRequirementsReviewTool(server);
-const requirementsUpdateTool = new MagiRequirementsUpdateTool(server);
-const gapAnalysisTool = new MagiGapAnalysisTool(server);
-const prdGenerationTool = new MagiPRDGenerationTool(server);
-const prdReviewTool = new MagiPRDReviewTool(server);
-const prdUpdateTool = new MagiPRDUpdateTool(server);
-const prdFinalizationTool = new MagiPRDFinalizationTool(server);
-const prdFailureTool = new PRDFailureTool(server);
+
+// Register Magi tools
+registerMagiMcpTools(server, readOnlyAnnotations);
 
 // Initialize prompts
 const mobileAppProjectPrompt = new MobileAppProjectPrompt(server);
 
 // Register orchestrator with specific annotations
 orchestrator.register(orchestratorAnnotations);
-prdOrchestrator.register(orchestratorAnnotations);
 
 // Register all other tools with read-only annotations
 getInputTool.register(readOnlyAnnotations);
@@ -108,20 +81,6 @@ deploymentTool.register(readOnlyAnnotations);
 xcodeAddFilesTool.register(readOnlyAnnotations);
 completionTool.register(readOnlyAnnotations);
 failureTool.register(readOnlyAnnotations);
-featureBriefTool.register(readOnlyAnnotations);
-featureBriefUpdateTool.register(readOnlyAnnotations);
-featureBriefReviewTool.register(readOnlyAnnotations);
-featureBriefFinalizationTool.register(readOnlyAnnotations);
-initialRequirementsTool.register(readOnlyAnnotations);
-gapRequirementsTool.register(readOnlyAnnotations);
-requirementsReviewTool.register(readOnlyAnnotations);
-requirementsUpdateTool.register(readOnlyAnnotations);
-gapAnalysisTool.register(readOnlyAnnotations);
-prdGenerationTool.register(readOnlyAnnotations);
-prdReviewTool.register(readOnlyAnnotations);
-prdUpdateTool.register(readOnlyAnnotations);
-prdFinalizationTool.register(readOnlyAnnotations);
-prdFailureTool.register(readOnlyAnnotations);
 
 // Register prompts
 mobileAppProjectPrompt.register();

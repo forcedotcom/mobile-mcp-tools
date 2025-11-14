@@ -1,14 +1,12 @@
 {
-  "name": "@salesforce/mobile-native-mcp-server",
-  "version": "0.0.1-alpha.2",
+  "name": "@salesforce/workflow-magi",
+  "version": "0.1.0",
   "type": "module",
   "files": [
     "dist",
-    "resources",
-    "templates",
     "README.md"
   ],
-  "description": "Salesforce Mobile Native MCP Server",
+  "description": "Magi PRD Workflow - Tools and workflow definitions for Spec Driven Development",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,24 +16,16 @@
       "import": "./dist/index.js"
     }
   },
-  "bin": {
-    "magen-server": "dist/index.js"
-  },
   "scripts": {
-    "build": "npm run ensure-templates && tsc && npm run copy-templates",
-    "ensure-templates": "git submodule update --init --recursive",
-    "copy-templates": "cp -r templates dist/",
-    "start": "node dist/index.js",
+    "build": "tsc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "lint": "eslint --max-warnings 0 --config ../../eslint.config.mjs \"{src,tests}/**/*.ts\"",
-    "format": "prettier --write \"{src,tests}/**/*.ts\"",
-    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+    "format": "prettier --write \"{src,tests}/**/*.ts\""
   },
   "dependencies": {
     "@salesforce/magen-mcp-workflow": "*",
-    "@salesforce/workflow-magi": "*",
     "@langchain/langgraph": "^0.4.9",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "dedent": "^1.7.0",
@@ -44,10 +34,8 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
-    "@modelcontextprotocol/inspector": "^0.17.2",
     "@types/node": "^24.10.0",
     "@vitest/coverage-v8": "^3.2.4",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^3.2.3"
   }
