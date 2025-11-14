@@ -6,9 +6,7 @@
  */
 
 import { State } from '../metadata.js';
-import { BaseNode } from '@salesforce/magen-mcp-workflow';
-import { ToolExecutor } from '@salesforce/magen-mcp-workflow';
-import { Logger } from '@salesforce/magen-mcp-workflow';
+import { BaseNode, Logger, ToolExecutor } from '@salesforce/magen-mcp-workflow';
 import {
   BuildRecoveryService,
   BuildRecoveryServiceProvider,

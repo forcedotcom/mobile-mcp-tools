@@ -9,6 +9,11 @@ import {
   GitHubServiceProvider,
   ActionsServiceProvider,
   PackageServiceProvider,
+  FileSystemService,
+  ProcessService,
+  GitHubService,
+  ActionsService,
+  PackageService,
 } from './services/index.js';
 
 interface CreateReleaseOptions {
@@ -272,14 +277,6 @@ export class ReleaseOrchestrator {
  * Factory function to create ReleaseOrchestrator with default service implementations
  * Provides a convenient way to instantiate with concrete services
  */
-import {
-  FileSystemService,
-  ProcessService,
-  GitHubService,
-  ActionsService,
-  PackageService,
-} from './services/index.js';
-
 export function createReleaseOrchestrator(context: GitHubContext): ReleaseOrchestrator {
   const githubToken = process.env.GITHUB_TOKEN;
   if (!githubToken) {

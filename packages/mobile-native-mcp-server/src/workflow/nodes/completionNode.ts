@@ -5,12 +5,14 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '@salesforce/magen-mcp-workflow';
+import {
+  AbstractToolNode,
+  Logger,
+  MCPToolInvocationData,
+  ToolExecutor,
+} from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
-import { AbstractToolNode } from '@salesforce/magen-mcp-workflow';
 import { FINISH_TOOL } from '../../tools/workflow/sfmobile-native-completion/metadata.js';
-import { ToolExecutor } from '@salesforce/magen-mcp-workflow';
-import { Logger } from '@salesforce/magen-mcp-workflow';
 
 export class CompletionNode extends AbstractToolNode<State> {
   constructor(toolExecutor?: ToolExecutor, logger?: Logger) {

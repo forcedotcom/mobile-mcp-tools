@@ -8,13 +8,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { join } from 'path';
 import { Evaluator } from '../../src/evaluator/evaluator.js';
-import { LwcGenerationEvaluator } from '../../src/evaluator/lwcGenerationEvaluator.js';
+import {
+  LwcGenerationEvaluator,
+  EVAL_DATA_FOLDER,
+} from '../../src/evaluator/lwcGenerationEvaluator.js';
 import { LwcReviewRefactorEvaluator } from '../../src/evaluator/lwcReviewRefactorEvaluator.js';
 import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { Score, CorrectnessScore } from '../../src/schema/schema.js';
 import { loadEvaluationUnit, EvaluationUnit } from '../../src/utils/lwcUtils.js';
-import { EVAL_DATA_FOLDER } from '../../src/evaluator/lwcGenerationEvaluator.js';
 
 // Mock the dependencies
 vi.mock('../../src/evaluator/lwcGenerationEvaluator.js');

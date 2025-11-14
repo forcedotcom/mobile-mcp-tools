@@ -6,9 +6,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LlmClient } from '../../src/llmclient/llmClient.js';
+import { LlmClient, StreamType } from '../../src/llmclient/llmClient.js';
 import { ModelConfig } from '../../src/llmclient/modelConfig.js';
-import { StreamType } from '../../src/llmclient/llmClient.js';
 import { mockConfig } from '../testUtils.js';
 
 // Mock TextDecoderStream

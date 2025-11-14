@@ -10,8 +10,7 @@ import { BaseNode } from '../abstractBaseNode.js';
 import { LangGraphToolExecutor } from '../toolExecutor.js';
 import { createComponentLogger } from '../../logging/logger.js';
 import { GetInputService, GetInputServiceProvider } from '../../services/getInputService.js';
-import { GetUserInputNodeOptions } from './node.js';
-import { GetUserInputNode } from './node.js';
+import { GetUserInputNodeOptions, GetUserInputNode } from './node.js';
 import { PropertyFulfilledResult } from '../../common/types.js';
 
 /**

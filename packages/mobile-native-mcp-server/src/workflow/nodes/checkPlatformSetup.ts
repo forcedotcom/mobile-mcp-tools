@@ -6,9 +6,8 @@
  */
 
 import { State } from '../metadata.js';
-import { BaseNode } from '@salesforce/magen-mcp-workflow';
+import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
 import z from 'zod';
-import { createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
 import { execSync } from 'child_process';
 
 const REQUIREMENT_RESULT_SCHEMA = z.object({
