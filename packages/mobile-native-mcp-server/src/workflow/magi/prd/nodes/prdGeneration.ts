@@ -5,12 +5,14 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { MCPToolInvocationData } from '@salesforce/magen-mcp-workflow';
+import {
+  AbstractToolNode,
+  Logger,
+  MCPToolInvocationData,
+  ToolExecutor,
+} from '@salesforce/magen-mcp-workflow';
 import { PRDState } from '../metadata.js';
-import { AbstractToolNode } from '@salesforce/magen-mcp-workflow';
 import { PRD_GENERATION_TOOL } from '../../../../tools/magi/prd/magi-prd-generation/metadata.js';
-import { ToolExecutor } from '@salesforce/magen-mcp-workflow';
-import { Logger } from '@salesforce/magen-mcp-workflow';
 import { MAGI_ARTIFACTS, getMagiPath, writeMagiArtifact } from '../../../../utils/magiDirectory.js';
 import z from 'zod';
 

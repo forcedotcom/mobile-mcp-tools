@@ -13,6 +13,7 @@ import {
   type Logger,
 } from '@salesforce/magen-mcp-workflow';
 import { prdGenerationWorkflow } from '../../../../workflow/magi/prd/graph.js';
+import { PRD_ORCHESTRATOR_TOOL } from './metadata.js';
 
 /**
  * PRD Generation Orchestrator Tool
@@ -23,7 +24,7 @@ import { prdGenerationWorkflow } from '../../../../workflow/magi/prd/graph.js';
 export class PRDGenerationOrchestrator extends OrchestratorTool {
   constructor(server: McpServer, logger?: Logger, useMemoryForTesting = false) {
     const config: OrchestratorConfig = {
-      toolId: 'magi-prd-orchestrator',
+      toolId: PRD_ORCHESTRATOR_TOOL.toolId,
       title: 'Magi - PRD Orchestrator',
       description:
         'Orchestrates the end-to-end workflow for generating Product Requirements Documents.',

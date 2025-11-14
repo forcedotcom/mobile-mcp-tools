@@ -5,19 +5,29 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import z from 'zod';
 import { ToolExecutor } from '../nodes/toolExecutor.js';
 import { AbstractService } from './abstractService.js';
 import {
   createGetInputMetadata,
-  GET_INPUT_PROPERTY_SCHEMA,
   GET_INPUT_WORKFLOW_INPUT_SCHEMA,
   GET_INPUT_WORKFLOW_RESULT_SCHEMA,
 } from '../tools/utilities/index.js';
 import { Logger } from '../logging/logger.js';
 import { MCPToolInvocationData } from '../common/metadata.js';
 
-export type GetInputProperty = z.infer<typeof GET_INPUT_PROPERTY_SCHEMA>;
+export interface GetInputProperty {
+  /** Property name to be collected */
+  readonly propertyName: string;
+
+  /** Human-readable name for display */
+  readonly friendlyName: string;
+
+  /** Detailed description for LLM-based extraction */
+  readonly description: string;
+
+  /** Optional reason why the property is unfulfilled */
+  readonly reason?: string;
+}
 
 /**
  * Provider interface for user input service.

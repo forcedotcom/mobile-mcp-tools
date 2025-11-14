@@ -50,7 +50,9 @@ export interface UserInputExtractionNodeOptions<TState extends StateType<StateDe
   getUserInput?: (state: TState) => unknown;
 }
 
-export class UserInputExtractionNode<TState> extends BaseNode<TState> {
+export class UserInputExtractionNode<
+  TState extends StateType<StateDefinition>,
+> extends BaseNode<TState> {
   constructor(
     private readonly extractionService: InputExtractionServiceProvider,
     private readonly requiredProperties: PropertyMetadataCollection,

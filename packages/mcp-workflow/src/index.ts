@@ -44,6 +44,7 @@ export {
   type PropertyMetadataCollection,
   type InferPropertyTypes,
 } from './common/propertyMetadata.js';
+export { type PropertyFulfilledResult, type IsPropertyFulfilled } from './common/types.js';
 
 // Tool Execution Infrastructure
 export { type ToolExecutor, LangGraphToolExecutor } from './nodes/toolExecutor.js';

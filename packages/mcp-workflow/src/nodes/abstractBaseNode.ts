@@ -28,7 +28,7 @@ import { StateType, StateDefinition } from '@langchain/langgraph';
  * }
  * ```
  */
-export abstract class BaseNode<TState = StateType<StateDefinition>> {
+export abstract class BaseNode<TState extends StateType<StateDefinition>> {
   public readonly name: string;
 
   constructor(name: string) {

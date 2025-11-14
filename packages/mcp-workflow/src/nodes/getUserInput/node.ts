@@ -8,6 +8,7 @@
 import { StateType, StateDefinition } from '@langchain/langgraph';
 import { BaseNode } from '../abstractBaseNode.js';
 import { PropertyMetadataCollection } from '../../common/propertyMetadata.js';
+import { IsPropertyFulfilled } from '../../common/types.js';
 import { ToolExecutor } from '../toolExecutor.js';
 import { Logger } from '../../logging/logger.js';
 import { GetInputProperty, GetInputServiceProvider } from '../../services/getInputService.js';
@@ -47,20 +48,34 @@ export interface GetUserInputNodeOptions<TState extends StateType<StateDefinitio
    * Function to check if a property is fulfilled in the state
    * Default: checks if property exists and is truthy
    */
-  isPropertyFulfilled?: (state: TState, propertyName: string) => boolean;
+  isPropertyFulfilled?: IsPropertyFulfilled<TState>;
 
   /**
-   * Function to get the userInput field from state
-   * Default: expects state.userInput
+   * Property name in state that contains user input to extract from.
+   * Must be a valid property of TState.
+   * Defaults to 'userInput' if not specified.
+   *
+   * @example
+   *
+   * // State has a 'userInput' property - use default
+   * createUserInputExtractionNode({ ... });
+   *
+   * // State has a 'currentUtterance' property - specify it
+   * createUserInputExtractionNode({
+   *   userInputProperty: 'currentUtterance',
+   *   ...
+   * });
+   *
    */
-  getUserInput?: (state: TState) => unknown;
+  userInputProperty: keyof TState;
 }
 
-export class GetUserInputNode<TState> extends BaseNode<TState> {
+export class GetUserInputNode<TState extends StateType<StateDefinition>> extends BaseNode<TState> {
   constructor(
     private readonly getInputService: GetInputServiceProvider,
     private readonly requiredProperties: PropertyMetadataCollection,
-    private readonly isPropertyFulfilled: (state: TState, propertyName: string) => boolean
+    private readonly isPropertyFulfilled: IsPropertyFulfilled<TState>,
+    private readonly userInputProperty: keyof TState
   ) {
     super('getUserInput');
   }
@@ -68,17 +83,22 @@ export class GetUserInputNode<TState> extends BaseNode<TState> {
   execute = (state: TState): Partial<TState> => {
     const unfulfilledProperties = this.getUnfulfilledProperties(state);
     const userResponse = this.getInputService.getInput(unfulfilledProperties);
-    return { userInput: userResponse } as unknown as Partial<TState>;
+    return { [this.userInputProperty]: userResponse } as unknown as Partial<TState>;
   };
 
   private getUnfulfilledProperties(state: TState): GetInputProperty[] {
     const propertyArray: GetInputProperty[] = [];
-    for (const [propertyName, metadata] of Object.entries(this.requiredProperties)) {
-      if (!this.isPropertyFulfilled(state, propertyName)) {
+    for (const [propertyName, metadata] of Object.entries(
+      this.requiredProperties as PropertyMetadataCollection
+    )) {
+      const fulfillmentResult = this.isPropertyFulfilled(state, propertyName);
+
+      if (!fulfillmentResult.isFulfilled) {
         propertyArray.push({
           propertyName,
           friendlyName: metadata.friendlyName,
           description: metadata.description,
+          reason: fulfillmentResult.reason,
         });
       }
     }

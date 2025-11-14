@@ -12,6 +12,7 @@ import { createComponentLogger } from '../../logging/logger.js';
 import { GetInputService, GetInputServiceProvider } from '../../services/getInputService.js';
 import { GetUserInputNodeOptions } from './node.js';
 import { GetUserInputNode } from './node.js';
+import { PropertyFulfilledResult } from '../../common/types.js';
 
 /**
  * Factory function to create a Get User Input Node
@@ -51,7 +52,7 @@ import { GetUserInputNode } from './node.js';
  * });
  * ```
  */
-export function createGetUserInputNode<TState = StateType<StateDefinition>>(
+export function createGetUserInputNode<TState extends StateType<StateDefinition>>(
   options: GetUserInputNodeOptions<TState>
 ): BaseNode<TState> {
   const {
@@ -60,14 +61,22 @@ export function createGetUserInputNode<TState = StateType<StateDefinition>>(
     getInputService,
     toolExecutor = new LangGraphToolExecutor(),
     logger = createComponentLogger('GetUserInputNode'),
-    isPropertyFulfilled = (state: TState, propertyName: string) => {
-      return !!(state as Record<string, unknown>)[propertyName];
+    isPropertyFulfilled = (state: TState, propertyName: string): PropertyFulfilledResult => {
+      const isFulfilled = !!state[propertyName];
+      if (isFulfilled) {
+        return { isFulfilled: true };
+      }
+      return {
+        isFulfilled: false,
+        reason: `Property '${propertyName}' is missing from the workflow state.`,
+      };
     },
+    userInputProperty,
   } = options;
 
   // Create default service implementation if not provided
   const service: GetInputServiceProvider =
     getInputService ?? new GetInputService(toolId, toolExecutor, logger);
 
-  return new GetUserInputNode(service, requiredProperties, isPropertyFulfilled);
+  return new GetUserInputNode(service, requiredProperties, isPropertyFulfilled, userInputProperty);
 }

@@ -19,7 +19,7 @@ import { executeToolWithLogging } from '../utils/toolExecutionUtils.js';
  * @template TState - The state type for the workflow (defaults to StateType<StateDefinition>)
  */
 export abstract class AbstractToolNode<
-  TState = StateType<StateDefinition>,
+  TState extends StateType<StateDefinition>,
 > extends BaseNode<TState> {
   protected readonly logger: Logger;
   protected readonly componentName: string;

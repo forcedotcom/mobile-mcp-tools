@@ -63,7 +63,7 @@ export function createUserInputExtractionNode<TState extends StateType<StateDefi
     toolExecutor = new LangGraphToolExecutor(),
     logger = createComponentLogger('UserInputExtractionNode'),
     getUserInput = (state: TState) => {
-      return (state as Record<string, unknown>).userInput;
+      return state.userInput;
     },
   } = options;
 
