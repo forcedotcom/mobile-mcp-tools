@@ -1,1 +1,0 @@
-Implement a feature in a Salesforce mobile app using the `BarcodeScanner` API. The feature should be targeted for Android devices and should allow the user to scan a barcode and preview the barcode data within the scanner UI. Configure the scanner to use the front-facing camera and provide a success message to the user when a barcode is scanned successfully.

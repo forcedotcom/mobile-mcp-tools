@@ -1,1 +1,0 @@
-Develop a Lightning Web Component (LWC) for an Android smartphone that calls the BarcodeScanner API directly to scan QR codes. The component should prompt the user to scan a QR code, display the scanned value or error in the view. Ensure the component checks if the BarcodeScanner is available on the device before attempting to scan.

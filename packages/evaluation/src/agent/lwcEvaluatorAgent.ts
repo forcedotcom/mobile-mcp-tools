@@ -8,9 +8,15 @@
 import { z } from 'zod/v4';
 import { LlmClient } from '../llmclient/llmClient.js';
 import { formatComponent4LLM } from '../utils/lwcUtils.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
 import { getJsonResponse } from '../utils/responseUtils.js';
-import { Score, ScoreVerdict, ScoreVerdictEnum, ScoreCategorySchema } from '../schema/schema.js';
+import {
+  LwcCodeType,
+  Score,
+  ScoreVerdict,
+  ScoreVerdictEnum,
+  ScoreCategorySchema,
+  ScoreCategory,
+} from '../schema/schema.js';
 
 const withMetadata = <T extends z.ZodTypeAny>(schema: T, metadata: Record<string, unknown>) => {
   const extended = schema as T & { _metadata: Record<string, unknown> };
@@ -79,14 +85,14 @@ export type EvaluationResponse = z.infer<typeof EvaluationResponseSchema>;
 
 const jsonSchema = z.toJSONSchema(EvaluationResponseSchema);
 
-const CATEGORY_TO_PERCENTAGE = {
+const CATEGORY_TO_PERCENTAGE: Record<ScoreCategory, number> = {
   Excellent: 1.0, // 100%
   Good: 0.8, // 80%
   Satisfactory: 0.6, // 60%
   Limited: 0.4, // 40%
   Poor: 0.2, // 20%
   Missing: 0.0, // 0%
-} as const;
+};
 
 // Top-level category weights (must sum to 1.0)
 const CATEGORY_WEIGHTS = {
@@ -157,7 +163,8 @@ export function calculateOverallScore(evaluation: EvaluationResponse): number {
   return Math.round(totalScore);
 }
 
-function determineVerdict(score: number): Score {
+// Exported for testing
+export function determineVerdict(score: number): Score {
   let verdict: ScoreVerdict;
   if (score >= 85) verdict = 'Pass GA Criteria';
   else if (score >= 70) verdict = 'Pass Beta Criteria';

@@ -3,7 +3,6 @@
 An open source monorepo for extensible Salesforce Mobile Model Context Protocol (MCP) servers and tools, maintained by the Mobile Platform Experience team.
 
 [![Codecov](https://codecov.io/gh/forcedotcom/mobile-mcp-tools/branch/main/graph/badge.svg?flag=monorepo)](https://codecov.io/gh/forcedotcom/mobile-mcp-tools?flag=monorepo)
-[![mobile-web coverage](https://codecov.io/gh/forcedotcom/mobile-mcp-tools/branch/main/graph/badge.svg?flag=mobile-web)](https://codecov.io/gh/forcedotcom/mobile-mcp-tools?flag=mobile-web)
 [![Build Status](https://github.com/forcedotcom/mobile-mcp-tools/workflows/run-tests/badge.svg)](https://github.com/forcedotcom/mobile-mcp-tools/actions)
 
 ## Overview
@@ -24,16 +23,6 @@ For detailed project vision and design principles, see [Project Overview](./docs
 ## Packages
 
 This monorepo contains the following packages:
-
-### [@salesforce/mobile-web-mcp-server](./packages/mobile-web/)
-
-Our first MCP server providing comprehensive tooling support for Salesforce Mobile and Hybrid Web development scenarios. Includes:
-
-- **Native Capabilities**: Tools for integrating device capabilities (barcode scanning, location services, contacts, etc.)
-- **Mobile Offline**: Tools for implementing offline-first design patterns and compatibility analysis
-- **Future Tool Suites**: Extensible architecture for additional mobile web development scenarios
-
-**Installation**: `npx -y @salesforce/mobile-web-mcp-server`
 
 ### [@salesforce/mobile-native-mcp-server](./packages/mobile-native-mcp-server/)
 
@@ -73,7 +62,6 @@ The monorepo is designed to support additional MCP servers in the future, as we 
 For comprehensive project documentation, including setup guides, API references, and implementation details:
 
 - **[Project Overview](./docs/1_project_overview.md)**: Project goals, architecture, and design principles
-- **[Salesforce Mobile Web MCP Server](./docs/2_salesforce-mobile-web-mcp-server.md)**: Server design and technical implementation
 - **[Mobile Native Capabilities](./docs/3_mobile_native_capabilities.md)**: Tool suite for device capabilities
 - **[Mobile Offline](./docs/4_mobile_offline.md)**: Tool suite for offline compatibility
 
@@ -114,16 +102,15 @@ npm run prettier:fix     # Fix code formatting
 ```
 mobile-mcp-tools/
 ├── packages/
-│   ├── mobile-web/                     # @salesforce/mobile-web-mcp-server
 │   ├── mobile-native-mcp-server/       # @salesforce/mobile-native-mcp-server
 │   ├── evaluation/                     # Testing and evaluation utilities
 │   ├── github-actions-scripts/         # CI/CD automation (deprecated)
 │   └── project-maintenance-utilities/  # Project automation utilities
 ├── docs/                               # Project documentation
 │   ├── 1_project_overview.md
-│   ├── 2_salesforce-mobile-web-mcp-server.md
-│   ├── 3_mobile_native_capabilities.md
-│   └── 4_mobile_offline.md
+│   ├── 5_mobile_native_app_generation.md
+│   ├── 7_utils_xcode_add_files_design.md
+│   └── 8_prd_wordflow_architecture.md
 ├── .github/workflows/           # GitHub Actions workflows
 ├── nx.json                      # Nx workspace configuration
 ├── package.json                 # Monorepo dependencies and scripts

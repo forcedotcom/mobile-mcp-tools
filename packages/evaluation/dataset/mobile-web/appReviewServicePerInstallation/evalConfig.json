@@ -1,9 +1,0 @@
-{
-  "mcpTools": [
-    {
-      "toolId": "sfmobile-web-app-review",
-      "params": {}
-    }
-  ],
-  "type": "lwc-generation"
-}

@@ -8,8 +8,7 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { LwcRefactorCorrectnessEvaluatorAgent } from '../../src/agent/lwcRefactorCorrectnessEvaluatorAgent.js';
-import { LwcCodeType, CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server';
-import { CorrectnessScore } from '../../src/schema/schema.js';
+import { CorrectnessScore, LwcCodeType, CodeAnalysisIssuesType } from '../../src/schema/schema.js';
 import * as responseUtils from '../../src/utils/responseUtils.js';
 import { LWCFileType } from '../../src/utils/lwcUtils.js';
 import { mockConfig } from '../testUtils.js';

@@ -40,7 +40,8 @@ describe('evaluator tests', () => {
     });
   });
 
-  describe('evaluate tests', () => {
+  // Skipped because mobile-web package has been removed
+  describe.skip('evaluate tests', () => {
     let evaluator: LwcGenerationEvaluator;
 
     beforeEach(async () => {
