@@ -62,7 +62,7 @@ const completionTool = new SFMobileNativeCompletionTool(server);
 const failureTool = new SFMobileNativeFailureTool(server);
 
 // Register Magi tools
-registerMagiMcpTools(server, readOnlyAnnotations);
+registerMagiMcpTools(server);
 
 // Initialize prompts
 const mobileAppProjectPrompt = new MobileAppProjectPrompt(server);
