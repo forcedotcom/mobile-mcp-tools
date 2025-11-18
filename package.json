@@ -9,7 +9,7 @@
   "scripts": {
     "prettier:format": "prettier --write \"**/src/**/*.{ts,js,md,json}\" \"**/tests/**/*.{ts,js,md,json}\" \"**/package.json\"",
     "prettier:verify": "prettier --list-different \"**/src/**/*.{ts, js, md, json}\"  \"**/tests/**/*.{ts, js, md, json}\"",
-    "lint": "eslint --max-warnings 0 --config eslint.config.mjs \"**/*.{ts,tsx,js,jsx}\"",
+    "lint": "eslint --max-warnings 0 --config eslint.config.mjs \"**/*.{ts,tsx,js,jsx}\" && prettier --check \"**/*.{json,md}\"",
     "test": "nx run-many --target=test",
     "test:coverage": "nx run-many --target=test:coverage",
     "test:watch": "nx run-many --target=test:watch",
