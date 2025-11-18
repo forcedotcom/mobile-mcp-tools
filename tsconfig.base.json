@@ -14,7 +14,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@salesforce/magen-mcp-workflow": ["./packages/mcp-workflow/src/index.ts"]
+      "@salesforce/magen-mcp-workflow": ["./packages/mcp-workflow"]
     }
   },
   "exclude": ["node_modules", "tmp"]

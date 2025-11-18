@@ -4,7 +4,6 @@
   "type": "module",
   "files": [
     "dist",
-    "resources",
     "templates",
     "README.md"
   ],
@@ -22,19 +21,19 @@
     "magen-server": "dist/index.js"
   },
   "scripts": {
-    "build": "npm run ensure-templates && tsc && npm run copy-templates",
-    "ensure-templates": "git submodule update --init --recursive",
+    "build": "npm run ensure-templates && tsc --build",
+    "ensure-templates": "git submodule update --init --recursive ",
     "copy-templates": "cp -r templates dist/",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "lint": "eslint --max-warnings 0 --config ../../eslint.config.mjs \"{src,tests}/**/*.ts\"",
-    "format": "prettier --write \"{src,tests}/**/*.ts\"",
+    "format": "prettier --write \"{src,tests}/**/*.ts\" \"*.json\"",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
   },
   "dependencies": {
-    "@salesforce/magen-mcp-workflow": "*",
+    "@salesforce/magen-mcp-workflow": "^0.1.0",
     "@langchain/langgraph": "^0.4.9",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "dedent": "^1.7.0",

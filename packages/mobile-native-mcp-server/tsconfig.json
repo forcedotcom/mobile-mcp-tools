@@ -2,8 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": "../..",
+    "composite": true,
     "resolveJsonModule": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/scripts", "templates"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/scripts", "templates"],
+  "references": [{ "path": "../mcp-workflow" }]
 }
