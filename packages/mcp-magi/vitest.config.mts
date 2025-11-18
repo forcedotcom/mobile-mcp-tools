@@ -5,4 +5,3 @@ import baseConfig from '../../vitest.config.base.mts';
 export default mergeConfig(baseConfig, {
   plugins: [tsconfigPaths()],
 });
-

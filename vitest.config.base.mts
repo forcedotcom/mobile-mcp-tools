@@ -1,6 +1,19 @@
 import { defineConfig } from 'vitest/config';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
+  // Resolve workspace package aliases to their compiled JavaScript files
+  // This is needed when tests import workspace packages that are defined in tsconfig.base.json
+  resolve: {
+    alias: {
+      '@salesforce/workflow-magi': resolve(__dirname, 'packages/workflow-magi/dist/index.js'),
+      '@salesforce/magen-mcp-workflow': resolve(__dirname, 'packages/mcp-workflow/dist/index.js'),
+    },
+  },
   // Specifies the test environment to use
   // 'node' is used for running tests in a Node.js environment
   test: {
@@ -58,7 +71,7 @@ export default defineConfig({
     // Timeout in milliseconds for each test. Tests that take longer than this will fail.
     testTimeout: 5000,
 
-    // Timeout in milliseconds for each hook(beforeEach, beforeAll, etc). 
+    // Timeout in milliseconds for each hook(beforeEach, beforeAll, etc).
     // Hooks that take longer than this will fail.
     hookTimeout: 20000,
 
