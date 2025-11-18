@@ -4,9 +4,7 @@
     "rootDir": "./src",
     "outDir": "./dist",
     "resolveJsonModule": true,
-    "paths": {
-      "@salesforce/magen-mcp-workflow": ["../mcp-workflow/dist/index.d.ts"]
-    }
+    "baseUrl": "../.."
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "src/scripts", "templates"]
