@@ -11,6 +11,21 @@ import { PLATFORM_ENUM, PROJECT_NAME_FIELD } from '../common/schemas.js';
 import { PropertyMetadata, PropertyMetadataCollection } from '@salesforce/magen-mcp-workflow';
 
 /**
+ * Metadata for a custom template property
+ * This matches the structure returned from template discovery
+ */
+export interface TemplatePropertyMetadata {
+  value?: string;
+  required: boolean;
+  description: string;
+}
+
+/**
+ * Collection of template property metadata
+ */
+export type TemplatePropertiesMetadata = Record<string, TemplatePropertyMetadata>;
+
+/**
  * Definition of all user input properties required by the mobile native workflow.
  * Each property includes metadata for extraction, validation, and user prompting.
  *
@@ -54,6 +69,7 @@ export type WorkflowUserInputProperties = typeof WORKFLOW_USER_INPUT_PROPERTIES;
 export const MobileNativeWorkflowState = Annotation.Root({
   // Core workflow data
   userInput: Annotation<unknown>,
+  templatePropertiesUserInput: Annotation<unknown>,
   platform: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.platform.zodType>>,
 
   // Plan phase state
@@ -61,6 +77,8 @@ export const MobileNativeWorkflowState = Annotation.Root({
   validPlatformSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
   selectedTemplate: Annotation<string>,
+  templateProperties: Annotation<Record<string, string>>,
+  templatePropertiesMetadata: Annotation<TemplatePropertiesMetadata>,
   projectName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.projectName.zodType>>,
   projectPath: Annotation<string>,
   packageName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.packageName.zodType>>,

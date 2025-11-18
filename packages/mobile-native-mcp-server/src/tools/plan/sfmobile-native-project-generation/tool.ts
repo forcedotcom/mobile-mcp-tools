@@ -70,13 +70,22 @@ export class SFMobileNativeProjectGenerationTool extends AbstractNativeProjectMa
   ): string {
     const platformLower = input.platform.toLowerCase();
 
+    // Build template properties flags if they exist
+    let templatePropertiesFlags = '';
+    if (input.templateProperties && Object.keys(input.templateProperties).length > 0) {
+      const propertyFlags = Object.entries(input.templateProperties)
+        .map(([key, value]) => `--template-property-${key}="${value}"`)
+        .join(' ');
+      templatePropertiesFlags = ` ${propertyFlags}`;
+    }
+
     return dedent`
       ## Step ${stepNumber}: Execute Platform-Specific CLI Command
 
       Generate the project using the Salesforce Mobile SDK CLI:
 
       \`\`\`bash
-      sf mobilesdk ${platformLower} createwithtemplate --templatesource="${MOBILE_SDK_TEMPLATES_PATH}" --template="${input.selectedTemplate}" --appname="${input.projectName}" --packagename="${input.packageName}" --organization="${input.organization}"
+      sf mobilesdk ${platformLower} createwithtemplate --templatesource="${MOBILE_SDK_TEMPLATES_PATH}" --template="${input.selectedTemplate}" --appname="${input.projectName}" --packagename="${input.packageName}" --organization="${input.organization}"${templatePropertiesFlags}
       \`\`\`
 
       **Expected Outcome**: A new ${input.platform} project directory named "${input.projectName}" will be created with the template structure. The output of the command will indicate the location of the bootconfig.plist file, take note of this for oauth configuration!

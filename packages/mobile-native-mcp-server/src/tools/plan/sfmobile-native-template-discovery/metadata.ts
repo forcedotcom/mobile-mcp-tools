@@ -26,6 +26,16 @@ export type TemplateDiscoveryWorkflowInput = z.infer<
 
 export const TEMPLATE_DISCOVERY_WORKFLOW_RESULT_SCHEMA = z.object({
   selectedTemplate: z.string().describe('The template name selected from template discovery'),
+  templatePropertiesMetadata: z
+    .record(
+      z.object({
+        value: z.string().optional(),
+        required: z.boolean(),
+        description: z.string(),
+      })
+    )
+    .optional()
+    .describe('Metadata for custom template properties that need to be collected from the user'),
 });
 
 /**

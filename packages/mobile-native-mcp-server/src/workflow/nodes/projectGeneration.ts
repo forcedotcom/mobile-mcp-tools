@@ -35,6 +35,7 @@ export class ProjectGenerationNode extends AbstractToolNode<State> {
         connectedAppClientId: state.connectedAppClientId,
         connectedAppCallbackUri: state.connectedAppCallbackUri,
         loginHost: state.loginHost,
+        templateProperties: state.templateProperties,
       },
     };
 

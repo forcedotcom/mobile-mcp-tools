@@ -20,6 +20,9 @@ import { FailureNode } from './nodes/failureNode.js';
 import { CheckEnvironmentValidatedRouter } from './nodes/checkEnvironmentValidated.js';
 import { PlatformCheckNode } from './nodes/checkPlatformSetup.js';
 import { CheckSetupValidatedRouter } from './nodes/checkSetupValidatedRouter.js';
+import { TemplatePropertiesExtractionNode } from './nodes/templatePropertiesExtraction.js';
+import { TemplatePropertiesUserInputNode } from './nodes/templatePropertiesUserInput.js';
+import { CheckTemplatePropertiesFulfilledRouter } from './nodes/checkTemplatePropertiesFulfilledRouter.js';
 import {
   createGetUserInputNode,
   createUserInputExtractionNode,
@@ -40,6 +43,8 @@ const userInputNode = createGetUserInputNode<State>({
 const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
 const templateDiscoveryNode = new TemplateDiscoveryNode();
+const templatePropertiesExtractionNode = new TemplatePropertiesExtractionNode();
+const templatePropertiesUserInputNode = new TemplatePropertiesUserInputNode();
 const projectGenerationNode = new ProjectGenerationNode();
 const buildValidationNode = new BuildValidationNode();
 const buildRecoveryNode = new BuildRecoveryNode();
@@ -65,6 +70,11 @@ const checkBuildSuccessfulRouter = new CheckBuildSuccessfulRouter(
   failureNode.name
 );
 
+const checkTemplatePropertiesFulfilledRouter = new CheckTemplatePropertiesFulfilledRouter(
+  projectGenerationNode.name,
+  templatePropertiesUserInputNode.name
+);
+
 /**
  * The main workflow graph for mobile native app development
  * Follows the Plan → Design/Iterate → Run three-phase architecture
@@ -77,6 +87,8 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addNode(userInputNode.name, userInputNode.execute)
   .addNode(platformCheckNode.name, platformCheckNode.execute)
   .addNode(templateDiscoveryNode.name, templateDiscoveryNode.execute)
+  .addNode(templatePropertiesExtractionNode.name, templatePropertiesExtractionNode.execute)
+  .addNode(templatePropertiesUserInputNode.name, templatePropertiesUserInputNode.execute)
   .addNode(projectGenerationNode.name, projectGenerationNode.execute)
   .addNode(buildValidationNode.name, buildValidationNode.execute)
   .addNode(buildRecoveryNode.name, buildRecoveryNode.execute)
@@ -90,7 +102,14 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addConditionalEdges(initialUserInputExtractionNode.name, checkPropertiesFulFilledRouter.execute)
   .addEdge(userInputNode.name, initialUserInputExtractionNode.name)
   .addConditionalEdges(platformCheckNode.name, checkSetupValidatedRouter.execute)
-  .addEdge(templateDiscoveryNode.name, projectGenerationNode.name)
+  .addEdge(templateDiscoveryNode.name, templatePropertiesExtractionNode.name)
+  // Template properties gathering loop (similar to initial user input loop)
+  .addConditionalEdges(
+    templatePropertiesExtractionNode.name,
+    checkTemplatePropertiesFulfilledRouter.execute
+  )
+  .addEdge(templatePropertiesUserInputNode.name, templatePropertiesExtractionNode.name)
+  // Continue to project generation
   .addEdge(projectGenerationNode.name, buildValidationNode.name)
   // Build validation with recovery loop (similar to user input loop)
   .addConditionalEdges(buildValidationNode.name, checkBuildSuccessfulRouter.execute)

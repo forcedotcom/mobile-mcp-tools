@@ -30,6 +30,10 @@ export const PROJECT_GENERATION_WORKFLOW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT
     .string()
     .optional()
     .describe('Optional Salesforce login host URL (e.g., https://test.salesforce.com for sandbox)'),
+  templateProperties: z
+    .record(z.string())
+    .optional()
+    .describe('Custom template-specific properties required by the selected template'),
 });
 
 export type ProjectGenerationWorkflowInput = z.infer<

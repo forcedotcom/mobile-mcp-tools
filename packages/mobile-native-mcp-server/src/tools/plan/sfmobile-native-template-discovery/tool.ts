@@ -123,11 +123,46 @@ export class SFMobileNativeTemplateDiscoveryTool extends AbstractNativeProjectMa
       sf mobilesdk ${platformLower} describetemplate --templatesource=${MOBILE_SDK_TEMPLATES_PATH} --template=<TEMPLATE_PATH> --doc --json
       \`\`\`
 
-       Choose the template that best matches:
+      Choose the template that best matches:
       - **Platform compatibility**: ${input.platform}
       - **Feature requirements**: General mobile app needs
       - **Use case alignment**: Record management, data display, CRUD operations
       - **Complexity level**: Appropriate for the user's requirements
+
+      ## Step ${stepNumber + 1}: Extract Template Properties
+
+      After selecting the best template, examine the template JSON output for custom template properties.
+
+      Look for \`properties.templatePrerequisites.properties.templateProperties\` in the JSON output.
+      These are custom properties that must be provided when creating a project from this template.
+
+      If the template has custom properties:
+      1. Extract each property name and its metadata (required, description)
+      2. Return the selectedTemplate name AND the templatePropertiesMetadata in this format:
+
+      \`\`\`json
+      {
+        "selectedTemplate": "<TEMPLATE_NAME>",
+        "templatePropertiesMetadata": {
+          "<propertyName>": {
+            "value": "",
+            "required": true,
+            "description": "<property description from template>"
+          }
+        }
+      }
+      \`\`\`
+
+      If the template has NO custom properties, simply return:
+
+      \`\`\`json
+      {
+        "selectedTemplate": "<TEMPLATE_NAME>"
+      }
+      \`\`\`
+
+      NOTE: Template properties are different from standard properties like appname, packagename, and organization.
+      They are template-specific values like developerName, organizationId, apiURL, etc.
     `;
   }
 }
