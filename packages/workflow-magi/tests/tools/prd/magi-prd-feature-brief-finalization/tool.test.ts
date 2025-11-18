@@ -65,7 +65,8 @@ describe('MagiFeatureBriefFinalizationTool', () => {
   describe('Result Schema Validation', () => {
     it('should validate result with finalizedFeatureBriefContent', () => {
       const validResult = {
-        finalizedFeatureBriefContent: '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
+        finalizedFeatureBriefContent:
+          '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
@@ -165,4 +166,3 @@ describe('MagiFeatureBriefFinalizationTool', () => {
     });
   });
 });
-

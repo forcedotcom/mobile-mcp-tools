@@ -65,7 +65,8 @@ describe('MagiRequirementsFinalizationTool', () => {
   describe('Result Schema Validation', () => {
     it('should validate result with finalizedRequirementsContent', () => {
       const validResult = {
-        finalizedRequirementsContent: '# Requirements\n\n## Status\n**Status**: approved\n\nContent',
+        finalizedRequirementsContent:
+          '# Requirements\n\n## Status\n**Status**: approved\n\nContent',
       };
       const result = tool.toolMetadata.resultSchema.safeParse(validResult);
       expect(result.success).toBe(true);
@@ -165,4 +166,3 @@ describe('MagiRequirementsFinalizationTool', () => {
     });
   });
 });
-

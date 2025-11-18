@@ -55,7 +55,8 @@ describe('PRDFeatureBriefFinalizationNode', () => {
       );
 
       mockToolExecutor.setResult(FEATURE_BRIEF_FINALIZATION_TOOL.toolId, {
-        finalizedFeatureBriefContent: '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
+        finalizedFeatureBriefContent:
+          '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
       });
 
       node.execute(inputState);
@@ -76,7 +77,8 @@ describe('PRDFeatureBriefFinalizationNode', () => {
       vi.mocked(magiDirectory.writeMagiArtifact).mockReturnValue(featureBriefPath);
 
       mockToolExecutor.setResult(FEATURE_BRIEF_FINALIZATION_TOOL.toolId, {
-        finalizedFeatureBriefContent: '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
+        finalizedFeatureBriefContent:
+          '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
       });
 
       node.execute(inputState);
@@ -126,7 +128,8 @@ describe('PRDFeatureBriefFinalizationNode', () => {
       );
 
       mockToolExecutor.setResult(FEATURE_BRIEF_FINALIZATION_TOOL.toolId, {
-        finalizedFeatureBriefContent: '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
+        finalizedFeatureBriefContent:
+          '# Feature Brief\n\n## Status\n**Status**: approved\n\nContent',
       });
 
       const result = node.execute(inputState);
@@ -136,4 +139,3 @@ describe('PRDFeatureBriefFinalizationNode', () => {
     });
   });
 });
-

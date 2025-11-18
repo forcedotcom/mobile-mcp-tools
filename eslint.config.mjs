@@ -55,6 +55,8 @@ export default tseslint.config(
       'packages/evaluation/{src,tests}/**/*.ts',
       'packages/mobile-native-mcp-server/{src,tests}/**/*.ts',
       'packages/mcp-workflow/{src,tests}/**/*.ts',
+      'packages/mcp-magi/{src,tests}/**/*.ts',
+      'packages/workflow-magi/{src,tests}/**/*.ts',
       '{src,tests}/**/*.ts', // For when running from package directories
     ],
     plugins: {
