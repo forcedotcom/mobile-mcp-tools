@@ -44,4 +44,3 @@ describe('mcp-magi server', () => {
     expect(serverModule.default).toBeInstanceOf(McpServer);
   });
 });
-
