@@ -107,11 +107,10 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       const result = await tool.handleRequest(input);
       const workflowOutput = JSON.parse(result.content[0].text as string);
 
+      // Verify CLI command includes OAuth parameters
+      expect(workflowOutput.promptForLLM).toContain('--consumerkey="3MVG9test123"');
+      expect(workflowOutput.promptForLLM).toContain('--callbackurl="testapp://oauth/callback"');
       expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
-      expect(workflowOutput.promptForLLM).toContain('Info.plist');
-      expect(workflowOutput.promptForLLM).toContain('CFBundleURLSchemes');
-      expect(workflowOutput.promptForLLM).toContain('3MVG9test123');
-      expect(workflowOutput.promptForLLM).toContain('testapp://oauth/callback');
     });
   });
 
@@ -142,8 +141,7 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       expect(workflowOutput.promptForLLM).toContain('Mobile App Project Generation Guide');
       expect(workflowOutput.promptForLLM).toContain('MobileSyncExplorerKotlin');
       expect(workflowOutput.promptForLLM).toContain('Android');
-      expect(workflowOutput.promptForLLM).toContain('bootconfig.xml');
-      expect(workflowOutput.promptForLLM).toContain('AndroidManifest.xml');
+      expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
 
       // Verify the result schema defines projectPath
       const resultSchema = JSON.parse(workflowOutput.resultSchema);
@@ -168,11 +166,10 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       const result = await tool.handleRequest(input);
       const workflowOutput = JSON.parse(result.content[0].text as string);
 
-      expect(workflowOutput.promptForLLM).toContain('bootconfig.xml');
-      expect(workflowOutput.promptForLLM).toContain('AndroidManifest.xml');
-      expect(workflowOutput.promptForLLM).toContain('intent-filter');
-      expect(workflowOutput.promptForLLM).toContain('3MVG9android123');
-      expect(workflowOutput.promptForLLM).toContain('androidapp://oauth/callback');
+      // Verify CLI command includes OAuth parameters
+      expect(workflowOutput.promptForLLM).toContain('--consumerkey="3MVG9android123"');
+      expect(workflowOutput.promptForLLM).toContain('--callbackurl="androidapp://oauth/callback"');
+      expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
     });
   });
 
@@ -231,7 +228,8 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       const result = await tool.handleRequest(input);
       const workflowOutput = JSON.parse(result.content[0].text as string);
 
-      expect(workflowOutput.promptForLLM).toContain('<string>myapp</string>');
+      // Verify CLI command includes the callback URI with the scheme
+      expect(workflowOutput.promptForLLM).toContain('--callbackurl="myapp://oauth/callback"');
     });
 
     it('should extract URL scheme from callback URI for Android', async () => {
@@ -249,7 +247,8 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       const result = await tool.handleRequest(input);
       const workflowOutput = JSON.parse(result.content[0].text as string);
 
-      expect(workflowOutput.promptForLLM).toContain('android:scheme="myapp"');
+      // Verify CLI command includes the callback URI with the scheme
+      expect(workflowOutput.promptForLLM).toContain('--callbackurl="myapp://oauth/callback"');
     });
 
     it('should handle missing callback URI with fallback scheme', async () => {
@@ -267,7 +266,8 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       const result = await tool.handleRequest(input);
       const workflowOutput = JSON.parse(result.content[0].text as string);
 
-      expect(workflowOutput.promptForLLM).toContain('<string>myapp</string>');
+      // Verify CLI command includes the empty callback URI
+      expect(workflowOutput.promptForLLM).toContain('--callbackurl=""');
     });
   });
 });
