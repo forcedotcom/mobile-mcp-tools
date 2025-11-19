@@ -36,7 +36,7 @@
   "dependencies": {
     "@salesforce/magen-mcp-workflow": "*",
     "@salesforce/workflow-magi": "*",
-    "@langchain/langgraph": "^0.4.9",
+    "@langchain/langgraph": "^1.0.2",
     "@modelcontextprotocol/sdk": "^1.21.1",
     "dedent": "^1.7.0",
     "pino": "^9.9.5",
