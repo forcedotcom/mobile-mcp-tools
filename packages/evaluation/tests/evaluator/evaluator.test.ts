@@ -313,4 +313,29 @@ describe('Evaluator', () => {
       );
     });
   });
+
+  describe('destroy', () => {
+    beforeEach(() => {
+      evaluator = new Evaluator(
+        mockGenerationEvaluator,
+        mockReviewRefactorEvaluator,
+        mockMcpClient
+      );
+    });
+
+    it('should call destroy on all dependencies', async () => {
+      await evaluator.destroy();
+
+      expect(mockGenerationEvaluator.destroy).toHaveBeenCalledTimes(1);
+      expect(mockReviewRefactorEvaluator.destroy).toHaveBeenCalledTimes(1);
+      expect(mockMcpClient.disconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle errors in destroy gracefully', async () => {
+      const destroyError = new Error('Cleanup failed');
+      (mockGenerationEvaluator.destroy as Mock).mockRejectedValue(destroyError);
+
+      await expect(evaluator.destroy()).rejects.toThrow('Cleanup failed');
+    });
+  });
 });

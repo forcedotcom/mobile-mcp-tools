@@ -59,7 +59,7 @@ describe('InputExtractionService', () => {
         platform: 'iOS',
         projectName: 'MyApp',
       };
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: extractedProps,
       });
 
@@ -71,7 +71,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should log debug message at start', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
       });
 
@@ -89,7 +89,7 @@ describe('InputExtractionService', () => {
       const extractedProps = {
         platform: 'Android',
       };
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: extractedProps,
       });
 
@@ -107,7 +107,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should call tool executor with correct metadata', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
         },
@@ -118,7 +118,7 @@ describe('InputExtractionService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      expect(call.llmMetadata.name).toBe('Input Extraction');
+      expect(call.llmMetadata.name).toBe(toolId);
       expect(call.input).toHaveProperty('userUtterance');
       expect(call.input).toHaveProperty('propertiesToExtract');
       expect(call.input).toHaveProperty('resultSchema');
@@ -126,7 +126,7 @@ describe('InputExtractionService', () => {
 
     it('should include userUtterance in tool call', () => {
       const userInput = 'Create an Android app';
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
       });
 
@@ -138,7 +138,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should prepare properties for extraction', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
       });
 
@@ -156,7 +156,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should include resultSchema in tool call', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
       });
 
@@ -171,7 +171,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should handle empty properties collection', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
       });
 
@@ -181,7 +181,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should validate and filter null/undefined values', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
           projectName: null,
@@ -195,7 +195,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should skip unknown properties', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
           unknownProperty: 'should be skipped',
@@ -209,7 +209,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should validate property values against zodType', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS', // Valid
           projectName: 'MyApp', // Valid
@@ -223,7 +223,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should filter out invalid property values', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'InvalidPlatform', // Invalid - not iOS or Android
           projectName: 'ValidProject', // Valid
@@ -239,7 +239,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should log validation failures', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'InvalidPlatform',
         },
@@ -256,7 +256,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should log successful validations', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
         },
@@ -273,7 +273,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should log info when some properties fail validation', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'InvalidPlatform',
           projectName: 'ValidProject',
@@ -293,7 +293,7 @@ describe('InputExtractionService', () => {
 
     it('should handle different userInput types', () => {
       const stringInput = 'iOS app';
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
         },
@@ -304,7 +304,7 @@ describe('InputExtractionService', () => {
 
       // Test with object input
       const objectInput = { message: 'Create iOS app' };
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
         },
@@ -323,7 +323,7 @@ describe('InputExtractionService', () => {
         },
       };
 
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           optionalField: null,
         },
@@ -335,7 +335,7 @@ describe('InputExtractionService', () => {
     });
 
     it('should handle passthrough schema for extra properties', () => {
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
           extraField: 'should pass through',
@@ -360,7 +360,7 @@ describe('InputExtractionService', () => {
         },
       };
 
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           testField: 'value',
         },

@@ -9,7 +9,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { LwcReviewAgent } from '../../src/agent/lwcReviewAgent.js';
 import { LlmClient } from '../../src/llmclient/llmClient.js';
 import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
+import { LwcCodeType } from '../../src/schema/schema.js';
 
 // Mock the dependencies
 vi.mock('../../src/mcpclient/mobileWebMcpClient.js');

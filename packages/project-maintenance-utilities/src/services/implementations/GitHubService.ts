@@ -104,7 +104,7 @@ export class GitHubService implements GitHubServiceProvider {
     owner: string,
     repo: string,
     releaseId: number,
-    updateData: { prerelease?: boolean }
+    updateData: { prerelease?: boolean; draft?: boolean; name?: string; body?: string }
   ): Promise<void> {
     await this.octokit.rest.repos.updateRelease({
       owner,

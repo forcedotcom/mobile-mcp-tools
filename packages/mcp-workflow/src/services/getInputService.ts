@@ -73,7 +73,7 @@ export class GetInputService extends AbstractService implements GetInputServiceP
     // Create tool invocation data
     const toolInvocationData: MCPToolInvocationData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> = {
       llmMetadata: {
-        name: metadata.title,
+        name: metadata.toolId,
         description: metadata.description,
         inputSchema: metadata.inputSchema,
       },

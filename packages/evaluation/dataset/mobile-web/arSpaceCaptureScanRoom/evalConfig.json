@@ -1,9 +1,0 @@
-{
-  "mcpTools": [
-    {
-      "toolId": "sfmobile-web-ar-space-capture",
-      "params": {}
-    }
-  ],
-  "type": "lwc-generation"
-}

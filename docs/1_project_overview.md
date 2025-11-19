@@ -75,7 +75,7 @@ Each MCP server is implemented as a standalone Node.js project, written in TypeS
 
 The initial sub-projects planned for the monorepo include:
 
-1. **`@salesforce/mobile-web-mcp-server`** - The first MCP server providing tools for Salesforce Mobile Web development scenarios
+1. **`@salesforce/mobile-native-mcp-server`** - MCP server providing tools for Salesforce Mobile Native development scenarios
 2. **Additional mobile platform MCP servers** - Future expansion covering other aspects of the Salesforce Mobile Platform ecosystem
 
 ### Directory Structure
@@ -83,10 +83,9 @@ The initial sub-projects planned for the monorepo include:
 ```
 mobile-mcp-tools/
   packages/
-    mobile-web/      # To be published as @salesforce/mobile-web-mcp-server
-    mobile-native/   # Future: Native mobile development tools
-    mobile-platform/ # Future: Cross-platform mobile development tools
-    mobile-data/     # Future: Mobile data management and sync tools
+    mobile-native-mcp-server/ # Published as @salesforce/mobile-native-mcp-server
+    mobile-platform/          # Future: Cross-platform mobile development tools
+    mobile-data/              # Future: Mobile data management and sync tools
     ...
   nx.json
   package.json

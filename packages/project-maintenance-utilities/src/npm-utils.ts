@@ -139,7 +139,7 @@ export class NpmUtils {
 
     try {
       this.processService.execSync(
-        `npm publish "${absoluteTarballPath}" --tag "${npmTag}" ${dryRunFlag}`.trim(),
+        `npm publish "${absoluteTarballPath}" --tag "${npmTag}" --access public ${dryRunFlag}`.trim(),
         {
           stdio: 'inherit',
         }
