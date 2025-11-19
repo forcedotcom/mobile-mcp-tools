@@ -132,7 +132,7 @@ describe('createGetUserInputNode', () => {
 
     it('should create default service with correct toolId', () => {
       const toolId = 'custom-tool-id';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: 'test response',
       });
 
@@ -160,7 +160,7 @@ describe('createGetUserInputNode', () => {
     it('should request input for unfulfilled properties', () => {
       const toolId = 'test-get-input';
       const userResponse = 'iOS';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: userResponse,
       });
 
@@ -186,7 +186,7 @@ describe('createGetUserInputNode', () => {
 
     it('should use default isPropertyFulfilled when properties are missing', () => {
       const toolId = 'test-get-input';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: 'test',
       });
 
@@ -210,7 +210,7 @@ describe('createGetUserInputNode', () => {
 
     it('should skip fulfilled properties', () => {
       const toolId = 'test-get-input';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: 'MyProject',
       });
 

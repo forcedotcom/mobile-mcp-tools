@@ -1,9 +1,0 @@
-{
-  "mcpTools": [
-    {
-      "toolId": "sfmobile-web-calendar",
-      "params": {}
-    }
-  ],
-  "type": "lwc-generation"
-}

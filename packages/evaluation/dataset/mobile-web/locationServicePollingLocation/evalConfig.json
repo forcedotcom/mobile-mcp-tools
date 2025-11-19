@@ -1,9 +1,0 @@
-{
-  "mcpTools": [
-    {
-      "toolId": "sfmobile-web-location",
-      "params": {}
-    }
-  ],
-  "type": "lwc-generation"
-}

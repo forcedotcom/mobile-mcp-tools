@@ -79,7 +79,7 @@ export class InputExtractionService
     const toolInvocationData: MCPToolInvocationData<typeof INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA> =
       {
         llmMetadata: {
-          name: metadata.title,
+          name: metadata.toolId,
           description: metadata.description,
           inputSchema: metadata.inputSchema,
         },

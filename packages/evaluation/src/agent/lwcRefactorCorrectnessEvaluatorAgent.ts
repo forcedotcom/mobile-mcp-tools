@@ -6,9 +6,13 @@
  */
 
 import { LlmClient } from '../llmclient/llmClient.js';
-import { CorrectnessScore, CorrectnessScoreSchema } from '../schema/schema.js';
 import { createTwoFilesPatch } from 'diff';
-import { LwcCodeType, CodeAnalysisIssuesType } from '@salesforce/mobile-web-mcp-server';
+import {
+  CorrectnessScore,
+  CorrectnessScoreSchema,
+  LwcCodeType,
+  CodeAnalysisIssuesType,
+} from '../schema/schema.js';
 import { LWCFileType } from '../utils/lwcUtils.js';
 import { z } from 'zod/v4';
 import { getJsonResponse } from '../utils/responseUtils.js';

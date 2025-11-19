@@ -110,7 +110,7 @@ describe('createUserInputExtractionNode', () => {
 
     it('should create default service with correct toolId', () => {
       const toolId = 'custom-tool-id';
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
           projectName: 'TestProject',
@@ -143,7 +143,7 @@ describe('createUserInputExtractionNode', () => {
         platform: 'iOS',
         projectName: 'MyApp',
       };
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: extractedProps,
       });
 
@@ -169,7 +169,7 @@ describe('createUserInputExtractionNode', () => {
 
     it('should use default getUserInput when not provided', () => {
       const toolId = 'test-input-extraction';
-      mockToolExecutor.setResult('Input Extraction', {
+      mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'Android',
         },

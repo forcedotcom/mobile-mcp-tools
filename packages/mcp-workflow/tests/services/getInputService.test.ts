@@ -41,7 +41,7 @@ describe('GetInputService', () => {
   describe('getInput', () => {
     it('should return userUtterance from tool result', () => {
       const userResponse = 'iOS';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: userResponse,
       });
 
@@ -60,7 +60,7 @@ describe('GetInputService', () => {
 
     it('should call tool executor with correct metadata', () => {
       const userResponse = 'MyProject';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: userResponse,
       });
 
@@ -77,7 +77,7 @@ describe('GetInputService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      expect(call.llmMetadata.name).toBe('Get User Input');
+      expect(call.llmMetadata.name).toBe(toolId);
       expect(call.input).toHaveProperty('propertiesRequiringInput');
       expect(
         (call.input as { propertiesRequiringInput: unknown[] }).propertiesRequiringInput
@@ -85,7 +85,7 @@ describe('GetInputService', () => {
     });
 
     it('should log debug message with properties', () => {
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: 'test',
       });
 
@@ -107,7 +107,7 @@ describe('GetInputService', () => {
     });
 
     it('should handle empty properties array', () => {
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: 'no properties needed',
       });
 
@@ -118,7 +118,7 @@ describe('GetInputService', () => {
 
     it('should handle multiple properties', () => {
       const userResponse = 'iOS and MyProject';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: userResponse,
       });
 
@@ -148,7 +148,7 @@ describe('GetInputService', () => {
     it('should validate result schema', () => {
       // Invalid result - wrong structure (not an object with userUtterance)
       // The schema expects { userUtterance: unknown }, so a string directly should fail
-      mockToolExecutor.setResult('Get User Input', 'invalid result');
+      mockToolExecutor.setResult(toolId, 'invalid result');
 
       const unfulfilledProperties = [
         {
@@ -165,7 +165,7 @@ describe('GetInputService', () => {
 
     it('should handle different userUtterance types', () => {
       const stringResponse = 'iOS';
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: stringResponse,
       });
 
@@ -181,7 +181,7 @@ describe('GetInputService', () => {
 
       // Test with object response
       const objectResponse = { platform: 'iOS', projectName: 'MyApp' };
-      mockToolExecutor.setResult('Get User Input', {
+      mockToolExecutor.setResult(toolId, {
         userUtterance: objectResponse,
       });
 

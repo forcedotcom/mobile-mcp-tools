@@ -6,7 +6,7 @@
  */
 
 import { getLwcComponentFromLlmResponse } from '../utils/lwcUtils.js';
-import { LwcCodeType } from '@salesforce/mobile-web-mcp-server';
+import { LwcCodeType } from '../schema/schema.js';
 import { createLwcGenerationLLMPrompt } from '../utils/promptUtils.js';
 import { LlmClient } from '../llmclient/llmClient.js';
 

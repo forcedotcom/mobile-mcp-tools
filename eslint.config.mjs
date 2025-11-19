@@ -13,9 +13,6 @@ import evaluationConfig from './packages/evaluation/eslint.config.mjs';
 export default tseslint.config(
   {
     ignores: [
-      'packages/mobile-web/dist/**',
-      'packages/mobile-web/resources/**',
-      'packages/mobile-web/coverage/**',
       'packages/project-maintenance-utilities/dist/**',
       'packages/project-maintenance-utilities/node_modules/**',
       'packages/project-maintenance-utilities/coverage/**',
@@ -50,11 +47,12 @@ export default tseslint.config(
   // TypeScript configuration - works both from root and package directories
   {
     files: [
-      'packages/mobile-web/{src,tests}/**/*.ts',
       'packages/project-maintenance-utilities/{src,tests}/**/*.ts',
       'packages/evaluation/{src,tests}/**/*.ts',
       'packages/mobile-native-mcp-server/{src,tests}/**/*.ts',
       'packages/mcp-workflow/{src,tests}/**/*.ts',
+      'packages/mcp-magi/{src,tests}/**/*.ts',
+      'packages/workflow-magi/{src,tests}/**/*.ts',
       '{src,tests}/**/*.ts', // For when running from package directories
     ],
     plugins: {

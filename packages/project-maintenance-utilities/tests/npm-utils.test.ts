@@ -153,33 +153,35 @@ describe('NpmUtils', () => {
     it('should publish successfully', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest"`,
+        `npm publish "${tarballPath}" --tag "latest" --access public`,
         'Published successfully'
       );
 
       expect(() => npmUtils.publishToNpm(tarballPath, 'latest', false)).not.toThrow();
 
       const commands = mockProcess.getExecutedCommands();
-      expect(commands).toContain(`npm publish "${tarballPath}" --tag "latest"`);
+      expect(commands).toContain(`npm publish "${tarballPath}" --tag "latest" --access public`);
     });
 
     it('should handle dry run mode', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --dry-run`,
+        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`,
         'Dry run successful'
       );
 
       expect(() => npmUtils.publishToNpm(tarballPath, 'latest', true)).not.toThrow();
 
       const commands = mockProcess.getExecutedCommands();
-      expect(commands).toContain(`npm publish "${tarballPath}" --tag "latest" --dry-run`);
+      expect(commands).toContain(
+        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`
+      );
     });
 
     it('should use default tag if not specified', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest"`,
+        `npm publish "${tarballPath}" --tag "latest" --access public`,
         'Published successfully'
       );
 
@@ -189,7 +191,7 @@ describe('NpmUtils', () => {
     it('should throw descriptive error on publish failure', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandToThrow(
-        `npm publish "${tarballPath}" --tag "latest"`,
+        `npm publish "${tarballPath}" --tag "latest" --access public`,
         'Publish failed'
       );
 
@@ -201,7 +203,7 @@ describe('NpmUtils', () => {
     it('should throw descriptive error on dry run validation failure', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandToThrow(
-        `npm publish "${tarballPath}" --tag "latest" --dry-run`,
+        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`,
         'Validation failed'
       );
 

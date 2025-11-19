@@ -1,9 +1,0 @@
-{
-  "mcpTools": [
-    {
-      "toolId": "sfmobile-web-payments",
-      "params": {}
-    }
-  ],
-  "type": "lwc-generation"
-}

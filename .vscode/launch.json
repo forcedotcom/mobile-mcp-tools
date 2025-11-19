@@ -16,6 +16,17 @@
         "${workspaceFolder}/packages/mobile-web/**",
         "!**/node_modules/**"
       ]
+    },
+    {
+      "name": "Attach to Mobile Native MCP Server",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/packages/mobile-native-mcp-server/dist/**/*.js"],
+      "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"]
     }
   ]
 }
