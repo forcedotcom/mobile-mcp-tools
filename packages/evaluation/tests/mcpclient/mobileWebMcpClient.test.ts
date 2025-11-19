@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { MobileWebMcpClient } from '../../src/mcpclient/mobileWebMcpClient.js';
 
 // Integration tests against the real MCP server
-describe('MobileWebMcpClient (integration)', () => {
+// Skipped because mobile-web package has been removed
+describe.skip('MobileWebMcpClient (integration)', () => {
   let client: MobileWebMcpClient;
 
   beforeAll(async () => {
