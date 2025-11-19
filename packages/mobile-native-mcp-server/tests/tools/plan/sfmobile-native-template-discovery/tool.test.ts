@@ -80,9 +80,8 @@ describe('SFMobileNativeTemplateDiscoveryTool', () => {
       const response = JSON.parse(responseText);
 
       expect(response.promptForLLM).toContain('Template Discovery Guidance for iOS');
-      expect(response.promptForLLM).toContain('Step 1: Plugin Verification');
-      expect(response.promptForLLM).toContain('Step 2: Template Discovery');
-      expect(response.promptForLLM).toContain('Step 3: Detailed Template Investigation');
+      expect(response.promptForLLM).toContain('Step 1: Template Discovery');
+      expect(response.promptForLLM).toContain('Step 2: Detailed Template Investigation');
       expect(response.promptForLLM).toContain('sf mobilesdk ios listtemplates');
       expect(response.promptForLLM).toContain('sf mobilesdk ios describetemplate');
     });
@@ -106,7 +105,7 @@ describe('SFMobileNativeTemplateDiscoveryTool', () => {
       expect(response.promptForLLM).toContain('sf mobilesdk android describetemplate');
     });
 
-    it('should include plugin verification steps', async () => {
+    it('should include template source path', async () => {
       const input = {
         platform: 'iOS' as const,
         workflowStateData: { thread_id: 'test-123' },
@@ -116,10 +115,8 @@ describe('SFMobileNativeTemplateDiscoveryTool', () => {
       const responseText = result.content[0].text as string;
       const response = JSON.parse(responseText);
 
-      expect(response.promptForLLM).toContain('sf plugins inspect sfdx-mobilesdk-plugin');
-      expect(response.promptForLLM).toContain('version 13.1.0 or greater');
-      expect(response.promptForLLM).toContain('sf plugins install sfdx-mobilesdk-plugin');
-      expect(response.promptForLLM).toContain('sf plugins update sfdx-mobilesdk-plugin');
+      expect(response.promptForLLM).toContain('--templatesource=');
+      expect(response.promptForLLM).toContain('--template=<TEMPLATE_PATH>');
     });
 
     it('should include next steps guidance', async () => {

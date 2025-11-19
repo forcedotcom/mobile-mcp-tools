@@ -20,6 +20,8 @@ import { FailureNode } from './nodes/failureNode.js';
 import { CheckEnvironmentValidatedRouter } from './nodes/checkEnvironmentValidated.js';
 import { PlatformCheckNode } from './nodes/checkPlatformSetup.js';
 import { CheckSetupValidatedRouter } from './nodes/checkSetupValidatedRouter.js';
+import { PluginCheckNode } from './nodes/checkPluginSetup.js';
+import { CheckPluginValidatedRouter } from './nodes/checkPluginValidatedRouter.js';
 import {
   createGetUserInputNode,
   createUserInputExtractionNode,
@@ -39,6 +41,7 @@ const userInputNode = createGetUserInputNode<State>({
 });
 const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
+const pluginCheckNode = new PluginCheckNode();
 const templateDiscoveryNode = new TemplateDiscoveryNode();
 const projectGenerationNode = new ProjectGenerationNode();
 const buildValidationNode = new BuildValidationNode();
@@ -55,6 +58,11 @@ const checkEnvironmentValidatedRouter = new CheckEnvironmentValidatedRouter(
   failureNode.name
 );
 const checkSetupValidatedRouter = new CheckSetupValidatedRouter(
+  pluginCheckNode.name,
+  failureNode.name
+);
+
+const checkPluginValidatedRouter = new CheckPluginValidatedRouter(
   templateDiscoveryNode.name,
   failureNode.name
 );
@@ -76,6 +84,7 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addNode(initialUserInputExtractionNode.name, initialUserInputExtractionNode.execute)
   .addNode(userInputNode.name, userInputNode.execute)
   .addNode(platformCheckNode.name, platformCheckNode.execute)
+  .addNode(pluginCheckNode.name, pluginCheckNode.execute)
   .addNode(templateDiscoveryNode.name, templateDiscoveryNode.execute)
   .addNode(projectGenerationNode.name, projectGenerationNode.execute)
   .addNode(buildValidationNode.name, buildValidationNode.execute)
@@ -90,6 +99,7 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addConditionalEdges(initialUserInputExtractionNode.name, checkPropertiesFulFilledRouter.execute)
   .addEdge(userInputNode.name, initialUserInputExtractionNode.name)
   .addConditionalEdges(platformCheckNode.name, checkSetupValidatedRouter.execute)
+  .addConditionalEdges(pluginCheckNode.name, checkPluginValidatedRouter.execute)
   .addEdge(templateDiscoveryNode.name, projectGenerationNode.name)
   .addEdge(projectGenerationNode.name, buildValidationNode.name)
   // Build validation with recovery loop (similar to user input loop)
