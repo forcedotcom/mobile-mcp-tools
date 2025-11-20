@@ -79,7 +79,7 @@ export class SFMobileNativeProjectGenerationTool extends AbstractNativeProjectMa
       Generate the project using the Salesforce Mobile SDK CLI:
 
       \`\`\`bash
-      sf mobilesdk ${platformLower} createwithtemplate --templatesource="${MOBILE_SDK_TEMPLATES_PATH}" --template="${input.selectedTemplate}" --appname="${input.projectName}" --packagename="${input.packageName}" --organization="${input.organization}"${templatePropertiesFlags} --consumerkey="${input.connectedAppClientId}" --callbackurl="${input.connectedAppCallbackUri}" --loginserver="${input.loginHost}
+      sf mobilesdk ${platformLower} createwithtemplate --templatesource="${MOBILE_SDK_TEMPLATES_PATH}" --template="${input.selectedTemplate}" --appname="${input.projectName}" --packagename="${input.packageName}" --organization="${input.organization} --consumerkey="${input.connectedAppClientId}" --callbackurl="${input.connectedAppCallbackUri}" --loginserver="${input.loginHost} ${templatePropertiesFlags}"
       \`\`\`
 
       **Expected Outcome**: A new ${input.platform} project directory named "${input.projectName}" will be created with the template structure. The output of the command will indicate the location of the bootconfig.plist file, take note of this for oauth configuration!
