@@ -118,7 +118,6 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
     checkTemplatePropertiesFulfilledRouter.execute
   )
   .addEdge(templatePropertiesUserInputNode.name, templatePropertiesExtractionNode.name)
-  .addEdge(templateDiscoveryNode.name, projectGenerationNode.name)
   .addEdge(projectGenerationNode.name, buildValidationNode.name)
   // Build validation with recovery loop (similar to user input loop)
   .addConditionalEdges(buildValidationNode.name, checkBuildSuccessfulRouter.execute)

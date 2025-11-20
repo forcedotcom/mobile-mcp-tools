@@ -37,7 +37,7 @@ export class SFMobileNativeDeploymentTool extends AbstractNativeProjectManagerTo
       // of the user selection of virtual devices more generally. In the meantime, this just
       // helps the LLM to not have to typically "vibe" a default value in all use cases, since
       // we don't really take in a virtual device at this point.
-      validatedInput.targetDevice = validatedInput.targetDevice ?? 'iPhone 15 Pro';
+      validatedInput.targetDevice = validatedInput.targetDevice ?? 'iPhone 16 Pro Max';
 
       const guidance = this.generateDeploymentGuidance(validatedInput);
       return this.finalizeWorkflowToolOutput(guidance, validatedInput.workflowStateData);
@@ -172,7 +172,7 @@ export class SFMobileNativeDeploymentTool extends AbstractNativeProjectManagerTo
     return dedent`
       ## Next Steps
 
-      Once the app is deployed successfully, you can launch the app on the target device by running the following command:
+      Once the app is deployed successfully, you MUST launch the app on the target device by running the following command:
       ${this.generateLaunchCommand(input)}
     `;
   }
