@@ -45,6 +45,12 @@ export class TemplatePropertiesExtractionNode {
       return { templateProperties: {} };
     }
 
+    // If templatePropertiesUserInput doesn't exist yet, don't initialize templateProperties
+    // This allows the router to route to templatePropertiesUserInputNode to prompt for input
+    if (!state.templatePropertiesUserInput) {
+      return {};
+    }
+
     // Convert template properties metadata to PropertyMetadataCollection format
     const requiredProperties: PropertyMetadataCollection = {};
 

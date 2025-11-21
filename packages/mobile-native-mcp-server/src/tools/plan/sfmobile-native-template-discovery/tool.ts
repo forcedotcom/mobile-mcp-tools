@@ -7,7 +7,6 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import dedent from 'dedent';
-import { MOBILE_SDK_TEMPLATES_PATH } from '../../../common.js';
 import { Logger } from '@salesforce/magen-mcp-workflow';
 import { TEMPLATE_DISCOVERY_TOOL, TemplateDiscoveryWorkflowInput } from './metadata.js';
 import { AbstractNativeProjectManagerTool } from '../../base/abstractNativeProjectManagerTool.js';
@@ -38,35 +37,20 @@ export class SFMobileNativeTemplateDiscoveryTool extends AbstractNativeProjectMa
   };
 
   private generateTemplateDiscoveryGuidance(input: TemplateDiscoveryWorkflowInput): string {
+    const templateOptionsJson = JSON.stringify(input.templateOptions, null, 2);
+
     return dedent`
       # Template Discovery Guidance for ${input.platform}
 
-      You MUST follow the steps in this guide in order. Do not execute any commands that are not part of the steps in this guide.
+      ## Task: Identify Promising Template Candidates
 
-      ${this.generateTemplateDiscoveryStep(1, input)}
+      The following template options have been discovered for ${input.platform}:
 
-      ${this.generateDetailedInvestigationStep(2, input)}
-    `;
-  }
-
-  private generateTemplateDiscoveryStep(
-    stepNumber: number,
-    input: TemplateDiscoveryWorkflowInput
-  ): string {
-    const platformLower = input.platform.toLowerCase();
-
-    return dedent`
-      ## Step ${stepNumber}: Template Discovery
-
-      Discover available ${input.platform} templates using:
-
-      \`\`\`bash
-      sf mobilesdk ${platformLower} listtemplates --templatesource=${MOBILE_SDK_TEMPLATES_PATH} --doc --json
+      \`\`\`json
+      ${templateOptionsJson}
       \`\`\`
 
-      You MUST use the --templatesource=${MOBILE_SDK_TEMPLATES_PATH} flag to specify the templates source, do not use any other source.
-
-      This will show a detailed JSON representation of all available templates with their:
+      Inspect the JSON above to identify templates that best match the user's requirements. Each template includes:
       - path: the relative path to the template from the templates source
       - description: the description of the template
       - features: the features of the template
@@ -74,65 +58,19 @@ export class SFMobileNativeTemplateDiscoveryTool extends AbstractNativeProjectMa
       - complexity: the complexity of the template
       - customizationPoints: the customization points of the template
 
-      Inspect the JSON output from the template discovery command to identify templates that best match the user's requirements and filter the templates to the most promising candidates. Prioritize templates that match multiple keywords and have comprehensive documentation.
-    `;
-  }
+      Filter the templates to the most promising candidates (typically 1-3 templates). Prioritize templates that match multiple keywords and have comprehensive documentation.
 
-  private generateDetailedInvestigationStep(
-    stepNumber: number,
-    input: TemplateDiscoveryWorkflowInput
-  ): string {
-    const platformLower = input.platform.toLowerCase();
+      Return a list of template paths/names as candidates. Use the template's \`path\` field from the JSON above as the candidate value.
 
-    return dedent`
-      ## Step ${stepNumber}: Detailed Template Investigation
-
-      For each promising template, get detailed documentation:
-
-      \`\`\`bash
-      sf mobilesdk ${platformLower} describetemplate --templatesource=${MOBILE_SDK_TEMPLATES_PATH} --template=<TEMPLATE_PATH> --doc --json
-      \`\`\`
-
-      Choose the template that best matches:
-      - **Platform compatibility**: ${input.platform}
-      - **Feature requirements**: General mobile app needs
-      - **Use case alignment**: Record management, data display, CRUD operations
-      - **Complexity level**: Appropriate for the user's requirements
-
-      ## Step ${stepNumber + 1}: Extract Template Properties
-
-      After selecting the best template, examine the template JSON output for custom template properties.
-
-      Look for \`properties.templatePrerequisites.properties.templateProperties\` in the JSON output.
-      These are custom properties that must be provided when creating a project from this template.
-
-      If the template has custom properties:
-      1. Extract each property name and its metadata (required, description)
-      2. Return the selectedTemplate name AND the templatePropertiesMetadata in this format:
+      Return your result in this format:
 
       \`\`\`json
       {
-        "selectedTemplate": "<TEMPLATE_NAME>",
-        "templatePropertiesMetadata": {
-          "<propertyName>": {
-            "value": "",
-            "required": true,
-            "description": "<property description from template>"
-          }
-        }
+        "templateCandidates": ["<TEMPLATE_PATH_1>", "<TEMPLATE_PATH_2>", ...]
       }
       \`\`\`
 
-      If the template has NO custom properties, simply return:
-
-      \`\`\`json
-      {
-        "selectedTemplate": "<TEMPLATE_NAME>"
-      }
-      \`\`\`
-
-      NOTE: Template properties are different from standard properties like appname, packagename, and organization.
-      They are template-specific values like developerName, organizationId, apiURL, etc.
+      You MUST return at least one candidate. Return multiple candidates if several templates seem equally promising.
     `;
   }
 }

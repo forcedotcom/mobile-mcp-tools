@@ -34,6 +34,12 @@ export class CheckTemplatePropertiesFulfilledRouter {
   };
 
   private getPropertyFulfillmentStatus(state: State): string {
+    // If no template has been selected yet, we shouldn't be checking template properties
+    // This is a safety check to prevent routing to project generation before template selection
+    if (!state.selectedTemplate) {
+      return this.propertiesUnfulfilledNodeName;
+    }
+
     // If no template properties metadata exists, all properties are fulfilled (none required)
     if (
       !state.templatePropertiesMetadata ||

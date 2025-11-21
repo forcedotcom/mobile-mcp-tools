@@ -7,7 +7,7 @@
 
 import { Annotation } from '@langchain/langgraph';
 import z from 'zod';
-import { PLATFORM_ENUM, PROJECT_NAME_FIELD } from '../common/schemas.js';
+import { PLATFORM_ENUM, PROJECT_NAME_FIELD, TemplateListOutput } from '../common/schemas.js';
 import { PropertyMetadata, PropertyMetadataCollection } from '@salesforce/magen-mcp-workflow';
 
 /**
@@ -77,6 +77,9 @@ export const MobileNativeWorkflowState = Annotation.Root({
   validPlatformSetup: Annotation<boolean>,
   validPluginSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
+  templateOptions: Annotation<TemplateListOutput>,
+  templateCandidates: Annotation<string[]>,
+  templateDetails: Annotation<Record<string, unknown>>,
   selectedTemplate: Annotation<string>,
   templateProperties: Annotation<Record<string, string>>,
   templatePropertiesMetadata: Annotation<TemplatePropertiesMetadata>,

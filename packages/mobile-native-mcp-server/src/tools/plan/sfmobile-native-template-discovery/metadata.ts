@@ -6,7 +6,7 @@
  */
 
 import z from 'zod';
-import { PLATFORM_ENUM } from '../../../common/schemas.js';
+import { PLATFORM_ENUM, TEMPLATE_LIST_SCHEMA } from '../../../common/schemas.js';
 import {
   WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
@@ -18,24 +18,27 @@ import {
  */
 export const TEMPLATE_DISCOVERY_WORKFLOW_INPUT_SCHEMA = WORKFLOW_TOOL_BASE_INPUT_SCHEMA.extend({
   platform: PLATFORM_ENUM,
+  templateOptions: TEMPLATE_LIST_SCHEMA.describe(
+    'The template options. Must include templates array with each template having a path field.'
+  ),
 });
 
 export type TemplateDiscoveryWorkflowInput = z.infer<
   typeof TEMPLATE_DISCOVERY_WORKFLOW_INPUT_SCHEMA
 >;
 
+/**
+ * Template Discovery Tool Result Schema
+ * Note: templateCandidates should contain template paths that exist in templateOptions.templates[].path
+ * This validation is enforced in the tool execution logic, not in the schema.
+ */
 export const TEMPLATE_DISCOVERY_WORKFLOW_RESULT_SCHEMA = z.object({
-  selectedTemplate: z.string().describe('The template name selected from template discovery'),
-  templatePropertiesMetadata: z
-    .record(
-      z.object({
-        value: z.string().optional(),
-        required: z.boolean(),
-        description: z.string(),
-      })
-    )
-    .optional()
-    .describe('Metadata for custom template properties that need to be collected from the user'),
+  templateCandidates: z
+    .array(z.string())
+    .min(1)
+    .describe(
+      'List of template paths/names that are promising candidates for further investigation. Each candidate must match a template path from templateOptions.templates[].path'
+    ),
 });
 
 /**

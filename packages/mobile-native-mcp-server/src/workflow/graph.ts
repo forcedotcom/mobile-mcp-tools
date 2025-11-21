@@ -8,7 +8,10 @@
 import { END, START, StateGraph } from '@langchain/langgraph';
 import { MobileNativeWorkflowState, State, WORKFLOW_USER_INPUT_PROPERTIES } from './metadata.js';
 import { EnvironmentValidationNode } from './nodes/environment.js';
-import { TemplateDiscoveryNode } from './nodes/templateDiscovery.js';
+import { TemplateOptionsFetchNode } from './nodes/templateOptionsFetch.js';
+import { TemplateCandidateSelectionNode } from './nodes/templateCandidateSelection.js';
+import { TemplateDetailFetchNode } from './nodes/templateDetailFetch.js';
+import { TemplateSelectionNode } from './nodes/templateSelection.js';
 import { ProjectGenerationNode } from './nodes/projectGeneration.js';
 import { BuildValidationNode } from './nodes/buildValidation.js';
 import { BuildRecoveryNode } from './nodes/buildRecovery.js';
@@ -45,7 +48,10 @@ const userInputNode = createGetUserInputNode<State>({
 const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
 const pluginCheckNode = new PluginCheckNode();
-const templateDiscoveryNode = new TemplateDiscoveryNode();
+const templateOptionsFetchNode = new TemplateOptionsFetchNode();
+const templateCandidateSelectionNode = new TemplateCandidateSelectionNode();
+const templateDetailFetchNode = new TemplateDetailFetchNode();
+const templateSelectionNode = new TemplateSelectionNode();
 const templatePropertiesExtractionNode = new TemplatePropertiesExtractionNode();
 const templatePropertiesUserInputNode = new TemplatePropertiesUserInputNode();
 const projectGenerationNode = new ProjectGenerationNode();
@@ -68,7 +74,7 @@ const checkSetupValidatedRouter = new CheckSetupValidatedRouter(
 );
 
 const checkPluginValidatedRouter = new CheckPluginValidatedRouter(
-  templateDiscoveryNode.name,
+  templateOptionsFetchNode.name,
   failureNode.name
 );
 
@@ -95,7 +101,10 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addNode(userInputNode.name, userInputNode.execute)
   .addNode(platformCheckNode.name, platformCheckNode.execute)
   .addNode(pluginCheckNode.name, pluginCheckNode.execute)
-  .addNode(templateDiscoveryNode.name, templateDiscoveryNode.execute)
+  .addNode(templateOptionsFetchNode.name, templateOptionsFetchNode.execute)
+  .addNode(templateCandidateSelectionNode.name, templateCandidateSelectionNode.execute)
+  .addNode(templateDetailFetchNode.name, templateDetailFetchNode.execute)
+  .addNode(templateSelectionNode.name, templateSelectionNode.execute)
   .addNode(templatePropertiesExtractionNode.name, templatePropertiesExtractionNode.execute)
   .addNode(templatePropertiesUserInputNode.name, templatePropertiesUserInputNode.execute)
   .addNode(projectGenerationNode.name, projectGenerationNode.execute)
@@ -112,7 +121,10 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addEdge(userInputNode.name, initialUserInputExtractionNode.name)
   .addConditionalEdges(platformCheckNode.name, checkSetupValidatedRouter.execute)
   .addConditionalEdges(pluginCheckNode.name, checkPluginValidatedRouter.execute)
-  .addEdge(templateDiscoveryNode.name, templatePropertiesExtractionNode.name)
+  .addEdge(templateOptionsFetchNode.name, templateCandidateSelectionNode.name)
+  .addEdge(templateCandidateSelectionNode.name, templateDetailFetchNode.name)
+  .addEdge(templateDetailFetchNode.name, templateSelectionNode.name)
+  .addEdge(templateSelectionNode.name, templatePropertiesExtractionNode.name)
   .addConditionalEdges(
     templatePropertiesExtractionNode.name,
     checkTemplatePropertiesFulfilledRouter.execute
