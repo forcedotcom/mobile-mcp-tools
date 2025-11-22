@@ -71,11 +71,18 @@ export function createGetUserInputNode<TState extends StateType<StateDefinition>
       };
     },
     userInputProperty,
+    nodeName = 'getUserInput',
   } = options;
 
   // Create default service implementation if not provided
   const service: GetInputServiceProvider =
     getInputService ?? new GetInputService(toolId, toolExecutor, logger);
 
-  return new GetUserInputNode(service, requiredProperties, isPropertyFulfilled, userInputProperty);
+  return new GetUserInputNode(
+    service,
+    requiredProperties,
+    isPropertyFulfilled,
+    userInputProperty,
+    nodeName
+  );
 }

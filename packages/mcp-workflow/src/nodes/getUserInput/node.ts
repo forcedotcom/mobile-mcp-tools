@@ -70,6 +70,25 @@ export interface GetUserInputNodeOptions<TState extends StateType<StateDefinitio
    *
    */
   userInputProperty: keyof TState;
+
+  /**
+   * Custom name for the node (optional, defaults to 'getUserInput')
+   * Use this when you need multiple getUserInput nodes in the same graph
+   *
+   * @example
+   *
+   * // Create multiple input nodes with unique names
+   * const userInputNode = createGetUserInputNode({
+   *   nodeName: 'getUserInput',
+   *   ...
+   * });
+   *
+   * const androidSetupNode = createGetUserInputNode({
+   *   nodeName: 'getAndroidSetup',
+   *   ...
+   * });
+   */
+  nodeName?: string;
 }
 
 export class GetUserInputNode<TState extends StateType<StateDefinition>> extends BaseNode<TState> {
@@ -77,9 +96,10 @@ export class GetUserInputNode<TState extends StateType<StateDefinition>> extends
     private readonly getInputService: GetInputServiceProvider,
     private readonly requiredProperties: PropertyMetadataCollection,
     private readonly isPropertyFulfilled: IsPropertyFulfilled<TState>,
-    private readonly userInputProperty: keyof TState
+    private readonly userInputProperty: keyof TState,
+    nodeName: string = 'getUserInput'
   ) {
-    super('getUserInput');
+    super(nodeName);
   }
 
   execute = (state: TState): Partial<TState> => {

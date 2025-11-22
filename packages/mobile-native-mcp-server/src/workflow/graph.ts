@@ -6,7 +6,12 @@
  */
 
 import { END, START, StateGraph } from '@langchain/langgraph';
-import { MobileNativeWorkflowState, State, WORKFLOW_USER_INPUT_PROPERTIES } from './metadata.js';
+import {
+  MobileNativeWorkflowState,
+  State,
+  WORKFLOW_USER_INPUT_PROPERTIES,
+  ANDROID_SETUP_PROPERTIES,
+} from './metadata.js';
 import { EnvironmentValidationNode } from './nodes/environment.js';
 import { TemplateDiscoveryNode } from './nodes/templateDiscovery.js';
 import { ProjectGenerationNode } from './nodes/projectGeneration.js';
@@ -19,6 +24,8 @@ import { FailureNode } from './nodes/failureNode.js';
 import { CheckEnvironmentValidatedRouter } from './nodes/checkEnvironmentValidated.js';
 import { PlatformCheckNode } from './nodes/checkPlatformSetup.js';
 import { CheckSetupValidatedRouter } from './nodes/checkSetupValidatedRouter.js';
+import { CheckAndroidSetupExtractedRouter } from './nodes/checkAndroidSetupExtractedRouter.js';
+import { ExtractAndroidSetupNode } from './nodes/extractAndroidSetup.js';
 import { PluginCheckNode } from './nodes/checkPluginSetup.js';
 import { CheckPluginValidatedRouter } from './nodes/checkPluginValidatedRouter.js';
 import {
@@ -40,6 +47,16 @@ const userInputNode = createGetUserInputNode<State>({
   toolId: SFMOBILE_NATIVE_GET_INPUT_TOOL_ID,
   userInputProperty: 'userInput',
 });
+
+const getAndroidSetupNode = createGetUserInputNode<State>({
+  requiredProperties: ANDROID_SETUP_PROPERTIES,
+  toolId: SFMOBILE_NATIVE_GET_INPUT_TOOL_ID,
+  userInputProperty: 'userInput',
+  nodeName: 'getAndroidSetup',
+});
+
+const extractAndroidSetupNode = new ExtractAndroidSetupNode();
+
 const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
 const pluginCheckNode = new PluginCheckNode();
@@ -61,11 +78,16 @@ const checkEnvironmentValidatedRouter = new CheckEnvironmentValidatedRouter(
 );
 const checkSetupValidatedRouter = new CheckSetupValidatedRouter(
   pluginCheckNode.name,
+  getAndroidSetupNode.name,
   failureNode.name
 );
 
 const checkPluginValidatedRouter = new CheckPluginValidatedRouter(
   templateDiscoveryNode.name,
+  failureNode.name
+);
+const checkAndroidSetupExtractedRouter = new CheckAndroidSetupExtractedRouter(
+  platformCheckNode.name,
   failureNode.name
 );
 
@@ -86,6 +108,8 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addNode(initialUserInputExtractionNode.name, initialUserInputExtractionNode.execute)
   .addNode(userInputNode.name, userInputNode.execute)
   .addNode(platformCheckNode.name, platformCheckNode.execute)
+  .addNode(getAndroidSetupNode.name, getAndroidSetupNode.execute)
+  .addNode(extractAndroidSetupNode.name, extractAndroidSetupNode.execute)
   .addNode(pluginCheckNode.name, pluginCheckNode.execute)
   .addNode(templateDiscoveryNode.name, templateDiscoveryNode.execute)
   .addNode(projectGenerationNode.name, projectGenerationNode.execute)
@@ -101,6 +125,9 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addConditionalEdges(initialUserInputExtractionNode.name, checkPropertiesFulFilledRouter.execute)
   .addEdge(userInputNode.name, initialUserInputExtractionNode.name)
   .addConditionalEdges(platformCheckNode.name, checkSetupValidatedRouter.execute)
+  // Android setup recovery flow
+  .addEdge(getAndroidSetupNode.name, extractAndroidSetupNode.name)
+  .addConditionalEdges(extractAndroidSetupNode.name, checkAndroidSetupExtractedRouter.execute)
   .addConditionalEdges(pluginCheckNode.name, checkPluginValidatedRouter.execute)
   .addEdge(templateDiscoveryNode.name, projectGenerationNode.name)
   .addEdge(projectGenerationNode.name, buildValidationNode.name)
