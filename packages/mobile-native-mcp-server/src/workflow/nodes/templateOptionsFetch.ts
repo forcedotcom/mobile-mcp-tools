@@ -78,4 +78,3 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
     }
   }
 }
-

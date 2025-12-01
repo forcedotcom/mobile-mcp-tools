@@ -64,7 +64,9 @@ export class TemplateCandidateSelectionNode extends AbstractToolNode<State> {
 
     if (!validatedResult.templateCandidates || validatedResult.templateCandidates.length === 0) {
       return {
-        workflowFatalErrorMessages: ['Template candidate selection did not return any template candidates'],
+        workflowFatalErrorMessages: [
+          'Template candidate selection did not return any template candidates',
+        ],
       };
     }
 
@@ -73,4 +75,3 @@ export class TemplateCandidateSelectionNode extends AbstractToolNode<State> {
     };
   };
 }
-
