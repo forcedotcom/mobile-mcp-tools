@@ -75,7 +75,9 @@ describe('TemplateCandidateSelectionNode', () => {
 
     it('should log tool execution', () => {
       const templateOptions = TEMPLATE_LIST_SCHEMA.parse({
-        templates: [{ path: 'template1', metadata: { platform: 'ios', displayName: 'Template 1' } }],
+        templates: [
+          { path: 'template1', metadata: { platform: 'ios', displayName: 'Template 1' } },
+        ],
       });
 
       const inputState = createTestState({
@@ -110,12 +112,16 @@ describe('TemplateCandidateSelectionNode', () => {
       const result = node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
-      expect(result.workflowFatalErrorMessages?.[0]).toContain('Template options not found in state');
+      expect(result.workflowFatalErrorMessages?.[0]).toContain(
+        'Template options not found in state'
+      );
     });
 
     it('should skip execution if templateCandidates already exist', () => {
       const templateOptions = TEMPLATE_LIST_SCHEMA.parse({
-        templates: [{ path: 'template1', metadata: { platform: 'ios', displayName: 'Template 1' } }],
+        templates: [
+          { path: 'template1', metadata: { platform: 'ios', displayName: 'Template 1' } },
+        ],
       });
 
       const inputState = createTestState({
@@ -139,4 +145,3 @@ describe('TemplateCandidateSelectionNode', () => {
     });
   });
 });
-
