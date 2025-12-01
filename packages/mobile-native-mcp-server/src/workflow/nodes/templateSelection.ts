@@ -31,9 +31,9 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       return {}; // Return empty update to avoid overwriting existing state
     }
 
-    if (!state.templateDetails || Object.keys(state.templateDetails).length === 0) {
+    if (!state.templateOptions) {
       return {
-        workflowFatalErrorMessages: ['No template details available for selection'],
+        workflowFatalErrorMessages: ['No template options available for selection'],
       };
     }
 
@@ -45,7 +45,7 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       },
       input: {
         platform: state.platform,
-        templateDetails: state.templateDetails,
+        templateOptions: state.templateOptions,
       },
     };
 
@@ -60,10 +60,10 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       };
     }
 
-    // Extract template properties metadata from the selected template's details
+    // Extract template properties metadata from the selected template's options
     const templatePropertiesMetadata = this.extractTemplatePropertiesMetadata(
       validatedResult.selectedTemplate,
-      state.templateDetails
+      state.templateOptions
     );
 
     return {
@@ -74,24 +74,24 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
 
   private extractTemplatePropertiesMetadata(
     selectedTemplate: string,
-    templateDetails: Record<string, unknown>
+    templateOptions: State['templateOptions']
   ): TemplatePropertiesMetadata | undefined {
     try {
-      const templateDetail = templateDetails[selectedTemplate];
-      if (!templateDetail || typeof templateDetail !== 'object') {
-        this.logger.warn(`Template detail not found or invalid for ${selectedTemplate}`);
+      // Find the selected template in the templates array
+      const template = templateOptions.templates.find(t => t.path === selectedTemplate);
+      if (!template) {
+        this.logger.warn(`Template not found in templateOptions: ${selectedTemplate}`);
         return undefined;
       }
 
-      // Navigate to properties.templatePrerequisites.templateProperties
-      const detail = templateDetail as Record<string, unknown>;
-      const properties = detail.properties as Record<string, unknown> | undefined;
-      if (!properties) {
-        this.logger.debug(`No properties found for template ${selectedTemplate}`);
+      // Navigate to metadata.templatePrerequisites.templateProperties
+      const metadata = template.metadata as Record<string, unknown> | undefined;
+      if (!metadata) {
+        this.logger.debug(`No metadata found for template ${selectedTemplate}`);
         return undefined;
       }
 
-      const templatePrerequisites = properties.templatePrerequisites as
+      const templatePrerequisites = metadata.templatePrerequisites as
         | Record<string, unknown>
         | undefined;
       if (!templatePrerequisites) {
@@ -108,7 +108,7 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       }
 
       // Convert template properties to TemplatePropertiesMetadata format
-      const metadata: TemplatePropertiesMetadata = {};
+      const propertiesMetadata: TemplatePropertiesMetadata = {};
 
       for (const [propertyName, propertyValue] of Object.entries(templateProperties)) {
         // Property can be a simple value or an object with value, required, description
@@ -118,14 +118,14 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
           !Array.isArray(propertyValue)
         ) {
           const propObj = propertyValue as Record<string, unknown>;
-          metadata[propertyName] = {
+          propertiesMetadata[propertyName] = {
             value: propObj.value !== undefined ? String(propObj.value) : undefined,
             required: typeof propObj.required === 'boolean' ? propObj.required : false,
             description: typeof propObj.description === 'string' ? propObj.description : '',
           };
         } else {
           // Simple value - treat as optional with empty description
-          metadata[propertyName] = {
+          propertiesMetadata[propertyName] = {
             value: propertyValue !== undefined ? String(propertyValue) : undefined,
             required: false,
             description: '',
@@ -134,9 +134,9 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       }
 
       this.logger.info(
-        `Extracted ${Object.keys(metadata).length} template properties for ${selectedTemplate}`
+        `Extracted ${Object.keys(propertiesMetadata).length} template properties for ${selectedTemplate}`
       );
-      return Object.keys(metadata).length > 0 ? metadata : undefined;
+      return Object.keys(propertiesMetadata).length > 0 ? propertiesMetadata : undefined;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       this.logger.error(

@@ -37,27 +37,30 @@ export class SFMobileNativeTemplateSelectionTool extends AbstractNativeProjectMa
   };
 
   private generateTemplateSelectionGuidance(input: TemplateSelectionWorkflowInput): string {
-    const templateDetailsJson = JSON.stringify(input.templateDetails, null, 2);
+    const templateOptionsJson = JSON.stringify(input.templateOptions, null, 2);
 
     return dedent`
       # Template Selection Guidance for ${input.platform}
 
       ## Task: Select the Best Template
 
-      The following detailed template information has been fetched for the candidates:
+      The following template options are available:
 
       \`\`\`json
-      ${templateDetailsJson}
+      ${templateOptionsJson}
       \`\`\`
 
-      Review the detailed information for each template candidate and choose the template that best matches:
+      Review the available templates and choose the template that best matches:
       - **Platform compatibility**: ${input.platform}
       - **Feature requirements**: General mobile app needs
       - **Use case alignment**: Record management, data display, CRUD operations
       - **Complexity level**: Appropriate for the user's requirements
 
-      Use the template path/name (the key in the templateDetails object) as the selectedTemplate value.
-      \`\`\`
+      Each template includes:
+      - **path**: The template identifier to use as the selectedTemplate value
+      - **metadata**: Contains platform, displayName, and descriptive information about the template
+
+      Use the template path field as the selectedTemplate value in your response.
     `;
   }
 }

@@ -14,8 +14,6 @@ import {
 } from './metadata.js';
 import { EnvironmentValidationNode } from './nodes/environment.js';
 import { TemplateOptionsFetchNode } from './nodes/templateOptionsFetch.js';
-import { TemplateCandidateSelectionNode } from './nodes/templateCandidateSelection.js';
-import { TemplateDetailFetchNode } from './nodes/templateDetailFetch.js';
 import { TemplateSelectionNode } from './nodes/templateSelection.js';
 import { ProjectGenerationNode } from './nodes/projectGeneration.js';
 import { BuildValidationNode } from './nodes/buildValidation.js';
@@ -67,8 +65,6 @@ const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
 const pluginCheckNode = new PluginCheckNode();
 const templateOptionsFetchNode = new TemplateOptionsFetchNode();
-const templateCandidateSelectionNode = new TemplateCandidateSelectionNode();
-const templateDetailFetchNode = new TemplateDetailFetchNode();
 const templateSelectionNode = new TemplateSelectionNode();
 const templatePropertiesExtractionNode = new TemplatePropertiesExtractionNode();
 const templatePropertiesUserInputNode = new TemplatePropertiesUserInputNode();
@@ -128,8 +124,6 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addNode(extractAndroidSetupNode.name, extractAndroidSetupNode.execute)
   .addNode(pluginCheckNode.name, pluginCheckNode.execute)
   .addNode(templateOptionsFetchNode.name, templateOptionsFetchNode.execute)
-  .addNode(templateCandidateSelectionNode.name, templateCandidateSelectionNode.execute)
-  .addNode(templateDetailFetchNode.name, templateDetailFetchNode.execute)
   .addNode(templateSelectionNode.name, templateSelectionNode.execute)
   .addNode(templatePropertiesExtractionNode.name, templatePropertiesExtractionNode.execute)
   .addNode(templatePropertiesUserInputNode.name, templatePropertiesUserInputNode.execute)
@@ -150,9 +144,7 @@ export const mobileNativeWorkflow = new StateGraph(MobileNativeWorkflowState)
   .addEdge(getAndroidSetupNode.name, extractAndroidSetupNode.name)
   .addConditionalEdges(extractAndroidSetupNode.name, checkAndroidSetupExtractedRouter.execute)
   .addConditionalEdges(pluginCheckNode.name, checkPluginValidatedRouter.execute)
-  .addEdge(templateOptionsFetchNode.name, templateCandidateSelectionNode.name)
-  .addEdge(templateCandidateSelectionNode.name, templateDetailFetchNode.name)
-  .addEdge(templateDetailFetchNode.name, templateSelectionNode.name)
+  .addEdge(templateOptionsFetchNode.name, templateSelectionNode.name)
   .addEdge(templateSelectionNode.name, templatePropertiesExtractionNode.name)
   .addConditionalEdges(
     templatePropertiesExtractionNode.name,

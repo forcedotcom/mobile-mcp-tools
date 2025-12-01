@@ -105,8 +105,6 @@ export const MobileNativeWorkflowState = Annotation.Root({
   validPluginSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
   templateOptions: Annotation<TemplateListOutput>,
-  templateCandidates: Annotation<string[]>,
-  templateDetails: Annotation<Record<string, unknown>>,
 
   // Android setup state (for recovery flow)
   androidInstalled: Annotation<z.infer<typeof ANDROID_SETUP_PROPERTIES.androidInstalled.zodType>>,
