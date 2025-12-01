@@ -18,6 +18,7 @@ export class MockFileSystem implements FileSystemOperations {
   private directories = new Set<string>();
   private mkdirCalls: Array<{ path: string; options?: fs.MakeDirectoryOptions; isSync: boolean }> =
     [];
+  private tempDirCounter = 0;
 
   // Synchronous operations
   existsSync(path: string): boolean {
@@ -27,6 +28,53 @@ export class MockFileSystem implements FileSystemOperations {
   mkdirSync(dirPath: string, options?: fs.MakeDirectoryOptions): void {
     this.mkdirCalls.push({ path: dirPath, options, isSync: true });
     this.createDirectory(dirPath, options);
+  }
+
+  mkdtempSync(prefix: string): string {
+    // Create a unique temp directory path with the given prefix
+    const tempDir = `${prefix}${Date.now()}-${this.tempDirCounter++}`;
+    this.createDirectory(tempDir);
+    return tempDir;
+  }
+
+  rmSync(targetPath: string, options?: { recursive?: boolean; force?: boolean }): void {
+    const exists = this.files.has(targetPath) || this.directories.has(targetPath);
+
+    if (!exists && !options?.force) {
+      const error: NodeJS.ErrnoException = new Error(
+        `ENOENT: no such file or directory, rm '${targetPath}'`
+      );
+      error.code = 'ENOENT';
+      throw error;
+    }
+
+    if (options?.recursive) {
+      // Remove files and directories that start with this path
+      const pathPrefix = targetPath.endsWith(path.sep) ? targetPath : targetPath + path.sep;
+
+      // Remove matching files
+      for (const filePath of this.files.keys()) {
+        if (filePath === targetPath || filePath.startsWith(pathPrefix)) {
+          this.files.delete(filePath);
+        }
+      }
+
+      // Remove matching directories
+      for (const dirPath of this.directories) {
+        if (dirPath === targetPath || dirPath.startsWith(pathPrefix)) {
+          this.directories.delete(dirPath);
+        }
+      }
+    } else {
+      // Non-recursive: only remove if it's a file or empty directory
+      this.files.delete(targetPath);
+      this.directories.delete(targetPath);
+    }
+  }
+
+  tmpdir(): string {
+    // Return a mock temp directory path
+    return path.resolve('/tmp');
   }
 
   // Asynchronous operations

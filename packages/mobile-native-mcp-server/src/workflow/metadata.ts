@@ -63,6 +63,33 @@ export const WORKFLOW_USER_INPUT_PROPERTIES = {
 export type WorkflowUserInputProperties = typeof WORKFLOW_USER_INPUT_PROPERTIES;
 
 /**
+ * Definition of Android setup properties required when Android/Java environment is not configured.
+ * Used during the recovery flow to collect environment paths from the user.
+ */
+export const ANDROID_SETUP_PROPERTIES = {
+  androidInstalled: {
+    zodType: z.boolean(),
+    description:
+      'Whether both Android SDK and Java 17+ are installed. If yes, ANDROID_HOME and JAVA_HOME paths must also be provided.',
+    friendlyName: 'Android and Java installation status',
+  } satisfies PropertyMetadata<z.ZodBoolean>,
+  androidHome: {
+    zodType: z.string(),
+    description:
+      'The absolute path to ANDROID_HOME directory (e.g. /Users/username/Library/Android/sdk). Required if androidInstalled is true.',
+    friendlyName: 'ANDROID_HOME path',
+  } satisfies PropertyMetadata<z.ZodString>,
+  javaHome: {
+    zodType: z.string(),
+    description:
+      'The absolute path to JAVA_HOME directory (e.g. /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home). Required if androidInstalled is true.',
+    friendlyName: 'JAVA_HOME path',
+  } satisfies PropertyMetadata<z.ZodString>,
+} as const satisfies PropertyMetadataCollection;
+
+export type AndroidSetupProperties = typeof ANDROID_SETUP_PROPERTIES;
+
+/**
  * Workflow state annotation for LangGraph
  * Defines the structure of state that flows through the workflow nodes
  */
@@ -80,6 +107,12 @@ export const MobileNativeWorkflowState = Annotation.Root({
   templateOptions: Annotation<TemplateListOutput>,
   templateCandidates: Annotation<string[]>,
   templateDetails: Annotation<Record<string, unknown>>,
+
+  // Android setup state (for recovery flow)
+  androidInstalled: Annotation<z.infer<typeof ANDROID_SETUP_PROPERTIES.androidInstalled.zodType>>,
+  androidHome: Annotation<z.infer<typeof ANDROID_SETUP_PROPERTIES.androidHome.zodType>>,
+  javaHome: Annotation<z.infer<typeof ANDROID_SETUP_PROPERTIES.javaHome.zodType>>,
+
   selectedTemplate: Annotation<string>,
   templateProperties: Annotation<Record<string, string>>,
   templatePropertiesMetadata: Annotation<TemplatePropertiesMetadata>,

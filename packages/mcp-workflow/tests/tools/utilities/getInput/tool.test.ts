@@ -58,31 +58,32 @@ describe('GetInputTool', () => {
   });
 
   describe('Factory Function', () => {
-    it('should create tool with default toolId when no prefix provided', () => {
+    it('should create tool with specified toolId', () => {
       const factoryTool = createGetInputTool(mockServer, {
+        toolId: 'magen-get-input',
         orchestratorToolId: TEST_ORCHESTRATOR_ID,
       });
 
       expect(factoryTool.toolMetadata.toolId).toBe('magen-get-input');
     });
 
-    it('should create tool with prefixed toolId', () => {
+    it('should create tool with custom toolId', () => {
       const factoryTool = createGetInputTool(mockServer, {
-        toolIdPrefix: 'mobile',
+        toolId: 'mobile-magen-get-input',
         orchestratorToolId: TEST_ORCHESTRATOR_ID,
       });
 
       expect(factoryTool.toolMetadata.toolId).toBe('mobile-magen-get-input');
     });
 
-    it('should create tool with different prefixes', () => {
+    it('should create tool with different toolIds', () => {
       const mobileTool = createGetInputTool(mockServer, {
-        toolIdPrefix: 'mobile',
+        toolId: 'mobile-magen-get-input',
         orchestratorToolId: 'mobile-orchestrator',
       });
 
       const salesopsTool = createGetInputTool(mockServer, {
-        toolIdPrefix: 'salesops',
+        toolId: 'salesops-magen-get-input',
         orchestratorToolId: 'salesops-orchestrator',
       });
 
@@ -92,7 +93,7 @@ describe('GetInputTool', () => {
 
     it('should create functional tool via factory', async () => {
       const factoryTool = createGetInputTool(mockServer, {
-        toolIdPrefix: 'test',
+        toolId: 'test-magen-get-input',
         orchestratorToolId: TEST_ORCHESTRATOR_ID,
       });
 

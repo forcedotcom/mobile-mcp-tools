@@ -13,15 +13,28 @@ import { GetInputServiceProvider } from '../../../src/services/getInputService.j
 import { PropertyMetadataCollection } from '../../../src/common/propertyMetadata.js';
 import { PropertyFulfilledResult } from '../../../src/common/types.js';
 
-// Test state type
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const TestState = Annotation.Root({
-  userInput: Annotation<unknown>(),
-  platform: Annotation<string>(),
-  projectName: Annotation<string>(),
+// Test state definition
+// NB: Since we only use TestState to create and use its State type, TypeScript complains.
+// Hence the underscore prefix here.
+const _TestState = Annotation.Root({
+  userInput: Annotation<unknown>,
+  platform: Annotation<string>,
+  projectName: Annotation<string>,
 });
 
-type TestStateType = typeof TestState.State;
+type TestStateType = typeof _TestState.State;
+
+/**
+ * Creates a test State object with sensible defaults for testing.
+ */
+function createTestState(overrides: Partial<TestStateType> = {}): TestStateType {
+  return {
+    userInput: undefined,
+    platform: undefined,
+    projectName: undefined,
+    ...overrides,
+  } as TestStateType;
+}
 
 describe('GetUserInputNode', () => {
   let mockService: GetInputServiceProvider;
@@ -100,11 +113,7 @@ describe('GetUserInputNode', () => {
         'userInput'
       );
 
-      const state: TestStateType = {
-        userInput: undefined,
-        platform: undefined,
-        projectName: undefined,
-      };
+      const state = createTestState();
 
       const result = node.execute(state);
 
@@ -141,11 +150,7 @@ describe('GetUserInputNode', () => {
         'userInput'
       );
 
-      const state: TestStateType = {
-        userInput: undefined,
-        platform: undefined,
-        projectName: undefined,
-      };
+      const state = createTestState();
 
       node.execute(state);
 
@@ -184,11 +189,9 @@ describe('GetUserInputNode', () => {
         'userInput'
       );
 
-      const state: TestStateType = {
-        userInput: undefined,
+      const state = createTestState({
         platform: 'iOS', // Fulfilled
-        projectName: undefined,
-      };
+      });
 
       node.execute(state);
 
@@ -227,11 +230,7 @@ describe('GetUserInputNode', () => {
         'userInput'
       );
 
-      const state: TestStateType = {
-        userInput: undefined,
-        platform: undefined,
-        projectName: undefined,
-      };
+      const state = createTestState();
 
       node.execute(state);
 
@@ -276,11 +275,10 @@ describe('GetUserInputNode', () => {
         'userInput'
       );
 
-      const state: TestStateType = {
-        userInput: undefined,
+      const state = createTestState({
         platform: 'iOS', // Fulfilled
         projectName: 'MyProject', // Fulfilled
-      };
+      });
 
       node.execute(state);
 

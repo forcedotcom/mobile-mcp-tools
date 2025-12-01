@@ -14,12 +14,9 @@ import { InputExtractionTool } from './tool.js';
  */
 export interface InputExtractionToolOptions {
   /**
-   * Optional prefix for the tool ID to avoid collisions in multi-server environments
-   * @example 'mobile' → 'mobile-magen-input-extraction'
-   * @example 'salesops' → 'salesops-magen-input-extraction'
-   * @default undefined → 'magen-input-extraction'
+   * The tool ID to use for the input extraction tool
    */
-  toolIdPrefix?: string;
+  toolId: string;
 
   /**
    * Orchestrator tool ID that this tool reports back to
@@ -43,25 +40,25 @@ export interface InputExtractionToolOptions {
  * @example
  * // Simple case - single MCP server
  * const inputExtractionTool = createInputExtractionTool(server, {
+ *   toolId: 'magen-input-extraction',
  *   orchestratorToolId: 'my-orchestrator',
  * });
- * // Registers as: 'magen-input-extraction'
  *
  * @example
  * // Multi-server environment - avoid collisions
  * const inputExtractionTool = createInputExtractionTool(server, {
- *   toolIdPrefix: 'mobile',
+ *   toolId: 'mobile-magen-input-extraction',
  *   orchestratorToolId: 'mobile-orchestrator',
  * });
- * // Registers as: 'mobile-magen-input-extraction'
  */
 export function createInputExtractionTool(
   server: McpServer,
   options: InputExtractionToolOptions
 ): InputExtractionTool {
-  const toolId = options.toolIdPrefix
-    ? `${options.toolIdPrefix}-magen-input-extraction`
-    : 'magen-input-extraction';
-
-  return new InputExtractionTool(server, toolId, options.orchestratorToolId, options.logger);
+  return new InputExtractionTool(
+    server,
+    options.toolId,
+    options.orchestratorToolId,
+    options.logger
+  );
 }

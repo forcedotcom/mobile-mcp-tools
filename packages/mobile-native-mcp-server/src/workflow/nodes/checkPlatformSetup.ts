@@ -9,6 +9,7 @@ import { State } from '../metadata.js';
 import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
 import z from 'zod';
 import { execSync } from 'child_process';
+import { loadAndSetEnvVars } from '../utils/envConfig.js';
 
 const REQUIREMENT_RESULT_SCHEMA = z.object({
   title: z.string().describe('The title of the requirement check'),
@@ -50,6 +51,22 @@ export class PlatformCheckNode extends BaseNode<State> {
         validPlatformSetup: false,
         workflowFatalErrorMessages: [`Invalid platform: ${state.platform}`],
       };
+    }
+
+    // For Android platform, check if Android/Java environment is configured
+    if (platform === 'Android') {
+      // First check if already set in process.env
+      if (!process.env.ANDROID_HOME || !process.env.JAVA_HOME) {
+        // Try to load from config file
+        loadAndSetEnvVars(this.logger);
+
+        // Check again after attempting to load from config
+        if (!process.env.ANDROID_HOME || !process.env.JAVA_HOME) {
+          return {
+            validPlatformSetup: false,
+          };
+        }
+      }
     }
 
     // Execute the sf force lightning local setup command

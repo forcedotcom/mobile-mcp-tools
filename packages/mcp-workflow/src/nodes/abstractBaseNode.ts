@@ -14,7 +14,7 @@ import { StateType, StateDefinition } from '@langchain/langgraph';
  *
  * Example:
  * ```
- * const MyWorkflowState = Annotation.Root({ count: Annotation<number>() });
+ * const MyWorkflowState = Annotation.Root({ count: Annotation<number> });
  * type State = typeof MyWorkflowState.State; // This is StateType<typeof MyWorkflowState.spec>
  *
  * class IncrementNode extends BaseNode<State> {

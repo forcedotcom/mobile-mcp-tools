@@ -20,7 +20,7 @@ import type { OrchestratorConfig } from './config.js';
  * can start new workflows (where it doesn't exist yet) or continue existing ones.
  */
 export const ORCHESTRATOR_INPUT_SCHEMA = z.object({
-  userInput: z
+  [WORKFLOW_PROPERTY_NAMES.userInput]: z
     .record(z.string(), z.unknown())
     .optional()
     .describe(

@@ -44,10 +44,25 @@ export interface UserInputExtractionNodeOptions<TState extends StateType<StateDe
   logger?: Logger;
 
   /**
-   * Function to get the userInput field from state
-   * Default: expects state.userInput
+   * Property name in state that contains user input to extract from.
+   * Must be a valid property of TState.
+   *
+   * @example
+   *
+   * // State has a 'userInput' property
+   * createUserInputExtractionNode({
+   *   userInputProperty: 'userInput',
+   *   ...
+   * });
+   *
+   * // State has a 'currentUtterance' property
+   * createUserInputExtractionNode({
+   *   userInputProperty: 'currentUtterance',
+   *   ...
+   * });
+   *
    */
-  getUserInput?: (state: TState) => unknown;
+  userInputProperty: keyof TState;
 }
 
 export class UserInputExtractionNode<
@@ -56,13 +71,13 @@ export class UserInputExtractionNode<
   constructor(
     private readonly extractionService: InputExtractionServiceProvider,
     private readonly requiredProperties: PropertyMetadataCollection,
-    private readonly getUserInput: (state: TState) => unknown
+    private readonly userInputProperty: keyof TState
   ) {
     super('userInputExtraction');
   }
 
   execute = (state: TState): Partial<TState> => {
-    const userInput = this.getUserInput(state);
+    const userInput = state[this.userInputProperty];
     const result = this.extractionService.extractProperties(userInput, this.requiredProperties);
     return result.extractedProperties as unknown as Partial<TState>;
   };

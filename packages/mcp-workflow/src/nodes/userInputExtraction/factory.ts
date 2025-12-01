@@ -29,9 +29,9 @@ import { UserInputExtractionNodeOptions, UserInputExtractionNode } from './node.
  * @example
  * ```typescript
  * const MyState = Annotation.Root({
- *   userInput: Annotation<unknown>(),
- *   platform: Annotation<string>(),
- *   projectName: Annotation<string>(),
+ *   userInput: Annotation<unknown>,
+ *   platform: Annotation<string>,
+ *   projectName: Annotation<string>,
  * });
  *
  * const properties = {
@@ -62,14 +62,12 @@ export function createUserInputExtractionNode<TState extends StateType<StateDefi
     extractionService,
     toolExecutor = new LangGraphToolExecutor(),
     logger = createComponentLogger('UserInputExtractionNode'),
-    getUserInput = (state: TState) => {
-      return state.userInput;
-    },
+    userInputProperty,
   } = options;
 
   // Create default service implementation if not provided
   const service: InputExtractionServiceProvider =
     extractionService ?? new InputExtractionService(toolId, toolExecutor, logger);
 
-  return new UserInputExtractionNode(service, requiredProperties, getUserInput);
+  return new UserInputExtractionNode(service, requiredProperties, userInputProperty);
 }

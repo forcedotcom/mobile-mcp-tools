@@ -14,7 +14,7 @@ import { WorkflowStateManager } from '../../checkpointing/workflowStateManager.j
  *
  * Example usage:
  * ```
- * const MyWorkflowState = Annotation.Root({ messages: Annotation<string[]>() });
+ * const MyWorkflowState = Annotation.Root({ messages: Annotation<string[]> });
  * const workflow = new StateGraph(MyWorkflowState)
  *   .addNode('start', (state) => ({ messages: ['Started'] }))
  *   .addEdge(START, 'start')

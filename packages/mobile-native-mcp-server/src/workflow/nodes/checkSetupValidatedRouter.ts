@@ -9,23 +9,42 @@ import { State } from '../metadata.js';
 
 /**
  * Conditional router edge to see whether the platform setup is valid.
+ * For Android platform, if Android/Java setup is missing, routes to the Android setup node.
  */
 export class CheckSetupValidatedRouter {
   private readonly setupValidatedNodeName: string;
+  private readonly androidSetupNodeName: string;
   private readonly invalidSetupNodeName: string;
 
   /**
    * Creates a new CheckSetupValidatedRouter.
    *
    * @param setupValidatedNodeName - The name of the node to route to if the platform setup is valid
+   * @param androidSetupNodeName - The name of the node to route to for Android setup recovery
    * @param invalidSetupNodeName - The name of the node to route to if the platform setup is invalid
    */
-  constructor(setupValidatedNodeName: string, invalidSetupNodeName: string) {
+  constructor(
+    setupValidatedNodeName: string,
+    androidSetupNodeName: string,
+    invalidSetupNodeName: string
+  ) {
     this.setupValidatedNodeName = setupValidatedNodeName;
+    this.androidSetupNodeName = androidSetupNodeName;
     this.invalidSetupNodeName = invalidSetupNodeName;
   }
 
   execute = (state: State): string => {
-    return state.validPlatformSetup ? this.setupValidatedNodeName : this.invalidSetupNodeName;
+    // If platform setup is valid, proceed
+    if (state.validPlatformSetup) {
+      return this.setupValidatedNodeName;
+    }
+
+    // If platform is Android and Android/Java paths are missing, route to Android setup
+    if (state.platform === 'Android' && (!state.androidHome || !state.javaHome)) {
+      return this.androidSetupNodeName;
+    }
+
+    // Otherwise, route to failure
+    return this.invalidSetupNodeName;
   };
 }

@@ -23,12 +23,9 @@ export function createTemplatePropertiesExtractionNode() {
   return createUserInputExtractionNode<State>({
     requiredProperties: {} as PropertyMetadataCollection, // Will be determined dynamically
     toolId: SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID,
-    getUserInput: (state: State) => {
-      return state.templatePropertiesUserInput;
-    },
+    userInputProperty: 'templatePropertiesUserInput',
   });
 }
-
 /**
  * Custom node that converts template properties metadata to PropertyMetadataCollection
  * and then extracts properties from user input
@@ -66,9 +63,7 @@ export class TemplatePropertiesExtractionNode {
     const extractionNode = createUserInputExtractionNode<State>({
       requiredProperties,
       toolId: SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID,
-      getUserInput: (state: State) => {
-        return state.templatePropertiesUserInput;
-      },
+      userInputProperty: 'templatePropertiesUserInput',
     });
 
     // Execute the extraction and map results to templateProperties

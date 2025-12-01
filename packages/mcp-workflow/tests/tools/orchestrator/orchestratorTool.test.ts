@@ -553,11 +553,8 @@ describe('OrchestratorTool', () => {
     it('should work with custom state structures', async () => {
       // Define a different state structure with custom reducers
       const CustomState = Annotation.Root({
-        count: Annotation<number>({
-          reducer: (x, y) => x + y,
-          default: () => 0,
-        }),
-        name: Annotation<string>(),
+        count: Annotation<number>,
+        name: Annotation<string>,
       });
 
       type CustomStateType = typeof CustomState.State;

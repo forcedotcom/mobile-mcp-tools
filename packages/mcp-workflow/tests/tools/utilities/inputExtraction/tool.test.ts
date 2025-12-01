@@ -70,31 +70,32 @@ describe('InputExtractionTool', () => {
   });
 
   describe('Factory Function', () => {
-    it('should create tool with default toolId when no prefix provided', () => {
+    it('should create tool with specified toolId', () => {
       const factoryTool = createInputExtractionTool(mockServer, {
+        toolId: 'magen-input-extraction',
         orchestratorToolId: TEST_ORCHESTRATOR_ID,
       });
 
       expect(factoryTool.toolMetadata.toolId).toBe('magen-input-extraction');
     });
 
-    it('should create tool with prefixed toolId', () => {
+    it('should create tool with custom toolId', () => {
       const factoryTool = createInputExtractionTool(mockServer, {
-        toolIdPrefix: 'mobile',
+        toolId: 'mobile-magen-input-extraction',
         orchestratorToolId: TEST_ORCHESTRATOR_ID,
       });
 
       expect(factoryTool.toolMetadata.toolId).toBe('mobile-magen-input-extraction');
     });
 
-    it('should create tool with different prefixes', () => {
+    it('should create tool with different toolIds', () => {
       const mobileTool = createInputExtractionTool(mockServer, {
-        toolIdPrefix: 'mobile',
+        toolId: 'mobile-magen-input-extraction',
         orchestratorToolId: 'mobile-orchestrator',
       });
 
       const salesopsTool = createInputExtractionTool(mockServer, {
-        toolIdPrefix: 'salesops',
+        toolId: 'salesops-magen-input-extraction',
         orchestratorToolId: 'salesops-orchestrator',
       });
 
@@ -104,7 +105,7 @@ describe('InputExtractionTool', () => {
 
     it('should create functional tool via factory', async () => {
       const factoryTool = createInputExtractionTool(mockServer, {
-        toolIdPrefix: 'test',
+        toolId: 'test-magen-input-extraction',
         orchestratorToolId: TEST_ORCHESTRATOR_ID,
       });
 

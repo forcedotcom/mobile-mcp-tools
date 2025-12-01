@@ -12,15 +12,28 @@ import { UserInputExtractionNode } from '../../../src/nodes/userInputExtraction/
 import { InputExtractionServiceProvider } from '../../../src/services/inputExtractionService.js';
 import { PropertyMetadataCollection } from '../../../src/common/propertyMetadata.js';
 
-// Test state type
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const TestState = Annotation.Root({
-  userInput: Annotation<unknown>(),
-  platform: Annotation<string>(),
-  projectName: Annotation<string>(),
+// Test state definition
+// NB: Since we only use TestState to create and use its State type, TypeScript complains.
+// Hence the underscore prefix here.
+const _TestState = Annotation.Root({
+  userInput: Annotation<unknown>,
+  platform: Annotation<string>,
+  projectName: Annotation<string>,
 });
 
-type TestStateType = typeof TestState.State;
+type TestStateType = typeof _TestState.State;
+
+/**
+ * Creates a test State object with sensible defaults for testing.
+ */
+function createTestState(overrides: Partial<TestStateType> = {}): TestStateType {
+  return {
+    userInput: undefined,
+    platform: undefined,
+    projectName: undefined,
+    ...overrides,
+  } as TestStateType;
+}
 
 describe('UserInputExtractionNode', () => {
   let mockService: InputExtractionServiceProvider;
@@ -48,9 +61,7 @@ describe('UserInputExtractionNode', () => {
 
   describe('Constructor', () => {
     it('should initialize with correct name', () => {
-      const getUserInput = (state: TestStateType) => state.userInput;
-
-      const node = new UserInputExtractionNode(mockService, requiredProperties, getUserInput);
+      const node = new UserInputExtractionNode(mockService, requiredProperties, 'userInput');
 
       expect(node.name).toBe('userInputExtraction');
     });
@@ -68,15 +79,11 @@ describe('UserInputExtractionNode', () => {
         }),
       };
 
-      const getUserInput = (state: TestStateType) => state.userInput;
+      const node = new UserInputExtractionNode(service, requiredProperties, 'userInput');
 
-      const node = new UserInputExtractionNode(service, requiredProperties, getUserInput);
-
-      const state: TestStateType = {
+      const state = createTestState({
         userInput: 'I want an iOS app called TestApp',
-        platform: undefined as unknown as string,
-        projectName: undefined as unknown as string,
-      };
+      });
 
       const result = node.execute(state);
 
@@ -97,15 +104,11 @@ describe('UserInputExtractionNode', () => {
         },
       };
 
-      const getUserInput = (state: TestStateType) => state.userInput;
+      const node = new UserInputExtractionNode(service, requiredProperties, 'userInput');
 
-      const node = new UserInputExtractionNode(service, requiredProperties, getUserInput);
-
-      const state: TestStateType = {
+      const state = createTestState({
         userInput: 'test input string',
-        platform: undefined as unknown as string,
-        projectName: undefined as unknown as string,
-      };
+      });
 
       node.execute(state);
 
@@ -113,7 +116,27 @@ describe('UserInputExtractionNode', () => {
       expect(capturedProperties).toBe(requiredProperties);
     });
 
-    it('should use getUserInput function to extract userInput from state', () => {
+    it('should use userInputProperty to extract userInput from state', () => {
+      // Test state with a different property name for user input
+      const _CustomTestState = Annotation.Root({
+        customInput: Annotation<unknown>,
+        platform: Annotation<string>,
+        projectName: Annotation<string>,
+      });
+
+      type CustomTestStateType = typeof _CustomTestState.State;
+
+      function createCustomTestState(
+        overrides: Partial<CustomTestStateType> = {}
+      ): CustomTestStateType {
+        return {
+          customInput: undefined,
+          platform: undefined,
+          projectName: undefined,
+          ...overrides,
+        } as CustomTestStateType;
+      }
+
       let capturedUserInput: unknown;
       const service: InputExtractionServiceProvider = {
         extractProperties: userInput => {
@@ -124,18 +147,15 @@ describe('UserInputExtractionNode', () => {
         },
       };
 
-      const customGetUserInput = (state: TestStateType) => {
-        return (state as Record<string, unknown>).customInput;
-      };
+      const node = new UserInputExtractionNode<CustomTestStateType>(
+        service,
+        requiredProperties,
+        'customInput'
+      );
 
-      const node = new UserInputExtractionNode(service, requiredProperties, customGetUserInput);
-
-      const state: TestStateType = {
-        userInput: undefined,
-        platform: undefined as unknown as string,
-        projectName: undefined as unknown as string,
+      const state = createCustomTestState({
         customInput: 'custom input value',
-      } as TestStateType & { customInput: string };
+      });
 
       node.execute(state);
 
@@ -149,15 +169,11 @@ describe('UserInputExtractionNode', () => {
         }),
       };
 
-      const getUserInput = (state: TestStateType) => state.userInput;
+      const node = new UserInputExtractionNode(service, requiredProperties, 'userInput');
 
-      const node = new UserInputExtractionNode(service, requiredProperties, getUserInput);
-
-      const state: TestStateType = {
+      const state = createTestState({
         userInput: 'some input',
-        platform: undefined as unknown as string,
-        projectName: undefined as unknown as string,
-      };
+      });
 
       const result = node.execute(state);
 
@@ -174,15 +190,11 @@ describe('UserInputExtractionNode', () => {
         }),
       };
 
-      const getUserInput = (state: TestStateType) => state.userInput;
+      const node = new UserInputExtractionNode(service, requiredProperties, 'userInput');
 
-      const node = new UserInputExtractionNode(service, requiredProperties, getUserInput);
-
-      const state: TestStateType = {
+      const state = createTestState({
         userInput: 'Android app',
-        platform: undefined as unknown as string,
-        projectName: undefined as unknown as string,
-      };
+      });
 
       const result = node.execute(state);
 

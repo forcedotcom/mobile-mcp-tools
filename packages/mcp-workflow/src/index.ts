@@ -88,6 +88,9 @@ export {
   type UserInputExtractionNodeOptions,
 } from './nodes/index.js';
 
+// Routers
+export { CheckPropertiesFulfilledRouter } from './routers/index.js';
+
 // Base Service Classes
 export { AbstractService } from './services/index.js';
 

@@ -35,6 +35,12 @@ export function createTestState(overrides: Partial<State> = {}): State {
     validPlatformSetup: undefined,
     validPluginSetup: undefined,
     workflowFatalErrorMessages: undefined,
+
+    // Android setup state
+    androidInstalled: undefined,
+    androidHome: undefined,
+    javaHome: undefined,
+
     selectedTemplate: undefined,
     projectName: undefined,
     projectPath: undefined,
@@ -48,6 +54,11 @@ export function createTestState(overrides: Partial<State> = {}): State {
     buildType: undefined,
     targetDevice: undefined,
     buildSuccessful: undefined,
+    buildAttemptCount: undefined,
+    buildErrorMessages: undefined,
+    maxBuildRetries: undefined,
+    buildOutputFilePath: undefined,
+    recoveryReadyForRetry: undefined,
     deploymentStatus: undefined,
 
     // Apply any overrides

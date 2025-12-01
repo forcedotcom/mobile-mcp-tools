@@ -14,12 +14,9 @@ import { GetInputTool } from './tool.js';
  */
 export interface GetInputToolOptions {
   /**
-   * Optional prefix for the tool ID to avoid collisions in multi-server environments
-   * @example 'mobile' → 'mobile-magen-get-input'
-   * @example 'salesops' → 'salesops-magen-get-input'
-   * @default undefined → 'magen-get-input'
+   * The tool ID to use for the get input tool
    */
-  toolIdPrefix?: string;
+  toolId: string;
 
   /**
    * Orchestrator tool ID that this tool reports back to
@@ -43,22 +40,17 @@ export interface GetInputToolOptions {
  * @example
  * // Simple case - single MCP server
  * const getInputTool = createGetInputTool(server, {
+ *   toolId: 'magen-get-input',
  *   orchestratorToolId: 'my-orchestrator',
  * });
- * // Registers as: 'magen-get-input'
  *
  * @example
  * // Multi-server environment - avoid collisions
  * const getInputTool = createGetInputTool(server, {
- *   toolIdPrefix: 'mobile',
+ *   toolId: 'mobile-magen-get-input',
  *   orchestratorToolId: 'mobile-orchestrator',
  * });
- * // Registers as: 'mobile-magen-get-input'
  */
 export function createGetInputTool(server: McpServer, options: GetInputToolOptions): GetInputTool {
-  const toolId = options.toolIdPrefix
-    ? `${options.toolIdPrefix}-magen-get-input`
-    : 'magen-get-input';
-
-  return new GetInputTool(server, toolId, options.orchestratorToolId, options.logger);
+  return new GetInputTool(server, options.toolId, options.orchestratorToolId, options.logger);
 }
