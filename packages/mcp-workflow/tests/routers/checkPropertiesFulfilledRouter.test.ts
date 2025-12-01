@@ -712,7 +712,7 @@ describe('CheckPropertiesFulfilledRouter', () => {
     it('should match production graph configuration', () => {
       // This tests the actual node names used in typical workflow graphs
       const router = new CheckPropertiesFulfilledRouter<State>(
-        'templateDiscovery',
+        'selectTemplateCandidates',
         'getUserInput',
         TEST_PROPERTIES
       );
