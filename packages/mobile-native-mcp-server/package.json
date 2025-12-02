@@ -35,7 +35,7 @@
     "@salesforce/magen-mcp-workflow": "*",
     "@salesforce/workflow-magi": "*",
     "@langchain/langgraph": "^0.4.9",
-    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@modelcontextprotocol/sdk": "^1.24.0",
     "dedent": "^1.7.0",
     "pino": "^9.9.5",
     "zod": "^3.25.67",

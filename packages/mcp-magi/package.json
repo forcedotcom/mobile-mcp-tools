@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@salesforce/workflow-magi": "*",
-    "@modelcontextprotocol/sdk": "^1.21.1"
+    "@modelcontextprotocol/sdk": "^1.24.0"
   },
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.17.2",
