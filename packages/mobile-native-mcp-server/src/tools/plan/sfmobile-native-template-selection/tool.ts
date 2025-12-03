@@ -58,9 +58,7 @@ export class SFMobileNativeTemplateSelectionTool extends AbstractNativeProjectMa
 
       Each template includes:
       - **path**: The template identifier to use as the selectedTemplate value
-      - **metadata**: Contains platform, displayName, and descriptive information about the template
-
-      Use the template path field as the selectedTemplate value in your response.
+      - **metadata**: Contains descriptive information about the template
     `;
   }
 }

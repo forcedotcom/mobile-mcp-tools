@@ -39,7 +39,6 @@ export const PROJECT_NAME_FIELD = z.string().describe('Name for the mobile app p
 const TemplateMetadataSchema = z
   .object({
     platform: z.enum(['ios', 'android']),
-    displayName: z.string(),
   })
   .passthrough();
 

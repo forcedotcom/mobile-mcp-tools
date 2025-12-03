@@ -57,21 +57,7 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
     try {
       const parsed = JSON.parse(output);
 
-      // The sf mobilesdk listtemplates command may return different structures
-      // Try to extract the template list from various possible structures
-      let templateData = parsed;
-
-      // If it's wrapped in a result property
-      if (parsed.result) {
-        templateData = parsed.result;
-      }
-
-      // If it's wrapped in outputContent (similar to platform check)
-      if (parsed.outputContent) {
-        templateData = parsed.outputContent;
-      }
-
-      return TEMPLATE_LIST_SCHEMA.parse(templateData);
+      return TEMPLATE_LIST_SCHEMA.parse(parsed);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       throw new Error(`Failed to parse template list output: ${errorMessage}`);
