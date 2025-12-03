@@ -84,14 +84,21 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
         return undefined;
       }
 
-      // Navigate to metadata.templatePrerequisites.templateProperties
+      // Navigate to metadata.properties.templatePrerequisites.properties.templateProperties.properties
+      // This matches the deeply nested structure in template.json files
       const metadata = template.metadata as Record<string, unknown> | undefined;
       if (!metadata) {
         this.logger.debug(`No metadata found for template ${selectedTemplate}`);
         return undefined;
       }
 
-      const templatePrerequisites = metadata.templatePrerequisites as
+      const properties = metadata.properties as Record<string, unknown> | undefined;
+      if (!properties) {
+        this.logger.debug(`No properties found for template ${selectedTemplate}`);
+        return undefined;
+      }
+
+      const templatePrerequisites = properties.templatePrerequisites as
         | Record<string, unknown>
         | undefined;
       if (!templatePrerequisites) {
@@ -99,11 +106,31 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
         return undefined;
       }
 
-      const templateProperties = templatePrerequisites.templateProperties as
+      const templatePrerequisitesProperties = templatePrerequisites.properties as
+        | Record<string, unknown>
+        | undefined;
+      if (!templatePrerequisitesProperties) {
+        this.logger.debug(
+          `No templatePrerequisites.properties found for template ${selectedTemplate}`
+        );
+        return undefined;
+      }
+
+      const templatePropertiesContainer = templatePrerequisitesProperties.templateProperties as
+        | Record<string, unknown>
+        | undefined;
+      if (!templatePropertiesContainer) {
+        this.logger.debug(`No templateProperties found for template ${selectedTemplate}`);
+        return undefined;
+      }
+
+      const templateProperties = templatePropertiesContainer.properties as
         | Record<string, unknown>
         | undefined;
       if (!templateProperties || Object.keys(templateProperties).length === 0) {
-        this.logger.debug(`No templateProperties found for template ${selectedTemplate}`);
+        this.logger.debug(
+          `No templateProperties.properties found for template ${selectedTemplate}`
+        );
         return undefined;
       }
 

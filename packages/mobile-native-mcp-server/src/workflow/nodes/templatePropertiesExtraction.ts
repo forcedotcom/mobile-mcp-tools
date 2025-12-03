@@ -71,9 +71,11 @@ export class TemplatePropertiesExtractionNode {
 
     // Convert extracted properties to Record<string, string> format
     const templateProperties: Record<string, string> = {};
+    const resultRecord = result as Record<string, unknown>;
     for (const key of Object.keys(requiredProperties)) {
-      if (result[key as keyof State]) {
-        templateProperties[key] = result[key as keyof State] as string;
+      const value = resultRecord[key];
+      if (value && typeof value === 'string') {
+        templateProperties[key] = value;
       }
     }
 
