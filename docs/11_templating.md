@@ -271,49 +271,6 @@ npx magen-templates validate ios-native-swift
 npx magen-templates search --capability offline-sync
 ```
 
----
-
-```typescript
-// Agent receives user request: "iOS app for managing contacts with offline support"
-
-// 1. Extract requirements from natural language
-const requirements = {
-  platform: 'ios',
-  capabilities: ['offline-sync', 'contact-management']
-};
-
-// 2. Discover and filter
-const templates = await registry.discoverTemplates();
-const candidates = templates.filter(t => 
-  t.platform.type === requirements.platform &&
-  requirements.capabilities.every(cap => t.capabilities.includes(cap))
-);
-
-// 3. Examine each candidate
-for (const template of candidates) {
-  const metadata = await registry.getMetadata(template.id);
-  
-  // Agent reasons about:
-  // - Does use case align with "managing contacts"?
-  // - Are extension points suitable for customization?
-  // - Are capabilities comprehensive or will extensions be needed?
-  // - Do required variables match available inputs?
-}
-
-// 4. Agent makes informed selection and explains reasoning
-const selected = 'mobilesync-explorer-swift';
-const reasoning = [
-  'Matches platform: iOS with Swift/SwiftUI',
-  'Provides required capabilities: offline-sync, contact-management',
-  'Use case aligns: "Mobile SDK data explorer with offline sync"',
-  'Extension points enable adding custom SObjects',
-  'All required variables can be satisfied',
-  'Template features align well with user requirements'
-];
-```
-
----
-
 ## Generation Pipeline
 
 ```
