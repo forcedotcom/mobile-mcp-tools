@@ -5,10 +5,22 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-plugin-prettier';
 import evaluationConfig from './packages/evaluation/eslint.config.mjs';
+
+// Read Prettier options from .prettierrc to ensure consistency between IDE and CLI.
+// Using an absolute path ensures eslint-plugin-prettier uses the correct config
+// regardless of the working directory from which ESLint is invoked.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const prettierRcPath = path.join(__dirname, '.prettierrc');
+const prettierOptions = JSON.parse(fs.readFileSync(prettierRcPath, 'utf-8'));
 
 export default tseslint.config(
   {
@@ -40,7 +52,7 @@ export default tseslint.config(
       prettier: prettier,
     },
     rules: {
-      'prettier/prettier': 'error',
+      'prettier/prettier': ['error', prettierOptions],
     },
   },
   ...evaluationConfig,
@@ -59,7 +71,7 @@ export default tseslint.config(
       prettier: prettier,
     },
     rules: {
-      'prettier/prettier': 'error',
+      'prettier/prettier': ['error', prettierOptions],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
@@ -68,10 +80,10 @@ export default tseslint.config(
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_'
-        }
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
-      'no-duplicate-imports': 'error'
+      'no-duplicate-imports': 'error',
     },
   }
 );
