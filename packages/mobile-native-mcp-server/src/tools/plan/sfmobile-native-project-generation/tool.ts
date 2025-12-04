@@ -82,7 +82,7 @@ export class SFMobileNativeProjectGenerationTool extends AbstractNativeProjectMa
       sf mobilesdk ${platformLower} createwithtemplate --templatesource="${MOBILE_SDK_TEMPLATES_PATH}" --template="${input.selectedTemplate}" --appname="${input.projectName}" --packagename="${input.packageName}" --organization="${input.organization} --consumerkey="${input.connectedAppClientId}" --callbackurl="${input.connectedAppCallbackUri}" --loginserver="${input.loginHost} ${templatePropertiesFlags}"
       \`\`\`
 
-      **Expected Outcome**: A new ${input.platform} project directory named "${input.projectName}" will be created with the template structure. The output of the command will indicate the location of the bootconfig.plist file, take note of this for oauth configuration!
+      **Expected Outcome**: A new ${input.platform} project directory named "${input.projectName}" will be created with the template structure.
 
       NOTE: it is VERY IMPORTANT to use the above command EXACTLY to generate the project. Do not use any other configuration method to generate the project. If the above command fails do not try to generate the project using any other method. Instead report back error to the user.
     `;
