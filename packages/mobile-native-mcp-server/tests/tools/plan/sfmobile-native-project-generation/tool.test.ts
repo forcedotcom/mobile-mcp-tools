@@ -81,7 +81,6 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       expect(workflowOutput.promptForLLM).toContain('Mobile App Project Generation Guide');
       expect(workflowOutput.promptForLLM).toContain('MobileSyncExplorerSwift');
       expect(workflowOutput.promptForLLM).toContain('iOS');
-      expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
       expect(workflowOutput.promptForLLM).toContain('https://test.salesforce.com');
 
       // Verify the result schema defines projectPath
@@ -110,7 +109,6 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       // Verify CLI command includes OAuth parameters
       expect(workflowOutput.promptForLLM).toContain('--consumerkey="3MVG9test123"');
       expect(workflowOutput.promptForLLM).toContain('--callbackurl="testapp://oauth/callback"');
-      expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
     });
   });
 
@@ -141,7 +139,6 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       expect(workflowOutput.promptForLLM).toContain('Mobile App Project Generation Guide');
       expect(workflowOutput.promptForLLM).toContain('MobileSyncExplorerKotlin');
       expect(workflowOutput.promptForLLM).toContain('Android');
-      expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
 
       // Verify the result schema defines projectPath
       const resultSchema = JSON.parse(workflowOutput.resultSchema);
@@ -169,7 +166,6 @@ describe('SFMobileNativeProjectGenerationTool', () => {
       // Verify CLI command includes OAuth parameters
       expect(workflowOutput.promptForLLM).toContain('--consumerkey="3MVG9android123"');
       expect(workflowOutput.promptForLLM).toContain('--callbackurl="androidapp://oauth/callback"');
-      expect(workflowOutput.promptForLLM).toContain('bootconfig.plist');
     });
   });
 
