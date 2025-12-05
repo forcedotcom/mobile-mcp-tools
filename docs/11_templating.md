@@ -18,6 +18,32 @@ The template system is built on four principles:
 
 4. **Simple Processing** — Handlebars templating with minimal dependencies ensures predictable, transparent file generation.
 
+## Handlebars Templating
+
+The template system uses [Handlebars](https://handlebarsjs.com/) for variable substitution and file processing. Handlebars provides a simple, logic-less templating syntax that makes it easy to inject values into template files.
+
+### Basic Variable Substitution
+
+```handlebars
+// Simple variable substitution
+let projectName = "{{projectName}}";
+let bundleId = "{{bundleIdentifier}}";
+```
+
+### Built-in Helpers
+
+The system includes helpers for common string transformations:
+
+| Helper | Example Input | Output |
+|--------|---------------|--------|
+| `{{uppercase name}}` | `myApp` | `MYAPP` |
+| `{{lowercase name}}` | `MyApp` | `myapp` |
+| `{{capitalize name}}` | `myApp` | `MyApp` |
+| `{{pascalCase name}}` | `my-app` | `MyApp` |
+| `{{camelCase name}}` | `my-app` | `myApp` |
+
+For more advanced Handlebars features (conditionals, loops, custom helpers), see the [Handlebars documentation](https://handlebarsjs.com/guide/).
+
 ---
 
 ## Architecture
@@ -75,7 +101,10 @@ my-template/
 | Path contains `{{var}}` | Variable substitution in path |
 | **All other files** | **Copied verbatim (default)** |
 
-You only need to specify transforms for files that require processing. Binary files, assets, and files with `{{}}` syntax that isn't meant to be templated will be safely copied without modification.
+Files are only processed if they match a `fileTransforms` pattern OR have a `.hbs` extension. This opt-in approach means:
+- Binary files, assets, and other non-template files are safely copied without modification
+- Files containing `{{}}` syntax that are not meant to be templated (e.g., JSON schema examples, code snippets) won't be processed UNLESS explicitly specified in `fileTransforms`
+- You only need to specify transforms for files that actually require variable substitution
 
 ---
 
@@ -134,7 +163,6 @@ The `template.json` file defines everything needed for discovery, selection, and
       // All other files (images, assets, etc.) are copied as-is by default
     ],
     "fileOperations": [
-      { "action": "rename", "from": "ExampleApp", "to": "{{projectName}}" },
       { "action": "delete", "from": ".DS_Store" }
     ]
   }
@@ -270,6 +298,8 @@ npx magen-templates validate ios-native-swift
 # Search by capability
 npx magen-templates search --capability offline-sync
 ```
+
+---
 
 ## Generation Pipeline
 
@@ -581,7 +611,7 @@ Simplified `ios-mobilesync/template.json`:
 - **Use `hidden: true`**: Prevent direct instantiation
 - **Document inheritance**: Explain what children should override
 
-**Rule of Thumb**: Base templates define **what** to process (file transforms, variables). Concrete templates provide **what** to process (actual files).
+**Rule of Thumb**: Base templates **define** what to process (file transforms, variables). Concrete templates **provide** what to process (actual files).
 
 #### 2. Inheritance Depth
 
@@ -603,44 +633,68 @@ Child templates should:
 - Override `readme` with feature-specific content
 - Add `externalLinks` for specialized features
 
-## Handlebars Templating
+---
 
-The template system uses [Handlebars](https://handlebarsjs.com/) for variable substitution and file processing. Handlebars provides a simple, logic-less templating syntax that makes it easy to inject values into template files.
+## Validation
 
-### Basic Variable Substitution
+The validation system helps template authors catch errors before generation time, ensuring templates are well-formed and ready for use by AI agents and developers.
 
-```handlebars
-// Simple variable substitution
-let projectName = "{{projectName}}";
-let bundleId = "{{bundleIdentifier}}";
+### What Validation Checks
+
+| Check | Purpose | Severity |
+|-------|---------|----------|
+| **Schema compliance** | `template.json` matches the JSON Schema definition | Error |
+| **Required fields** | All mandatory metadata fields are present | Error |
+| **Template directory** | `template/` directory exists | Error |
+| **Handlebars syntax** | Template files compile without syntax errors | Error |
+| **Variable consistency** | Variables used in templates are declared in `templateVariables` | Warning |
+| **File transform patterns** | `fileTransforms` patterns match actual files | Warning |
+| **Hook scripts** | Pre/post hooks exist and are valid JavaScript | Error |
+| **Extension point files** | `affectedFiles` in extension points exist | Warning |
+| **Documentation files** | Referenced documentation files exist | Warning |
+
+### Why Validate?
+
+Validation catches common issues early:
+
+- **Typos in variable names** — Detects `{{projecName}}` when you declared `{{projectName}}`
+- **Invalid Handlebars syntax** — Catches unclosed tags like `{{#if}}` without `{{/if}}`
+- **Broken file references** — Warns if extension points reference files that don't exist
+- **Unused transforms** — Alerts when file patterns don't match any actual files
+- **Missing scripts** — Catches references to non-existent hook scripts
+
+### Usage
+
+**CLI:**
+```bash
+# Validate a specific template
+npx magen-templates validate ios-native-swift
+
+# Validate all templates in a directory
+npx magen-templates validate --all
 ```
 
-### Built-in Helpers
-
-The system includes helpers for common string transformations:
-
-| Helper | Example Input | Output |
-|--------|---------------|--------|
-| `{{uppercase name}}` | `myApp` | `MYAPP` |
-| `{{lowercase name}}` | `MyApp` | `myapp` |
-| `{{capitalize name}}` | `myApp` | `MyApp` |
-| `{{pascalCase name}}` | `my-app` | `MyApp` |
-| `{{camelCase name}}` | `my-app` | `myApp` |
-
-For more advanced Handlebars features (conditionals, loops, custom helpers), see the [Handlebars documentation](https://handlebarsjs.com/guide/).
-
-
-
-Templates are validated against:
-
-1. **Schema compliance** — `template.json` matches the JSON Schema
-2. **Required fields** — All mandatory metadata present
-3. **Variable consistency** — Variables in files match `templateVariables`
-4. **File references** — `affectedFiles` in extension points exist
-
+**Programmatic:**
 ```typescript
-const result = await registry.validateTemplate('my-template');
-// { valid: boolean, errors: [], warnings: [] }
+const validator = new TemplateValidator();
+const result = await validator.validate('/path/to/template');
+
+if (!result.valid) {
+  console.error('Validation errors:', result.errors);
+}
+
+if (result.warnings.length > 0) {
+  console.warn('Validation warnings:', result.warnings);
+}
+
+// Result structure:
+// {
+//   valid: boolean,
+//   errors: Array<{ type: string, message: string, path: string }>,
+//   warnings: Array<{ type: string, message: string, path: string }>
+// }
 ```
+
+**Best Practice:** Run validation after creating or modifying templates to catch issues before attempting generation.
 
 ---
