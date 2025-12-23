@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
+import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
 
 /**
@@ -13,6 +14,7 @@ import { State } from '../metadata.js';
 export class CheckPluginValidatedRouter {
   private readonly pluginValidatedNodeName: string;
   private readonly invalidPluginNodeName: string;
+  private readonly logger = createComponentLogger('CheckPluginValidatedRouter');
 
   /**
    * Creates a new CheckPluginValidatedRouter.
@@ -26,6 +28,12 @@ export class CheckPluginValidatedRouter {
   }
 
   execute = (state: State): string => {
-    return state.validPluginSetup ? this.pluginValidatedNodeName : this.invalidPluginNodeName;
+    if (state.validPluginSetup === true) {
+      this.logger.info(`Plugin setup valid, routing to ${this.pluginValidatedNodeName}`);
+      return this.pluginValidatedNodeName;
+    }
+
+    this.logger.info(`Plugin setup invalid, routing to ${this.invalidPluginNodeName}`);
+    return this.invalidPluginNodeName;
   };
 }

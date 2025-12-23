@@ -12,6 +12,7 @@ import {
   WorkflowStateManager,
   type Logger,
   type WorkflowEnvironment,
+  createWorkflowLogger,
 } from '@salesforce/magen-mcp-workflow';
 import { mobileNativeWorkflow } from '../../../workflow/graph.js';
 import { ORCHESTRATOR_TOOL } from './metadata.js';
@@ -24,6 +25,10 @@ import { ORCHESTRATOR_TOOL } from './metadata.js';
  */
 export class MobileNativeOrchestrator extends OrchestratorTool {
   constructor(server: McpServer, logger?: Logger, environment: WorkflowEnvironment = 'production') {
+    const mobileNativeOrchestratorToolLogger =
+      logger ?? createWorkflowLogger('MobileNativeOrchestratorTool');
+    const mobileNativeWorkflowStateManagerLogger =
+      logger ?? createWorkflowLogger('MobileNativeWorkflowStateManager');
     const config: OrchestratorConfig = {
       toolId: ORCHESTRATOR_TOOL.toolId,
       title: 'Salesforce Mobile Native Project Manager',
@@ -32,9 +37,9 @@ export class MobileNativeOrchestrator extends OrchestratorTool {
       workflow: mobileNativeWorkflow,
       stateManager: new WorkflowStateManager({
         environment,
-        logger,
+        logger: mobileNativeWorkflowStateManagerLogger,
       }),
-      logger,
+      logger: mobileNativeOrchestratorToolLogger,
     };
 
     super(server, config);
