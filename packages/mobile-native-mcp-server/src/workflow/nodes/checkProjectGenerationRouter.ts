@@ -38,7 +38,7 @@ export class CheckProjectGenerationRouter {
 
     if (hasProjectPath && !hasFatalErrors) {
       this.logger.info(
-        `Project generation successful at ${state.projectPath}, routing to build validation`
+        `Project generation successful at ${state.projectPath}, routing to ${this.successNodeName}`
       );
       return this.successNodeName;
     }
@@ -48,7 +48,9 @@ export class CheckProjectGenerationRouter {
       ? `Fatal errors occurred: ${state.workflowFatalErrorMessages?.join(', ')}`
       : 'Project path not set after generation';
 
-    this.logger.warn(`Project generation failed. Reason: ${reason}. Routing to failure.`);
+    this.logger.warn(
+      `Project generation failed. Reason: ${reason}. Routing to ${this.failureNodeName}.`
+    );
     return this.failureNodeName;
   };
 }

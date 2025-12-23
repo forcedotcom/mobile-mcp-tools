@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
+import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
 
 /**
@@ -17,7 +18,7 @@ import { State } from '../metadata.js';
 export class CheckTemplatePropertiesFulfilledRouter {
   private readonly propertiesFulfilledNodeName: string;
   private readonly propertiesUnfulfilledNodeName: string;
-
+  private readonly logger = createComponentLogger('CheckTemplatePropertiesFulfilledRouter');
   /**
    * Creates a new CheckTemplatePropertiesFulfilledRouter.
    *
@@ -37,6 +38,7 @@ export class CheckTemplatePropertiesFulfilledRouter {
     // If no template has been selected yet, we shouldn't be checking template properties
     // This is a safety check to prevent routing to project generation before template selection
     if (!state.selectedTemplate) {
+      this.logger.info(`No template selected, routing to ${this.propertiesUnfulfilledNodeName}`);
       return this.propertiesUnfulfilledNodeName;
     }
 
@@ -45,11 +47,17 @@ export class CheckTemplatePropertiesFulfilledRouter {
       !state.templatePropertiesMetadata ||
       Object.keys(state.templatePropertiesMetadata).length === 0
     ) {
+      this.logger.info(
+        `No template properties defined, routing to ${this.propertiesFulfilledNodeName}`
+      );
       return this.propertiesFulfilledNodeName;
     }
 
     // If templateProperties haven't been initialized, properties are unfulfilled
     if (!state.templateProperties) {
+      this.logger.info(
+        `Template properties not initialized, routing to ${this.propertiesUnfulfilledNodeName}`
+      );
       return this.propertiesUnfulfilledNodeName;
     }
 
@@ -57,10 +65,16 @@ export class CheckTemplatePropertiesFulfilledRouter {
     for (const [propertyName, metadata] of Object.entries(state.templatePropertiesMetadata)) {
       // If property is required and not present in templateProperties, it's unfulfilled
       if (metadata.required && !state.templateProperties[propertyName]) {
+        this.logger.info(
+          `Property ${propertyName} is required but not present in state.templateProperties["${propertyName}"], routing to ${this.propertiesUnfulfilledNodeName}`
+        );
         return this.propertiesUnfulfilledNodeName;
       }
     }
 
+    this.logger.info(
+      `All template properties fulfilled, routing to ${this.propertiesFulfilledNodeName}`
+    );
     return this.propertiesFulfilledNodeName;
   }
 }

@@ -87,6 +87,7 @@ export class PlatformCheckNode extends BaseNode<State> {
             : undefined,
       };
     } catch (error) {
+      this.logger.error(`Error executing platform check command: ${command}`, error as Error);
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       return {
         validPlatformSetup: false,

@@ -32,6 +32,7 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
     }
 
     if (!state.templateOptions) {
+      this.logger.error('Fatal error: No template is available to select.');
       return {
         workflowFatalErrorMessages: ['No template options available for selection'],
       };
