@@ -107,6 +107,7 @@ export class CheckPropertiesFulfilledRouter<TState extends StateType<StateDefini
         `Properties not fulfilled, routing to ${this.propertiesUnfulfilledNodeName}`,
         {
           unfulfilledProperties,
+          targetNode: this.propertiesUnfulfilledNodeName,
           totalRequired: Object.keys(this.requiredProperties).length,
         }
       );
@@ -114,6 +115,7 @@ export class CheckPropertiesFulfilledRouter<TState extends StateType<StateDefini
     }
 
     this.logger.debug(`All properties fulfilled, routing to ${this.propertiesFulfilledNodeName}`, {
+      targetNode: this.propertiesFulfilledNodeName,
       totalProperties: Object.keys(this.requiredProperties).length,
     });
     return this.propertiesFulfilledNodeName;
