@@ -21,8 +21,7 @@
     "magen-server": "dist/index.js"
   },
   "scripts": {
-    "build": "npm run ensure-templates && tsc --build",
-    "ensure-templates": "git submodule update --init --recursive",
+    "build": "tsc --build",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

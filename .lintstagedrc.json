@@ -3,5 +3,5 @@
     "prettier --check",
     "eslint --config eslint.config.mjs --max-warnings=0"
   ],
-  "**/*.{json,md}": ["prettier --check"]
+  "**/*.{json,md}": ["prettier --check --ignore-path .prettierignore"]
 }

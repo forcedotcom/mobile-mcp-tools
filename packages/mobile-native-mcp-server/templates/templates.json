@@ -1,0 +1,42 @@
+[
+    {
+        "path": "iOSNativeSwiftTemplate",
+        "description": "Swift application using MobileSync, SwiftUI and Combine",
+        "appType": "native_swift",
+        "platforms": [
+            "ios"
+        ]
+    },
+    {
+        "path": "AgentforceDemo",
+        "description": "Basic swift application integrating with the AgentforceSDK for service agents",
+        "appType": "native_swift",
+        "platforms": [
+            "ios"
+        ]
+    },
+    {
+        "path": "AndroidNativeKotlinTemplate",
+        "description": "Basic Kotlin application",
+        "appType": "native_kotlin",
+        "platforms": [
+            "android"
+        ]
+    },
+    {
+        "path": "MobileSyncExplorerSwift",
+        "description": "Sample Swift application using MobileSync data framework",
+        "appType": "native_swift",
+        "platforms": [
+            "ios"
+        ]
+    },
+    {
+        "path": "MobileSyncExplorerKotlinTemplate",
+        "description": "Sample Kotlin application using MobileSync data framework",
+        "appType": "native_kotlin",
+        "platforms": [
+            "android"
+        ]
+    }
+]

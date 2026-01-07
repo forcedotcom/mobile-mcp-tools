@@ -1,0 +1,98 @@
+{
+  "$schema": "../template-schema.json",
+  "version": "0.0.1",
+  "platform": "android",
+  "displayName": "Android Native Kotlin Template",
+  "description": "A basic Android native Kotlin application template using Salesforce Mobile SDK. This template provides a foundation for building Android apps that integrate with Salesforce, featuring basic authentication, REST API integration, and a simple list-based interface.",
+  "useCase": "Use this template when you need to create a basic Android native app that integrates with Salesforce using Kotlin. It's ideal for developers starting with Salesforce Mobile SDK who want a minimal but functional starting point with REST API capabilities.",
+  "features": [
+    "native-android",
+    "kotlin",
+    "salesforce-sdk",
+    "authentication",
+    "rest-api",
+    "oauth",
+    "qr-code-login",
+    "push-notifications",
+    "dark-theme-support",
+    "edge-to-edge-ui"
+  ],
+  "complexity": "simple",
+  "customizationPoints": [
+    {
+      "feature": "app-configuration",
+      "description": "Customize the app name, package name, and build configuration",
+      "files": [
+        "template.js",
+        "package.json",
+        "app/build.gradle.kts",
+        "settings.gradle.kts",
+        "app/src/main/res/values/strings.xml"
+      ],
+      "instructions": [
+        "Update template.js with new app name and package name",
+        "Modify package.json with new app name",
+        "Update build.gradle.kts with new package name",
+        "Update settings.gradle.kts with new app name",
+        "Update strings.xml with new app name"
+      ]
+    },
+    {
+      "feature": "salesforce-integration",
+      "description": "Add custom Salesforce object queries and REST API calls",
+      "files": [
+        "app/src/main/java/com/salesforce/androidnativekotlintemplate/MainActivity.kt",
+        "app/src/main/java/com/salesforce/androidnativekotlintemplate/MainApplication.kt"
+      ],
+      "instructions": [
+        "Modify MainActivity.kt to add custom REST API calls",
+        "Add new SObject queries in MainActivity",
+        "Update MainApplication.kt for custom SDK configuration",
+        "Implement custom data models for new SObjects"
+      ]
+    },
+    {
+      "feature": "authentication-flow",
+      "description": "Customize the authentication and login experience",
+      "files": [
+        "app/src/main/java/com/salesforce/androidnativekotlintemplate/MainApplication.kt",
+        "app/src/main/java/com/salesforce/androidnativekotlintemplate/QrCodeEnabledLoginActivity.kt"
+      ],
+      "instructions": [
+        "Configure QR code login in MainApplication.kt",
+        "Customize QrCodeEnabledLoginActivity for specific login flows",
+        "Enable IDP login flow if needed",
+        "Configure push notification handling"
+      ]
+    },
+    {
+      "feature": "ui-components",
+      "description": "Extend the user interface with additional components",
+      "files": [
+        "app/src/main/java/com/salesforce/androidnativekotlintemplate/MainActivity.kt",
+        "app/src/main/res/layout/main.xml"
+      ],
+      "instructions": [
+        "Add new UI components to MainActivity.kt",
+        "Create new layout files for additional screens",
+        "Implement navigation between activities",
+        "Add custom themes and styling"
+      ]
+    },
+    {
+      "feature": "build-configuration",
+      "description": "Customize the build and dependency configuration",
+      "files": [
+        "app/build.gradle.kts",
+        "build.gradle.kts",
+        "gradle.properties"
+      ],
+      "instructions": [
+        "Add new dependencies in app/build.gradle.kts",
+        "Configure build variants and signing",
+        "Update SDK versions and compatibility",
+        "Add custom build tasks if needed"
+      ]
+    }
+  ]
+}

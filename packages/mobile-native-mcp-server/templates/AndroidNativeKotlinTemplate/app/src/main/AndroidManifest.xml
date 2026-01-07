@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    android:installLocation="internalOnly"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <application
+        android:name=".MainApplication"
+        android:icon="@drawable/sf__icon"
+        android:label="@string/app_name"
+        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
+
+        <!-- Launcher screen -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/SalesforceSDK">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Uncomment when enabling log in via Salesforce UI Bridge API generated QR codes -->
+            <!-- This declares the app's support for QR code login deep links.  The scheme can be customized by the app to match any scheme used in the QR Code's URL -->
+<!--            <intent-filter>-->
+<!--                <data android:scheme="mobileapp" />-->
+<!--                <action android:name="android.intent.action.VIEW" />-->
+
+<!--                <category android:name="android.intent.category.BROWSABLE" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--            </intent-filter>-->
+        </activity>
+
+        <!-- Login activity -->
+        <!--
+            To enable browser based authentication, uncomment the lines below and replace
+            'scheme', 'host' and 'path' with their corresponding values from your connected app.
+
+            For example, if the callback URL of your connected app is
+            "testsfdc:///mobilesdk/detect/oauth/done",
+            'scheme' would be "testsfdc", 'host' would be "*" since it doesn't exist, and
+            'path' would be "/mobilesdk/detect/oauth/done".
+
+            If the callback URL is "sfdc://login.salesforce.com/oauth/done",
+            'scheme' would be "sfdc", 'host' would be "login.salesforce.com",
+            and 'path' would be "/oauth/done".
+        -->
+        <!-- Use `android:name="com.salesforce.androidnativekotlintemplate.QrCodeEnabledLoginActivity"` when enabling log in via Salesforce UI Bridge API generated QR codes -->
+<!--        <activity-->
+<!--            android:name="com.salesforce.androidsdk.ui.LoginActivity"-->
+<!--            android:exported="true"-->
+<!--            android:launchMode="singleTask"-->
+<!--            android:theme="@style/SalesforceSDK" />-->
+    </application>
+</manifest>

@@ -1,0 +1,96 @@
+{
+  "$schema": "../template-schema.json",
+  "version": "0.0.1",
+  "platform": "ios",
+  "displayName": "Agentforce SDK Demo Template",
+  "description": "A minimal iOS native Swift application template that integrates with AgentforceSDK for service agents. This template provides a foundation for building iOS apps that enable service agents to have conversations with customers using SwiftUI and the AgentforceSDK.",
+  "useCase": "Use this template when you need to create a minimal iOS native app for service agents that integrates with AgentforceSDK. It's ideal for developers who want a simple starting point for building agent-facing applications with chat and conversation capabilities.",
+  "features": [
+    "native-ios",
+    "swift",
+    "swiftui",
+    "agentforce-sdk",
+    "service-agent",
+    "chat",
+    "conversation",
+    "voice",
+    "transcript"
+  ],
+  "complexity": "simple",
+  "customizationPoints": [
+    {
+      "feature": "agentforce-configuration",
+      "description": "Configure AgentforceSDK settings including ES developer name, organization ID, and API URL",
+      "files": [
+        "AgentforceDemo/Classes/Settings.swift",
+        "AgentforceDemo/Classes/AgentforceMainView.swift",
+        "AgentforceDemo/Classes/CredentialProvider.swift"
+      ],
+      "instructions": [
+        "Update Settings.swift with your ES developer name, organization ID, and API URL",
+        "Modify AgentforceMainView.swift to customize ServiceAgentConfiguration",
+        "Update CredentialProvider.swift with your credential handling logic",
+        "Configure ServiceUISettings for transcript download and conversation ending"
+      ]
+    },
+    {
+      "feature": "ui-customization",
+      "description": "Customize the SwiftUI interface and chat experience",
+      "files": [
+        "AgentforceDemo/Classes/AgentforceMainView.swift",
+        "AgentforceDemo/Classes/AgentforceViewModel.swift",
+        "AgentforceDemo/Classes/CustomThemeManager.swift"
+      ],
+      "instructions": [
+        "Modify AgentforceMainView.swift to customize the main UI layout",
+        "Update AgentforceViewModel.swift to add custom state management",
+        "Create custom theme manager by extending AgentforceDefaultThemeManager",
+        "Customize chat view appearance and behavior"
+      ]
+    },
+    {
+      "feature": "authentication",
+      "description": "Customize credential provider and authentication flow",
+      "files": [
+        "AgentforceDemo/Classes/CredentialProvider.swift",
+        "AgentforceDemo/Classes/AppDelegate.swift"
+      ],
+      "instructions": [
+        "Update CredentialProvider.swift to implement your authentication mechanism",
+        "Modify AppDelegate.swift for custom app initialization",
+        "Configure credential refresh logic if needed",
+        "Add custom authentication UI if required"
+      ]
+    }
+  ],
+  "properties": {
+    "templatePrerequisites": {
+      "properties": {
+        "templateProperties": {
+          "properties": {
+            "agentID": {
+              "value": "",
+              "required": true,
+              "description": "Agent ID from your enhanced in-app chat deployment configuration"
+            },
+            "developerName": {
+              "value": "",
+              "required": true,
+              "description": "ES developer name from your enhanced in-app chat deployment configuration"
+            },
+            "organizationId": {
+              "value": "",
+              "required": true,
+              "description": "Organization ID from your enhanced in-app chat deployment configuration"
+            },
+            "apiURL": {
+              "value": "",
+              "required": true,
+              "description": "API URL from your enhanced in-app chat deployment configuration"
+            }
+          }
+        }
+      }
+    }
+  }
+}

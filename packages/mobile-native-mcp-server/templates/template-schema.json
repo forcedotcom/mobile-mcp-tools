@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "version",
+    "platform",
+    "displayName",
+    "description",
+    "features",
+    "complexity",
+    "useCase"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Template version (e.g., '1.0.0')"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android"
+      ],
+      "description": "Target platform for the template"
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Human-readable name for the template (e.g., 'Salesforce Record List')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description of what the template provides and its capabilities"
+    },
+    "useCase": {
+      "type": "string",
+      "description": "Clear guidance on when to use this template (e.g., 'Use this template when you need to display a list of Salesforce records with search and navigation capabilities')"
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of feature tags that describe template capabilities (e.g., ['record-list', 'search', 'detail-view', 'offline-sync'])"
+    },
+    "complexity": {
+      "type": "string",
+      "enum": [
+        "simple",
+        "moderate",
+        "advanced"
+      ],
+      "description": "Relative complexity level for LLM adaptation and user understanding"
+    },
+    "customizationPoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "feature",
+          "description",
+          "files",
+          "instructions"
+        ],
+        "properties": {
+          "feature": {
+            "type": "string",
+            "description": "Feature being customized (e.g., 'record-list', 'oauth-configuration')"
+          },
+          "description": {
+            "type": "string",
+            "description": "What this customization accomplishes"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of file paths that need modification"
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Step-by-step instructions for implementing the customization"
+          }
+        }
+      },
+      "description": "Key points where the template can be adapted for different use cases"
+    },
+    "templatePrerequisites": {
+      "type": "object",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "step"
+            ],
+            "properties": {
+              "step": {
+                "type": "string",
+                "description": "Description of the prerequisite step to perform before cloning"
+              },
+              "required": {
+                "type": "boolean",
+                "description": "Whether this step is required before cloning (default: true)",
+                "default": true
+              }
+            }
+          },
+          "description": "List of prerequisite steps to perform before cloning the template"
+        },
+        "templateProperties": {
+          "type": "object",
+          "description": "Properties to inject into the template at clone time. Each property can be a simple value (optional) or an object with value, required flag, and description.",
+          "additionalProperties": {
+            "oneOf": [
+              {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "object",
+                  "array"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "value": {
+                    "description": "The value for this property",
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "object",
+                      "array"
+                    ]
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "description": "Whether this property is required (default: false)",
+                    "default": false
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of what this property is used for"
+                  }
+                },
+                "required": [
+                  "value"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "description": "Prerequisite steps and template properties required before cloning the template"
+    }
+  }
+}

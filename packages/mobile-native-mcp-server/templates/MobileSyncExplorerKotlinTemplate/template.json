@@ -1,0 +1,148 @@
+{
+  "$schema": "../template-schema.json",
+  "version": "0.0.1",
+  "platform": "android",
+  "displayName": "MobileSync Explorer Kotlin Template",
+  "description": "An advanced Android native Kotlin application template demonstrating comprehensive Salesforce Mobile SDK integration using MobileSync data framework with modern Android architecture. This template provides a production-ready contact management app with offline sync capabilities, Jetpack Compose UI, flexible layouts, and a sophisticated data layer architecture.",
+  "useCase": "Use this template when you need to create a production-ready Android app with full Salesforce data synchronization capabilities and modern Android architecture. It's ideal for developers building enterprise-grade apps that require offline functionality, complex data relationships, flexible UI layouts, and professional-grade architecture patterns.",
+  "features": [
+    "native-android",
+    "kotlin",
+    "jetpack-compose",
+    "coroutines",
+    "flow",
+    "salesforce-sdk",
+    "mobilesync",
+    "offline-sync",
+    "smartstore",
+    "contact-management",
+    "flexible-ui",
+    "foldable-support",
+    "modern-architecture",
+    "repository-pattern",
+    "viewmodel",
+    "state-management",
+    "window-size-classes",
+    "edge-to-edge-ui"
+  ],
+  "complexity": "advanced",
+  "customizationPoints": [
+    {
+      "feature": "app-configuration",
+      "description": "Customize the app name, package name, and build configuration",
+      "files": [
+        "template.js",
+        "package.json",
+        "app/build.gradle.kts",
+        "settings.gradle.kts",
+        "app/src/main/res/values/strings.xml"
+      ],
+      "instructions": [
+        "Update template.js with new app name and package name",
+        "Modify package.json with new app name",
+        "Update build.gradle.kts with new package name",
+        "Update settings.gradle.kts with new app name",
+        "Update strings.xml with new app name"
+      ]
+    },
+    {
+      "feature": "salesforce-objects",
+      "description": "Add new Salesforce objects beyond the default Contact",
+      "files": [
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/model/contacts/ContactObject.kt",
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/core/salesforceobject/SObject.kt"
+      ],
+      "instructions": [
+        "Create new SObject data classes implementing the SObject interface",
+        "Implement JSONObject.applyObjProperties() method",
+        "Add new object types to Constants",
+        "Create corresponding deserializers and repositories"
+      ]
+    },
+    {
+      "feature": "data-layer-architecture",
+      "description": "Extend the repository pattern for new SObjects",
+      "files": [
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/core/repos/SObjectSyncableRepo.kt",
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/model/contacts/ContactsRepo.kt"
+      ],
+      "instructions": [
+        "Create new repositories implementing SObjectSyncableRepo interface",
+        "Implement sync up/down operations for new objects",
+        "Add local CRUD operations",
+        "Configure SmartStore soups and sync targets"
+      ]
+    },
+    {
+      "feature": "ui-components",
+      "description": "Add new Jetpack Compose UI components",
+      "files": [
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/contacts/listcomponent/ui/ContactsListSinglePaneComponent.kt",
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/contacts/detailscomponent/ui/ContactDetailsSinglePaneComponent.kt"
+      ],
+      "instructions": [
+        "Create new Composable functions for additional functionality",
+        "Implement UI state management with StateFlow",
+        "Add new UI components following the single-pane pattern",
+        "Customize the flexible layout behavior"
+      ]
+    },
+    {
+      "feature": "activity-integration",
+      "description": "Integrate new UI components into activities",
+      "files": [
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/contacts/activity/ContactsActivity.kt",
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/contacts/activity/ContactsActivityViewModel.kt"
+      ],
+      "instructions": [
+        "Add new UI components to ContactsActivity",
+        "Extend ContactsActivityViewModel for new functionality",
+        "Implement navigation between components",
+        "Add new user interactions and state management"
+      ]
+    },
+    {
+      "feature": "flexible-ui-layouts",
+      "description": "Customize the flexible UI behavior for different screen sizes",
+      "files": [
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/core/ui/state/WindowSizeClass.kt",
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/contacts/activity/ContactsActivityContent.kt"
+      ],
+      "instructions": [
+        "Add new window size classes for specific layouts",
+        "Implement responsive UI behavior",
+        "Customize the split-view navigation logic",
+        "Add support for new device form factors"
+      ]
+    },
+    {
+      "feature": "synchronization-logic",
+      "description": "Customize MobileSync synchronization behavior",
+      "files": [
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/core/repos/SObjectSyncableRepo.kt",
+        "app/src/main/java/com/salesforce/mobilesyncexplorerkotlintemplate/model/contacts/ContactsRepo.kt"
+      ],
+      "instructions": [
+        "Modify sync up/down logic in repositories",
+        "Add custom sync targets and configurations",
+        "Implement conflict resolution strategies",
+        "Add custom sync status indicators and error handling"
+      ]
+    },
+    {
+      "feature": "build-configuration",
+      "description": "Customize the build and dependency configuration",
+      "files": [
+        "app/build.gradle.kts",
+        "build.gradle.kts",
+        "gradle.properties"
+      ],
+      "instructions": [
+        "Add new dependencies in app/build.gradle.kts",
+        "Configure build variants and signing",
+        "Update SDK versions and compatibility",
+        "Add custom build tasks and configurations"
+      ]
+    }
+  ]
+}
