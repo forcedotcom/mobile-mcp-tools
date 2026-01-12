@@ -91,7 +91,6 @@ export class DefaultBuildExecutor implements BuildExecutor {
 
       // Create build command
       const command = factory.create({
-        platform: params.platform,
         projectPath: params.projectPath,
         projectName: params.projectName,
         buildOutputDir: appArtifactRootPath,

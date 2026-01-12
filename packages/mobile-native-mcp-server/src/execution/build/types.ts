@@ -5,7 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { PlatformEnum } from '../../common/schemas.js';
 import type { Command, ProgressParseResult } from '@salesforce/magen-mcp-workflow';
 
 /**
@@ -19,7 +18,6 @@ export const PROGRESS_MAX_BEFORE_COMPLETE = 95;
  * Parameters for creating a build command
  */
 export interface BuildCommandParams {
-  platform: PlatformEnum;
   projectPath: string;
   projectName: string;
   buildOutputDir: string;

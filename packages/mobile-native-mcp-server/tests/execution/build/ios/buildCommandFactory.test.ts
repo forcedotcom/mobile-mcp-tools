@@ -7,7 +7,6 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { iOSBuildCommandFactory } from '../../../../src/execution/build/ios/buildCommandFactory.js';
-import { PlatformEnum } from '../../../../src/common/schemas.js';
 import { PROGRESS_COMPLETE } from '../../../../src/execution/build/types.js';
 
 describe('iOSBuildCommandFactory', () => {
@@ -20,7 +19,6 @@ describe('iOSBuildCommandFactory', () => {
   describe('create', () => {
     it('should create command with correct executable', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -34,7 +32,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should include project path in command', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/custom/path',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -47,7 +44,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should include xcodebuild command with workspace', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -61,7 +57,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should include scheme in command', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'MyApp',
         buildOutputDir: '/output',
@@ -74,7 +69,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should include destination in command', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -87,7 +81,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should include clean build in command', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -100,7 +93,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should include CONFIGURATION_BUILD_DIR in command', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/custom/output',
@@ -113,7 +105,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should set cwd to project path', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -126,7 +117,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should set locale environment variables', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',
@@ -141,7 +131,6 @@ describe('iOSBuildCommandFactory', () => {
 
     it('should preserve other environment variables', () => {
       const params = {
-        platform: 'iOS' as PlatformEnum,
         projectPath: '/path/to/project',
         projectName: 'TestApp',
         buildOutputDir: '/output',

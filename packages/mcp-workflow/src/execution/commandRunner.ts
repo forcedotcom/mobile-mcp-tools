@@ -37,6 +37,7 @@ export class DefaultCommandRunner implements CommandRunner {
   private readonly logger: Logger;
   private readonly defaultTimeout: number;
   private static readonly PROGRESS_TOTAL = 100;
+  private static readonly DEFAULT_PROGRESS_DEBOUNCE_MS = 2000;
 
   constructor(logger?: Logger, defaultTimeout: number = 300000) {
     this.logger = logger ?? createComponentLogger('CommandRunner');
@@ -55,6 +56,7 @@ export class DefaultCommandRunner implements CommandRunner {
       progressParser,
       progressReporter,
       outputFilePath,
+      progressDebounceMs = DefaultCommandRunner.DEFAULT_PROGRESS_DEBOUNCE_MS,
     } = options;
 
     // Ensure UTF-8 encoding environment variables are set for tools like CocoaPods
@@ -69,6 +71,8 @@ export class DefaultCommandRunner implements CommandRunner {
     let stdout = '';
     let stderr = '';
     let currentProgress = 0;
+    let lastReportedProgress: number | null = null;
+    let lastReportTime: number | null = null;
 
     return new Promise<CommandResult>((resolve, reject) => {
       const outputStream = outputFilePath ? createWriteStream(outputFilePath) : null;
@@ -99,6 +103,7 @@ export class DefaultCommandRunner implements CommandRunner {
         if (progressReporter) {
           const elapsed = Date.now() - startTime;
           const elapsedSeconds = Math.floor(elapsed / 1000);
+          const now = Date.now();
 
           // Parse progress if parser provided
           if (progressParser) {
@@ -107,26 +112,52 @@ export class DefaultCommandRunner implements CommandRunner {
               if (parseResult.progress > currentProgress) {
                 currentProgress = parseResult.progress;
               }
-              progressReporter.report(
-                currentProgress,
-                DefaultCommandRunner.PROGRESS_TOTAL,
-                parseResult.message || `Build in progress... (${elapsedSeconds}s elapsed)`
-              );
+
+              // Check if we should report: always report if progress changed, or if debounce time elapsed
+              const progressChanged = lastReportedProgress !== currentProgress;
+              const debounceElapsed =
+                lastReportTime === null || now - lastReportTime >= progressDebounceMs;
+
+              if (progressChanged || debounceElapsed) {
+                progressReporter.report(
+                  currentProgress,
+                  DefaultCommandRunner.PROGRESS_TOTAL,
+                  parseResult.message || `Command in progress... (${elapsedSeconds}s elapsed)`
+                );
+                lastReportedProgress = currentProgress;
+                lastReportTime = now;
+              }
             } catch (_error) {
               // If parsing fails, still report progress to keep task alive
-              progressReporter.report(
-                currentProgress,
-                DefaultCommandRunner.PROGRESS_TOTAL,
-                `Build in progress... (${elapsedSeconds}s elapsed)`
-              );
+              const progressChanged = lastReportedProgress !== currentProgress;
+              const debounceElapsed =
+                lastReportTime === null || now - lastReportTime >= progressDebounceMs;
+
+              if (progressChanged || debounceElapsed) {
+                progressReporter.report(
+                  currentProgress,
+                  DefaultCommandRunner.PROGRESS_TOTAL,
+                  `Command in progress... (${elapsedSeconds}s elapsed)`
+                );
+                lastReportedProgress = currentProgress;
+                lastReportTime = now;
+              }
             }
           } else {
             // No parser - just report activity to keep task alive
-            progressReporter.report(
-              currentProgress,
-              DefaultCommandRunner.PROGRESS_TOTAL,
-              `Build in progress... (${elapsedSeconds}s elapsed)`
-            );
+            const progressChanged = lastReportedProgress !== currentProgress;
+            const debounceElapsed =
+              lastReportTime === null || now - lastReportTime >= progressDebounceMs;
+
+            if (progressChanged || debounceElapsed) {
+              progressReporter.report(
+                currentProgress,
+                DefaultCommandRunner.PROGRESS_TOTAL,
+                `Command in progress... (${elapsedSeconds}s elapsed)`
+              );
+              lastReportedProgress = currentProgress;
+              lastReportTime = now;
+            }
           }
         }
       });

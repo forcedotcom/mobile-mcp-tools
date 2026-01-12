@@ -52,4 +52,9 @@ export interface CommandExecutionOptions {
   progressParser?: ProgressParser;
   progressReporter?: ProgressReporter;
   outputFilePath?: string;
+  /**
+   * Debounce time in milliseconds for reporting identical progress values.
+   * Defaults to 2000ms (2 seconds). Progress changes are always reported immediately.
+   */
+  progressDebounceMs?: number;
 }

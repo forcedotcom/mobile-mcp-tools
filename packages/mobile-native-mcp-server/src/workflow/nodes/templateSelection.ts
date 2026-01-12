@@ -14,6 +14,7 @@ import {
 } from '@salesforce/magen-mcp-workflow';
 import { TEMPLATE_SELECTION_TOOL } from '../../tools/plan/sfmobile-native-template-selection/metadata.js';
 import { State, TemplatePropertiesMetadata } from '../metadata.js';
+import { TemplateListOutput } from '../../common/schemas.js';
 
 export class TemplateSelectionNode extends AbstractToolNode<State> {
   protected readonly logger: Logger;
@@ -38,6 +39,8 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       };
     }
 
+    const trimmedDownTemplateOptions = this.createTrimmedTemplateOptions(state.templateOptions);
+
     const toolInvocationData: MCPToolInvocationData<typeof TEMPLATE_SELECTION_TOOL.inputSchema> = {
       llmMetadata: {
         name: TEMPLATE_SELECTION_TOOL.toolId,
@@ -46,7 +49,7 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       },
       input: {
         platform: state.platform,
-        templateOptions: state.templateOptions,
+        templateOptions: trimmedDownTemplateOptions,
       },
     };
 
@@ -173,5 +176,24 @@ export class TemplateSelectionNode extends AbstractToolNode<State> {
       );
       return undefined;
     }
+  }
+
+  /**
+   * Creates a trimmed-down version of template options containing only necessary fields
+   * for LLM to select the best template to avoid bloat the LLM context window.
+   */
+  private createTrimmedTemplateOptions(templateOptions: TemplateListOutput): TemplateListOutput {
+    return {
+      templates: templateOptions.templates.map(template => ({
+        path: template.path,
+        metadata: {
+          platform: template.metadata.platform,
+          displayName: template.metadata.displayName,
+          description: template.metadata.description,
+          useCase: template.metadata.useCase,
+          features: template.metadata.features,
+        },
+      })),
+    };
   }
 }

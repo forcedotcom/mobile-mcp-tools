@@ -574,5 +574,328 @@ describe('DefaultCommandRunner', () => {
 
       expect(result.stderr).toBe('error1\nerror2\n');
     });
+
+    describe('progress debounce', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('should report progress changes immediately without debounce', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        const mockParser: ProgressParser = vi.fn((output: string, currentProgress: number) => {
+          // Return increasing progress based on output length
+          const progress = Math.min(100, currentProgress + 10);
+          return { progress, message: `Progress: ${progress}%` };
+        });
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressParser: mockParser,
+          progressDebounceMs: 2000,
+        });
+
+        // Simulate multiple stdout chunks with different progress
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 100);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 200);
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report immediately for each progress change
+        // Called: start (1), chunk1 (2), chunk2 (3), chunk3 (4), completion (5)
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(5);
+      });
+
+      it('should debounce identical progress values', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        const mockParser: ProgressParser = vi.fn(() => {
+          // Always return the same progress
+          return { progress: 50, message: 'Same progress' };
+        });
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressParser: mockParser,
+          progressDebounceMs: 2000,
+        });
+
+        // Simulate multiple stdout chunks with same progress
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 500);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+        }, 1000);
+
+        // Advance time past debounce threshold
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk4\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 2500);
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report: start (1), first chunk (2), after debounce (3), completion (4)
+        // chunk2 and chunk3 should be debounced
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(4);
+      });
+
+      it('should use custom debounce time', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        const mockParser: ProgressParser = vi.fn(() => {
+          return { progress: 50, message: 'Same progress' };
+        });
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressParser: mockParser,
+          progressDebounceMs: 500, // Custom debounce time
+        });
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 200);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 600); // Past custom debounce time
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report: start (1), first chunk (2), after debounce (3), completion (4)
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(4);
+      });
+
+      it('should debounce identical progress without parser', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressDebounceMs: 2000,
+        });
+
+        // Simulate multiple stdout chunks (progress stays at 0 without parser)
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 500);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 2500); // Past debounce time
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report: start (1), first chunk (2), after debounce (3), completion (4)
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(4);
+      });
+
+      it('should debounce identical progress when parser throws errors', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        const failingParser: ProgressParser = vi.fn(() => {
+          throw new Error('Parser error');
+        });
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressParser: failingParser,
+          progressDebounceMs: 2000,
+        });
+
+        // Simulate multiple stdout chunks (progress stays at 0 when parser fails)
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 500);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 2500); // Past debounce time
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report: start (1), first chunk (2), after debounce (3), completion (4)
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(4);
+      });
+
+      it('should report immediately when progress changes after debounce', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        let callCount = 0;
+        const mockParser: ProgressParser = vi.fn(() => {
+          callCount++;
+          // Return same progress for first 3 calls, then change
+          const progress = callCount <= 3 ? 50 : 60;
+          return { progress, message: `Progress: ${progress}%` };
+        });
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressParser: mockParser,
+          progressDebounceMs: 2000,
+        });
+
+        // First chunk - should report
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        // Second chunk - same progress, should be debounced
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 500);
+
+        // Third chunk - same progress, should be debounced
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+        }, 1000);
+
+        // Fourth chunk - progress changes, should report immediately
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk4\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 1500);
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report: start (1), chunk1 (2), chunk4 with changed progress (3), completion (4)
+        // chunk2 and chunk3 are debounced, but chunk4 reports immediately due to progress change
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(4);
+      });
+
+      it('should use default debounce time when not specified', async () => {
+        const mockProgressReporter: ProgressReporter = {
+          report: vi.fn(),
+        };
+
+        const mockParser: ProgressParser = vi.fn(() => {
+          return { progress: 50, message: 'Same progress' };
+        });
+
+        const promise = commandRunner.execute('echo', ['test'], {
+          progressReporter: mockProgressReporter,
+          progressParser: mockParser,
+          // progressDebounceMs not specified - should use default 2000ms
+        });
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk1\n'));
+          });
+        }, 0);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk2\n'));
+          });
+        }, 500);
+
+        setTimeout(() => {
+          stdoutHandlers.forEach(handler => {
+            handler(Buffer.from('chunk3\n'));
+          });
+          exitHandlers.forEach(handler => handler(0, null));
+        }, 2500); // Past default debounce time (2000ms)
+
+        await vi.runAllTimersAsync();
+        await promise;
+
+        // Should report: start (1), first chunk (2), after debounce (3), completion (4)
+        expect(mockProgressReporter.report).toHaveBeenCalledTimes(4);
+      });
+    });
   });
 });
