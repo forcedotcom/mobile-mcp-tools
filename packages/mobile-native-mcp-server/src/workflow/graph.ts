@@ -131,11 +131,7 @@ const checkTemplatePropertiesFulfilledRouter = new CheckTemplatePropertiesFulfil
 export function createMobileNativeWorkflow(logger?: Logger) {
   const commandRunner = new DefaultCommandRunner(logger);
   const tempDirManager = defaultTempDirectoryManager;
-  const buildExecutor = new DefaultBuildExecutor(
-    commandRunner,
-    tempDirManager,
-    logger
-  );
+  const buildExecutor = new DefaultBuildExecutor(commandRunner, tempDirManager, logger);
   // Create project generation node with CommandRunner
   const projectGenerationNodeInstance = new ProjectGenerationNode(commandRunner, logger);
   // Create build validation node with BuildExecutor
