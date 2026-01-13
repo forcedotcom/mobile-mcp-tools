@@ -19,6 +19,7 @@ describe('MobileNativeOrchestrator', () => {
   let mockLogger: MockLogger;
   let orchestrator: MobileNativeOrchestrator;
   let annotations: ToolAnnotations;
+  let mockSendNotification: (notification: { method: string; params?: unknown }) => Promise<void>;
 
   beforeEach(() => {
     mockServer = new McpServer({ name: 'test-server', version: '1.0.0' });
@@ -29,6 +30,11 @@ describe('MobileNativeOrchestrator', () => {
       destructiveHint: false,
       idempotentHint: false,
       openWorldHint: true,
+    };
+
+    // Create mock sendNotification function
+    mockSendNotification = async () => {
+      // Mock implementation - does nothing but satisfies the type requirement
     };
 
     // Clear mocks
@@ -73,7 +79,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'test-123' },
       };
 
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe('text');
@@ -89,7 +97,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'existing-thread-123' },
       };
 
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.content[0].type).toBe('text');
@@ -106,7 +116,7 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'test-456' },
       };
 
-      await orchestrator.handleRequest(input);
+      await orchestrator.handleRequest(input, { sendNotification: mockSendNotification });
 
       // Should have logged workflow processing events
       expect(mockLogger.logs.length).toBeGreaterThan(0);
@@ -126,7 +136,9 @@ describe('MobileNativeOrchestrator', () => {
       };
 
       // @ts-expect-error: We are intentionally missing required fields.
-      const result = await orchestrator.handleRequest(invalidInput);
+      const result = await orchestrator.handleRequest(invalidInput, {
+        sendNotification: mockSendNotification,
+      });
 
       // Should not throw, but may return error response
       expect(result).toBeDefined();
@@ -151,7 +163,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: 'this should be an object',
       } as any;
 
-      const result = await orchestrator.handleRequest(malformedInput);
+      const result = await orchestrator.handleRequest(malformedInput, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -179,7 +193,9 @@ describe('MobileNativeOrchestrator', () => {
       };
 
       // @ts-expect-error: Intentionally missing workflowStateData to test default behavior
-      const result = await orchestrator.handleRequest(inputWithoutWorkflowState);
+      const result = await orchestrator.handleRequest(inputWithoutWorkflowState, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -206,7 +222,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: '' },
       };
 
-      const result = await orchestrator.handleRequest(inputWithEmptyThreadId);
+      const result = await orchestrator.handleRequest(inputWithEmptyThreadId, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -233,7 +251,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { someOtherField: 'value' },
       } as any;
 
-      const result = await orchestrator.handleRequest(inputWithMissingThreadId);
+      const result = await orchestrator.handleRequest(inputWithMissingThreadId, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -261,7 +281,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: null },
       } as any;
 
-      const result = await orchestrator.handleRequest(inputWithNullThreadId);
+      const result = await orchestrator.handleRequest(inputWithNullThreadId, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -290,7 +312,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: validThreadId },
       };
 
-      const result = await orchestrator.handleRequest(validInput);
+      const result = await orchestrator.handleRequest(validInput, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -322,7 +346,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'complex-test-123' },
       };
 
-      const result = await orchestrator.handleRequest(complexMalformedInput);
+      const result = await orchestrator.handleRequest(complexMalformedInput, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -347,7 +373,9 @@ describe('MobileNativeOrchestrator', () => {
       const emptyInput = {};
 
       // @ts-expect-error: We are intentionally missing required fields.
-      const result = await orchestrator.handleRequest(emptyInput);
+      const result = await orchestrator.handleRequest(emptyInput, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -377,7 +405,9 @@ describe('MobileNativeOrchestrator', () => {
         numericField: 42,
       } as any;
 
-      const result = await orchestrator.handleRequest(inputWithExtraFields);
+      const result = await orchestrator.handleRequest(inputWithExtraFields, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -407,7 +437,11 @@ describe('MobileNativeOrchestrator', () => {
         }));
 
       // @ts-expect-error: We are intentionally missing required fields.
-      const results = await Promise.all(inputs.map(input => orchestrator.handleRequest(input)));
+      const results = await Promise.all(
+        inputs.map(input =>
+          orchestrator.handleRequest(input, { sendNotification: mockSendNotification })
+        )
+      );
 
       // All should succeed
       results.forEach(result => {
@@ -445,7 +479,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'memory-test-123' },
       };
 
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent).toBeDefined();
@@ -467,7 +503,7 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: threadId },
       };
 
-      await orchestrator.handleRequest(initialInput);
+      await orchestrator.handleRequest(initialInput, { sendNotification: mockSendNotification });
 
       // Second request to resume workflow
       const resumeInput = {
@@ -475,7 +511,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: threadId },
       };
 
-      const result = await orchestrator.handleRequest(resumeInput);
+      const result = await orchestrator.handleRequest(resumeInput, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent).toBeDefined();
@@ -521,7 +559,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'file-test-123' },
       };
 
-      const result = await fileOrchestrator.handleRequest(input);
+      const result = await fileOrchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
 
@@ -555,7 +595,9 @@ describe('MobileNativeOrchestrator', () => {
       // Since we're testing the checkpointer functionality, not the workflow execution,
       // we expect this to either succeed or fail gracefully
       try {
-        await fileOrchestrator.handleRequest(initialInput);
+        await fileOrchestrator.handleRequest(initialInput, {
+          sendNotification: mockSendNotification,
+        });
 
         // Create new orchestrator instance (simulating restart)
         const newOrchestrator = new MobileNativeOrchestrator(mockServer, mockLogger, 'production');
@@ -579,7 +621,9 @@ describe('MobileNativeOrchestrator', () => {
           workflowStateData: { thread_id: threadId },
         };
 
-        const result = await newOrchestrator.handleRequest(resumeInput);
+        const result = await newOrchestrator.handleRequest(resumeInput, {
+          sendNotification: mockSendNotification,
+        });
 
         expect(result.content).toBeDefined();
 
@@ -620,7 +664,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'fresh-start-123' },
       };
 
-      const result = await fileOrchestrator.handleRequest(input);
+      const result = await fileOrchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
 
@@ -644,7 +690,9 @@ describe('MobileNativeOrchestrator', () => {
       };
 
       // Should not throw, should start fresh
-      const result = await fileOrchestrator.handleRequest(input);
+      const result = await fileOrchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
 
@@ -663,9 +711,13 @@ describe('MobileNativeOrchestrator', () => {
       const input2 = { userInput: { request: 'Second request' } };
 
       // @ts-expect-error: Intentionally missing workflowStateData to force thread ID generation
-      const result1 = await orchestrator.handleRequest(input1);
+      const result1 = await orchestrator.handleRequest(input1, {
+        sendNotification: mockSendNotification,
+      });
       // @ts-expect-error: Intentionally missing workflowStateData to force thread ID generation
-      const result2 = await orchestrator.handleRequest(input2);
+      const result2 = await orchestrator.handleRequest(input2, {
+        sendNotification: mockSendNotification,
+      });
 
       // Both should have orchestration prompts
       expect(result1.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
@@ -684,7 +736,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: threadId },
       };
 
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
 
@@ -707,7 +761,9 @@ describe('MobileNativeOrchestrator', () => {
       const input = { userInput: { request: 'Generate thread ID' } };
 
       // @ts-expect-error: Intentionally missing workflowStateData to test thread ID generation
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
 
@@ -736,7 +792,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData,
       };
 
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.structuredContent?.orchestrationInstructionsPrompt).toBeDefined();
 
@@ -757,7 +815,9 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'completion-test-123' },
       };
 
-      const result = await orchestrator.handleRequest(input);
+      const result = await orchestrator.handleRequest(input, {
+        sendNotification: mockSendNotification,
+      });
 
       expect(result.content).toBeDefined();
       expect(result.structuredContent).toBeDefined();
@@ -776,7 +836,7 @@ describe('MobileNativeOrchestrator', () => {
         workflowStateData: { thread_id: 'logging-test-123' },
       };
 
-      await orchestrator.handleRequest(input);
+      await orchestrator.handleRequest(input, { sendNotification: mockSendNotification });
 
       const logs = mockLogger.logs;
 

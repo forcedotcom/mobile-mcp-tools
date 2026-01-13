@@ -9,13 +9,8 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { ProjectGenerationNode } from '../../../src/workflow/nodes/projectGeneration.js';
 import { createTestState } from '../../utils/stateBuilders.js';
 import { MockLogger } from '../../utils/MockLogger.js';
-import * as childProcess from 'child_process';
+import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
 import * as fs from 'fs';
-
-// Mock execSync, existsSync, and readdirSync
-vi.mock('child_process', () => ({
-  execSync: vi.fn(),
-}));
 
 vi.mock('fs', async importOriginal => {
   const actual = (await importOriginal()) as typeof import('fs');
@@ -29,21 +24,32 @@ vi.mock('fs', async importOriginal => {
 describe('ProjectGenerationNode', () => {
   let node: ProjectGenerationNode;
   let mockLogger: MockLogger;
-  let mockExecSync: ReturnType<typeof vi.fn>;
+  let mockCommandRunner: CommandRunner;
   let mockExistsSync: ReturnType<typeof vi.fn>;
   let mockReaddirSync: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockLogger = new MockLogger();
-    node = new ProjectGenerationNode(mockLogger);
-    mockExecSync = vi.mocked(childProcess.execSync);
+    mockCommandRunner = {
+      execute: vi.fn(),
+    };
+    node = new ProjectGenerationNode(mockCommandRunner, mockLogger);
     mockExistsSync = vi.mocked(fs.existsSync);
     mockReaddirSync = vi.mocked(fs.readdirSync);
-    mockExecSync.mockReset();
+    vi.mocked(mockCommandRunner.execute).mockReset();
     mockExistsSync.mockReset();
     mockReaddirSync.mockReset();
 
     // Default to success case
+    const defaultSuccessResult: CommandResult = {
+      exitCode: 0,
+      signal: null,
+      stdout: 'Project generated successfully',
+      stderr: '',
+      success: true,
+      duration: 1000,
+    };
+    vi.mocked(mockCommandRunner.execute).mockResolvedValue(defaultSuccessResult);
     mockExistsSync.mockReturnValue(true);
     mockReaddirSync.mockReturnValue(['MyApp.xcodeproj'] as unknown as string[]);
   });
@@ -53,30 +59,30 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('Constructor', () => {
-    it('should initialize with correct node name', () => {
+    it('should initialize with correct node name', async () => {
       expect(node.name).toBe('generateProject');
     });
 
-    it('should extend BaseNode', () => {
+    it('should extend BaseNode', async () => {
       expect(node).toBeDefined();
       expect(node.name).toBeDefined();
       expect(node.execute).toBeDefined();
     });
 
-    it('should create default logger when none provided', () => {
-      const nodeWithoutLogger = new ProjectGenerationNode();
+    it('should create default logger when none provided', async () => {
+      const nodeWithoutLogger = new ProjectGenerationNode(mockCommandRunner);
       expect(nodeWithoutLogger).toBeDefined();
     });
 
-    it('should use provided logger', () => {
+    it('should use provided logger', async () => {
       const customLogger = new MockLogger();
-      const nodeWithCustomLogger = new ProjectGenerationNode(customLogger);
+      const nodeWithCustomLogger = new ProjectGenerationNode(mockCommandRunner, customLogger);
       expect(nodeWithCustomLogger['logger']).toBe(customLogger);
     });
   });
 
   describe('execute() - iOS Platform - Success', () => {
-    it('should generate iOS project successfully', () => {
+    it('should generate iOS project successfully', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -88,20 +94,19 @@ describe('ProjectGenerationNode', () => {
         loginHost: 'https://login.salesforce.com',
       });
 
-      mockExecSync.mockReturnValue('Project generated successfully');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeDefined();
       expect(result.projectPath).toContain('MyiOSApp');
       expect(result.workflowFatalErrorMessages).toBeUndefined();
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('sf mobilesdk ios createwithtemplate'),
-        expect.objectContaining({ encoding: 'utf-8', timeout: 120000 })
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['mobilesdk', 'ios', 'createwithtemplate']),
+        expect.objectContaining({ timeout: 120000 })
       );
     });
 
-    it('should use correct command format for iOS', () => {
+    it('should use correct command format for iOS', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -113,25 +118,26 @@ describe('ProjectGenerationNode', () => {
         loginHost: undefined,
       });
 
-      mockExecSync.mockReturnValue('Success');
+      await node.execute(inputState);
 
-      node.execute(inputState);
-
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('--template="ContactsApp"'),
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['--template', 'ContactsApp']),
         expect.any(Object)
       );
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('--appname="MyiOSApp"'),
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['--appname', 'MyiOSApp']),
         expect.any(Object)
       );
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('--consumerkey="client123"'),
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['--consumerkey', 'client123']),
         expect.any(Object)
       );
     });
 
-    it('should validate iOS project structure', () => {
+    it('should validate iOS project structure', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -142,11 +148,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockReturnValue(['MyiOSApp.xcodeproj', 'Podfile'] as unknown as string[]);
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       // Should validate iOS project structure by reading directory
@@ -155,7 +160,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - iOS Platform - Validation Failures', () => {
-    it('should fail when .xcodeproj directory is missing', () => {
+    it('should fail when .xcodeproj directory is missing', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -166,10 +171,9 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockReturnValue(['Podfile', 'README.md'] as unknown as string[]);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages).toHaveLength(1);
@@ -178,7 +182,7 @@ describe('ProjectGenerationNode', () => {
       );
     });
 
-    it('should fail when readdirSync throws an error', () => {
+    it('should fail when readdirSync throws an error', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -189,18 +193,17 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockImplementation(() => {
         throw new Error('ENOENT: no such file or directory');
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('not a valid iOS project');
     });
 
-    it('should succeed when .xcodeproj exists even if other files are missing', () => {
+    it('should succeed when .xcodeproj exists even if other files are missing', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -211,18 +214,17 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       // Only .xcodeproj exists, no Podfile
       mockReaddirSync.mockReturnValue(['MyiOSApp.xcodeproj'] as unknown as string[]);
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       expect(result.projectPath).toBeDefined();
     });
 
-    it('should handle .xcworkspace files in project directory', () => {
+    it('should handle .xcworkspace files in project directory', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -233,7 +235,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockReturnValue([
         'MyiOSApp.xcodeproj',
         'MyiOSApp.xcworkspace',
@@ -241,13 +242,13 @@ describe('ProjectGenerationNode', () => {
       ] as unknown as string[]);
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       expect(result.projectPath).toBeDefined();
     });
 
-    it('should detect .xcodeproj even with different naming', () => {
+    it('should detect .xcodeproj even with different naming', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -258,7 +259,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       // Project name doesn't match .xcodeproj name
       mockReaddirSync.mockReturnValue([
         'DifferentName.xcodeproj',
@@ -266,7 +266,7 @@ describe('ProjectGenerationNode', () => {
       ] as unknown as string[]);
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       expect(result.projectPath).toBeDefined();
@@ -274,7 +274,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Android Platform - Success', () => {
-    it('should generate Android project successfully with valid structure', () => {
+    it('should generate Android project successfully with valid structure', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -286,21 +286,21 @@ describe('ProjectGenerationNode', () => {
         loginHost: 'https://test.salesforce.com',
       });
 
-      mockExecSync.mockReturnValue('Project generated successfully');
       mockExistsSync.mockReturnValue(true); // All files exist
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeDefined();
       expect(result.projectPath).toContain('MyAndroidApp');
       expect(result.workflowFatalErrorMessages).toBeUndefined();
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('sf mobilesdk android createwithtemplate'),
-        expect.objectContaining({ encoding: 'utf-8', timeout: 120000 })
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['mobilesdk', 'android', 'createwithtemplate']),
+        expect.objectContaining({ timeout: 120000 })
       );
     });
 
-    it('should validate Android project structure', () => {
+    it('should validate Android project structure', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -311,17 +311,16 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       // Should check for app directory (using regex to handle both Unix and Windows path separators)
       expect(mockExistsSync).toHaveBeenCalledWith(expect.stringMatching(/MyAndroidApp[/\\]app$/));
     });
 
-    it('should accept Kotlin build files as alternative', () => {
+    it('should accept Kotlin build files as alternative', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -331,8 +330,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppClientId: 'client123',
         connectedAppCallbackUri: 'myapp://callback',
       });
-
-      mockExecSync.mockReturnValue('Success');
 
       // Mock scenario: Groovy files don't exist, but Kotlin files do
       mockExistsSync.mockImplementation((path: string) => {
@@ -342,12 +339,12 @@ describe('ProjectGenerationNode', () => {
         return true; // Other files exist
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should accept Groovy build files', () => {
+    it('should accept Groovy build files', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -357,8 +354,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppClientId: 'client123',
         connectedAppCallbackUri: 'myapp://callback',
       });
-
-      mockExecSync.mockReturnValue('Success');
 
       // Mock scenario: Groovy files exist, Kotlin files don't
       mockExistsSync.mockImplementation((path: string) => {
@@ -368,14 +363,14 @@ describe('ProjectGenerationNode', () => {
         return true; // Other files exist
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
   });
 
   describe('execute() - Android Platform - Validation Failures', () => {
-    it('should fail when build.gradle and build.gradle.kts both missing', () => {
+    it('should fail when build.gradle and build.gradle.kts both missing', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -385,8 +380,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppClientId: 'client123',
         connectedAppCallbackUri: 'myapp://callback',
       });
-
-      mockExecSync.mockReturnValue('Success');
 
       // Mock: Both build.gradle and build.gradle.kts don't exist
       mockExistsSync.mockImplementation((path: string) => {
@@ -395,7 +388,7 @@ describe('ProjectGenerationNode', () => {
         return true;
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages).toHaveLength(1);
@@ -404,7 +397,7 @@ describe('ProjectGenerationNode', () => {
       );
     });
 
-    it('should fail when app directory is missing', () => {
+    it('should fail when app directory is missing', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -414,8 +407,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppClientId: 'client123',
         connectedAppCallbackUri: 'myapp://callback',
       });
-
-      mockExecSync.mockReturnValue('Success');
 
       mockExistsSync.mockImplementation((path: string) => {
         const pathStr = String(path);
@@ -423,13 +414,13 @@ describe('ProjectGenerationNode', () => {
         return true;
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('not a valid Android project');
     });
 
-    it('should fail when settings.gradle and settings.gradle.kts both missing', () => {
+    it('should fail when settings.gradle and settings.gradle.kts both missing', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -440,15 +431,13 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
-
       mockExistsSync.mockImplementation((path: string) => {
         const pathStr = String(path);
         if (pathStr.includes('settings.gradle')) return false;
         return true;
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('not a valid Android project');
@@ -456,7 +445,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Project Directory Verification', () => {
-    it('should fail when project directory does not exist after command execution', () => {
+    it('should fail when project directory does not exist after command execution', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -467,12 +456,11 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Command completed');
       // First call to existsSync (project directory check) returns false
       // This simulates the directory not being created
       mockExistsSync.mockReturnValue(false);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeUndefined();
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -483,7 +471,7 @@ describe('ProjectGenerationNode', () => {
       );
     });
 
-    it('should log error when project directory does not exist', () => {
+    it('should log error when project directory does not exist', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -494,11 +482,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Command completed');
       mockExistsSync.mockReturnValue(false);
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const errorLogs = mockLogger.getLogsByLevel('error');
       const missingDirLog = errorLogs.find(log =>
@@ -507,7 +494,7 @@ describe('ProjectGenerationNode', () => {
       expect(missingDirLog).toBeDefined();
     });
 
-    it('should proceed with validation when project directory exists', () => {
+    it('should proceed with validation when project directory exists', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -518,11 +505,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
       mockReaddirSync.mockReturnValue(['MyiOSApp.xcodeproj'] as unknown as string[]);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeDefined();
       expect(result.workflowFatalErrorMessages).toBeUndefined();
@@ -530,7 +516,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Command Execution Errors', () => {
-    it('should handle execSync throwing an error', () => {
+    it('should handle execSync throwing an error', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -541,11 +527,9 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Command not found: sf');
-      });
+      vi.mocked(mockCommandRunner.execute).mockRejectedValue(new Error('Command not found: sf'));
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeUndefined();
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -554,7 +538,7 @@ describe('ProjectGenerationNode', () => {
       expect(result.workflowFatalErrorMessages![0]).toContain('Command not found: sf');
     });
 
-    it('should handle non-Error exceptions', () => {
+    it('should handle non-Error exceptions', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -565,18 +549,16 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockImplementation(() => {
-        throw 'Unknown error';
-      });
+      vi.mocked(mockCommandRunner.execute).mockRejectedValue('Unknown error');
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('Failed to generate project');
       expect(result.workflowFatalErrorMessages![0]).toContain('Unknown error');
     });
 
-    it('should handle timeout errors', () => {
+    it('should handle timeout errors', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -587,18 +569,17 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockImplementation(() => {
-        const error = new Error('Command timed out after 120000ms');
-        throw error;
-      });
+      vi.mocked(mockCommandRunner.execute).mockRejectedValue(
+        new Error('Command timed out after 120000ms')
+      );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('timed out');
     });
 
-    it('should handle permission errors', () => {
+    it('should handle permission errors', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -609,11 +590,11 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockImplementation(() => {
-        throw new Error('EACCES: permission denied');
-      });
+      vi.mocked(mockCommandRunner.execute).mockRejectedValue(
+        new Error('EACCES: permission denied')
+      );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('permission denied');
@@ -621,7 +602,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Logging', () => {
-    it('should log debug message before command execution', () => {
+    it('should log debug message before command execution', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -632,10 +613,9 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const preExecutionLog = debugLogs.find(log =>
@@ -644,7 +624,7 @@ describe('ProjectGenerationNode', () => {
       expect(preExecutionLog).toBeDefined();
     });
 
-    it('should log debug message after command execution', () => {
+    it('should log debug message after command execution', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -655,11 +635,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const postExecutionLog = debugLogs.find(log =>
@@ -668,7 +647,7 @@ describe('ProjectGenerationNode', () => {
       expect(postExecutionLog).toBeDefined();
     });
 
-    it('should log Android validation success', () => {
+    it('should log Android validation success', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -679,11 +658,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const validationLog = debugLogs.find(log =>
@@ -692,7 +670,7 @@ describe('ProjectGenerationNode', () => {
       expect(validationLog).toBeDefined();
     });
 
-    it('should log iOS validation success', () => {
+    it('should log iOS validation success', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -703,12 +681,11 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockReturnValue(['MyiOSApp.xcodeproj'] as unknown as string[]);
       mockExistsSync.mockReturnValue(true);
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const validationLog = debugLogs.find(log =>
@@ -717,7 +694,7 @@ describe('ProjectGenerationNode', () => {
       expect(validationLog).toBeDefined();
     });
 
-    it('should log warning for missing Android files', () => {
+    it('should log warning for missing Android files', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -728,7 +705,6 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       // First call (project directory check) returns true, subsequent calls return false
       let callCount = 0;
       mockExistsSync.mockImplementation(() => {
@@ -737,13 +713,13 @@ describe('ProjectGenerationNode', () => {
       });
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const warnLogs = mockLogger.getLogsByLevel('warn');
       expect(warnLogs.length).toBeGreaterThan(0);
     });
 
-    it('should log warning for missing iOS .xcodeproj', () => {
+    it('should log warning for missing iOS .xcodeproj', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -754,11 +730,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockReturnValue(['Podfile', 'README.md'] as unknown as string[]);
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const warnLogs = mockLogger.getLogsByLevel('warn');
       const missingXcodeprojLog = warnLogs.find(log =>
@@ -767,7 +742,7 @@ describe('ProjectGenerationNode', () => {
       expect(missingXcodeprojLog).toBeDefined();
     });
 
-    it('should log warning when iOS project directory cannot be read', () => {
+    it('should log warning when iOS project directory cannot be read', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -778,13 +753,12 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockReaddirSync.mockImplementation(() => {
         throw new Error('EACCES: permission denied');
       });
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const warnLogs = mockLogger.getLogsByLevel('warn');
       const readFailLog = warnLogs.find(log =>
@@ -793,7 +767,7 @@ describe('ProjectGenerationNode', () => {
       expect(readFailLog).toBeDefined();
     });
 
-    it('should log error when command fails', () => {
+    it('should log error when command fails', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -804,12 +778,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Command failed');
-      });
+      vi.mocked(mockCommandRunner.execute).mockRejectedValue(new Error('Command failed'));
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const errorLogs = mockLogger.getLogsByLevel('error');
       const commandFailLog = errorLogs.find(log =>
@@ -818,7 +790,7 @@ describe('ProjectGenerationNode', () => {
       expect(commandFailLog).toBeDefined();
     });
 
-    it('should not log sensitive credentials in debug messages', () => {
+    it('should not log sensitive credentials in debug messages', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -829,10 +801,9 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://secret-callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const allLogs = mockLogger.logs;
       // Verify sensitive data is not in log messages
@@ -842,7 +813,7 @@ describe('ProjectGenerationNode', () => {
       });
     });
 
-    it('should log "Command executed successfully" before validation', () => {
+    it('should log "Command executed successfully" before validation', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -853,10 +824,9 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Project created successfully');
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const commandExecutedLog = debugLogs.find(log =>
@@ -865,7 +835,7 @@ describe('ProjectGenerationNode', () => {
       expect(commandExecutedLog).toBeDefined();
     });
 
-    it('should log "Project generation completed successfully" only after validation passes', () => {
+    it('should log "Project generation completed successfully" only after validation passes', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -876,11 +846,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const infoLogs = mockLogger.getLogsByLevel('info');
       const completionLog = infoLogs.find(log =>
@@ -889,7 +858,7 @@ describe('ProjectGenerationNode', () => {
       expect(completionLog).toBeDefined();
     });
 
-    it('should not log completion message when validation fails', () => {
+    it('should not log completion message when validation fails', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -900,11 +869,10 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(false); // Validation will fail
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const infoLogs = mockLogger.getLogsByLevel('info');
       const completionLog = infoLogs.find(log =>
@@ -915,7 +883,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Return Value', () => {
-    it('should return partial state object on success', () => {
+    it('should return partial state object on success', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -926,9 +894,7 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result).toBeDefined();
       expect(typeof result).toBe('object');
@@ -936,7 +902,7 @@ describe('ProjectGenerationNode', () => {
       expect(typeof result.projectPath).toBe('string');
     });
 
-    it('should return projectPath on success', () => {
+    it('should return projectPath on success', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -947,15 +913,13 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeDefined();
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should return error messages on failure', () => {
+    it('should return error messages on failure', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -966,11 +930,16 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Failed');
+      vi.mocked(mockCommandRunner.execute).mockResolvedValue({
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'Command failed',
+        success: false,
+        duration: 1000,
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeUndefined();
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -979,7 +948,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Command Timeout Configuration', () => {
-    it('should set timeout to 120000ms', () => {
+    it('should set timeout to 120000ms', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -990,26 +959,20 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
+      await node.execute(inputState);
 
-      node.execute(inputState);
-
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.any(String),
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.any(Array),
         expect.objectContaining({
-          encoding: 'utf-8',
           timeout: 120000,
-          env: expect.objectContaining({
-            LANG: 'en_US.UTF-8',
-            LC_ALL: 'en_US.UTF-8',
-          }),
         })
       );
     });
   });
 
   describe('execute() - Real World Scenarios', () => {
-    it('should handle typical iOS project generation', () => {
+    it('should handle typical iOS project generation', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1021,15 +984,13 @@ describe('ProjectGenerationNode', () => {
         loginHost: 'https://login.salesforce.com',
       });
 
-      mockExecSync.mockReturnValue('Project created successfully at /Users/developer/SalesApp');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toContain('SalesApp');
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should handle typical Android project generation with sandbox', () => {
+    it('should handle typical Android project generation with sandbox', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -1041,20 +1002,20 @@ describe('ProjectGenerationNode', () => {
         loginHost: 'https://test.salesforce.com',
       });
 
-      mockExecSync.mockReturnValue('Project created successfully');
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toContain('SalesApp');
       expect(result.workflowFatalErrorMessages).toBeUndefined();
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('https://test.salesforce.com'),
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['--loginserver', 'https://test.salesforce.com']),
         expect.any(Object)
       );
     });
 
-    it('should handle project generation in CI/CD environment', () => {
+    it('should handle project generation in CI/CD environment', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -1065,10 +1026,9 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'ciapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toBeDefined();
       expect(result.workflowFatalErrorMessages).toBeUndefined();
@@ -1076,7 +1036,7 @@ describe('ProjectGenerationNode', () => {
   });
 
   describe('execute() - Template Properties', () => {
-    it('should include template properties flags when templateProperties exist', () => {
+    it('should include template properties flags when templateProperties exist', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1091,17 +1051,16 @@ describe('ProjectGenerationNode', () => {
         },
       });
 
-      mockExecSync.mockReturnValue('Success');
+      await node.execute(inputState);
 
-      node.execute(inputState);
-
-      expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('--template-property-customField="customValue"'),
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'sf',
+        expect.arrayContaining(['--template-property-customField', 'customValue']),
         expect.any(Object)
       );
     });
 
-    it('should include multiple template properties flags', () => {
+    it('should include multiple template properties flags', async () => {
       const inputState = createTestState({
         platform: 'Android',
         selectedTemplate: 'ContactsApp',
@@ -1117,18 +1076,21 @@ describe('ProjectGenerationNode', () => {
         },
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
-      const command = mockExecSync.mock.calls[0][0] as string;
-      expect(command).toContain('--template-property-apiVersion="60.0"');
-      expect(command).toContain('--template-property-customObject="Account"');
-      expect(command).toContain('--template-property-enableFeatureX="true"');
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).toContain('--template-property-apiVersion');
+      expect(args).toContain('60.0');
+      expect(args).toContain('--template-property-customObject');
+      expect(args).toContain('Account');
+      expect(args).toContain('--template-property-enableFeatureX');
+      expect(args).toContain('true');
     });
 
-    it('should not include template properties flags when templateProperties is undefined', () => {
+    it('should not include template properties flags when templateProperties is undefined', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1140,15 +1102,14 @@ describe('ProjectGenerationNode', () => {
         templateProperties: undefined,
       });
 
-      mockExecSync.mockReturnValue('Success');
+      await node.execute(inputState);
 
-      node.execute(inputState);
-
-      const command = mockExecSync.mock.calls[0][0] as string;
-      expect(command).not.toContain('--template-property-');
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).not.toContain('--template-property-');
     });
 
-    it('should not include template properties flags when templateProperties is empty', () => {
+    it('should not include template properties flags when templateProperties is empty', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1160,15 +1121,14 @@ describe('ProjectGenerationNode', () => {
         templateProperties: {},
       });
 
-      mockExecSync.mockReturnValue('Success');
+      await node.execute(inputState);
 
-      node.execute(inputState);
-
-      const command = mockExecSync.mock.calls[0][0] as string;
-      expect(command).not.toContain('--template-property-');
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).not.toContain('--template-property-');
     });
 
-    it('should log template properties in debug message', () => {
+    it('should log template properties in debug message', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1182,10 +1142,9 @@ describe('ProjectGenerationNode', () => {
         },
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockLogger.reset();
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const preExecutionLog = debugLogs.find(log =>
@@ -1198,7 +1157,7 @@ describe('ProjectGenerationNode', () => {
       expect(logData?.templateProperties).toEqual({ customProp: 'customVal' });
     });
 
-    it('should handle template properties with special characters in values', () => {
+    it('should handle template properties with special characters in values', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1213,18 +1172,19 @@ describe('ProjectGenerationNode', () => {
         },
       });
 
-      mockExecSync.mockReturnValue('Success');
+      await node.execute(inputState);
 
-      node.execute(inputState);
-
-      const command = mockExecSync.mock.calls[0][0] as string;
-      expect(command).toContain('--template-property-description="My App Description"');
-      expect(command).toContain('--template-property-url="https://example.com/api"');
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).toContain('--template-property-description');
+      expect(args).toContain('My App Description');
+      expect(args).toContain('--template-property-url');
+      expect(args).toContain('https://example.com/api');
     });
   });
 
   describe('execute() - Edge Cases', () => {
-    it('should handle project names with spaces', () => {
+    it('should handle project names with spaces', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1235,14 +1195,12 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toContain('My Sales App');
     });
 
-    it('should handle project names with special characters', () => {
+    it('should handle project names with special characters', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1253,14 +1211,12 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toContain('My-App_2024');
     });
 
-    it('should handle very long project names', () => {
+    it('should handle very long project names', async () => {
       const longName = 'A'.repeat(100);
       const inputState = createTestState({
         platform: 'iOS',
@@ -1272,16 +1228,14 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'myapp://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
-
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.projectPath).toContain(longName);
     });
   });
 
   describe('execute() - State Independence', () => {
-    it('should not modify input state', () => {
+    it('should not modify input state', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1295,15 +1249,13 @@ describe('ProjectGenerationNode', () => {
       const originalPlatform = inputState.platform;
       const originalProjectName = inputState.projectName;
 
-      mockExecSync.mockReturnValue('Success');
-
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(inputState.platform).toBe(originalPlatform);
       expect(inputState.projectName).toBe(originalProjectName);
     });
 
-    it('should handle multiple invocations independently', () => {
+    it('should handle multiple invocations independently', async () => {
       const state1 = createTestState({
         platform: 'iOS',
         selectedTemplate: 'ContactsApp',
@@ -1324,15 +1276,14 @@ describe('ProjectGenerationNode', () => {
         connectedAppCallbackUri: 'app2://callback',
       });
 
-      mockExecSync.mockReturnValue('Success');
       mockExistsSync.mockReturnValue(true);
 
-      const result1 = node.execute(state1);
-      const result2 = node.execute(state2);
+      const result1 = await node.execute(state1);
+      const result2 = await node.execute(state2);
 
       expect(result1.projectPath).toContain('App1');
       expect(result2.projectPath).toContain('App2');
-      expect(mockExecSync).toHaveBeenCalledTimes(2);
+      expect(mockCommandRunner.execute).toHaveBeenCalledTimes(2);
     });
   });
 });

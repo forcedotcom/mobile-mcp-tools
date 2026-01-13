@@ -6,37 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  NoOpProgressReporter,
-  MCPProgressReporter,
-  createMCPProgressReporter,
-} from '../../src/execution/progressReporter.js';
+import { MCPProgressReporter } from '../../src/execution/progressReporter.js';
 
 describe('ProgressReporter', () => {
-  describe('NoOpProgressReporter', () => {
-    it('should implement ProgressReporter interface', () => {
-      const reporter = new NoOpProgressReporter();
-      expect(reporter.report).toBeDefined();
-      expect(typeof reporter.report).toBe('function');
-    });
-
-    it('should not throw when reporting progress', () => {
-      const reporter = new NoOpProgressReporter();
-      expect(() => {
-        reporter.report(50);
-        reporter.report(75, 100);
-        reporter.report(100, 100, 'Complete');
-      }).not.toThrow();
-    });
-
-    it('should accept all parameter combinations', () => {
-      const reporter = new NoOpProgressReporter();
-      expect(() => reporter.report(0)).not.toThrow();
-      expect(() => reporter.report(50, 100)).not.toThrow();
-      expect(() => reporter.report(100, 100, 'Done')).not.toThrow();
-    });
-  });
-
   describe('MCPProgressReporter', () => {
     let mockSendNotification: ReturnType<typeof vi.fn>;
     const progressToken = 'test-token-123';
@@ -194,44 +166,6 @@ describe('ProgressReporter', () => {
           total: 100,
         },
       });
-    });
-  });
-
-  describe('createMCPProgressReporter', () => {
-    let mockSendNotification: ReturnType<typeof vi.fn>;
-    const progressToken = 'test-token-123';
-
-    beforeEach(() => {
-      mockSendNotification = vi.fn().mockResolvedValue(undefined);
-    });
-
-    it('should create MCPProgressReporter when both parameters provided', () => {
-      const reporter = createMCPProgressReporter(mockSendNotification, progressToken);
-      expect(reporter).toBeInstanceOf(MCPProgressReporter);
-    });
-
-    it('should create NoOpProgressReporter when sendNotification is undefined', () => {
-      const reporter = createMCPProgressReporter(undefined, progressToken);
-      expect(reporter).toBeInstanceOf(NoOpProgressReporter);
-    });
-
-    it('should create NoOpProgressReporter when progressToken is undefined', () => {
-      const reporter = createMCPProgressReporter(mockSendNotification, undefined);
-      expect(reporter).toBeInstanceOf(NoOpProgressReporter);
-    });
-
-    it('should create NoOpProgressReporter when both are undefined', () => {
-      const reporter = createMCPProgressReporter(undefined, undefined);
-      expect(reporter).toBeInstanceOf(NoOpProgressReporter);
-    });
-
-    it('should create functional MCPProgressReporter', async () => {
-      const reporter = createMCPProgressReporter(mockSendNotification, progressToken);
-      reporter.report(50, 100, 'Test');
-
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      expect(mockSendNotification).toHaveBeenCalled();
     });
   });
 });

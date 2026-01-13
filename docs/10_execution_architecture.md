@@ -36,7 +36,7 @@ The execution architecture distinguishes between two concepts:
 
 Contains reusable components that can be used for any command execution, exported from `@salesforce/magen-mcp-workflow`:
 
-- **`progressReporter.ts`**: Abstract progress reporting interface and MCP implementation (`ProgressReporter`, `NoOpProgressReporter`, `MCPProgressReporter`, `createMCPProgressReporter`)
+- **`progressReporter.ts`**: Abstract progress reporting interface and MCP implementation (`ProgressReporter`, `MCPProgressReporter`)
 - **`commandRunner.ts`**: Generic command execution abstraction (`CommandRunner`, `DefaultCommandRunner`)
 - **`types.ts`**: Generic types (`Command`, `CommandResult`, `ProgressParseResult`, `ProgressParser`, `CommandExecutionOptions`)
 - **`index.ts`**: Exports all generic execution components
@@ -76,7 +76,7 @@ This organization provides:
 
 **Flow**:
 1. Orchestrator extracts `sendNotification` function and `progressToken` from MCP request context
-2. Creates `MCPProgressReporter` using `createMCPProgressReporter()` helper
+2. Creates `MCPProgressReporter` instance directly
 3. Passes `ProgressReporter` to workflow graph creation
 4. Workflow passes reporter to nodes that need it (e.g., `BuildValidationNode`)
 
@@ -174,48 +174,41 @@ interface BuildCommandFactory {
 
 ### Workflow Creation
 
-The workflow graph is created via a factory function that accepts dependencies:
+The workflow graph is created via a factory function that constructs its dependencies internally:
 
 ```typescript
-function createMobileNativeWorkflow(
-  buildExecutor: BuildExecutor,
-  sendNotification: SendNotification
-): StateGraph
+function createMobileNativeWorkflow(logger?: Logger): StateGraph
 ```
 
-This pattern enables:
-- **Testability**: Dependencies can be mocked for testing
-- **Flexibility**: Different implementations can be injected
-- **Explicit Dependencies**: Clear contract of what the workflow needs
+This pattern:
+- **Encapsulates Infrastructure**: The workflow owns its execution dependencies (CommandRunner, BuildExecutor)
+- **Simplifies the API**: Callers only need to provide an optional logger
+- **Maintains Testability**: Individual components (BuildExecutor, CommandRunner) can still be tested in isolation
 
 ### Component Construction
 
-Components are constructed at the orchestrator level:
+Components are constructed within the workflow factory:
 
 ```typescript
-// Orchestrator creates dependencies
-import {
-  DefaultCommandRunner,
-  createMCPProgressReporter,
-} from '@salesforce/magen-mcp-workflow';
-import { DefaultBuildExecutor } from '../execution/build/buildExecutor.js';
+// graph.ts - workflow owns its infrastructure
+export function createMobileNativeWorkflow(logger?: Logger) {
+  const commandRunner = new DefaultCommandRunner(logger);
+  const buildExecutor = new DefaultBuildExecutor(
+    commandRunner,
+    defaultTempDirectoryManager,
+    logger
+  );
+  // ... build workflow graph with buildExecutor
+}
 
-const commandRunner = new DefaultCommandRunner(logger);
-const buildExecutor = new DefaultBuildExecutor(
-  commandRunner,
-  tempDirManager,
-  logger
-);
-const progressReporter = createMCPProgressReporter(sendNotification, progressToken);
-
-// Workflow receives dependencies
-const workflow = createMobileNativeWorkflow(buildExecutor);
+// Orchestrator simply invokes the factory
+const workflow = createMobileNativeWorkflow(logger);
 ```
 
 This ensures:
-- Dependencies are created once and reused
-- Lifecycle is managed at the appropriate level
-- Components remain focused on their responsibilities
+- The orchestrator focuses on orchestration, not infrastructure construction
+- Workflow infrastructure is colocated with the workflow definition
+- Individual components remain independently testable
 
 ## Progress Reporting Flow
 
@@ -223,7 +216,7 @@ This ensures:
 
 1. **MCP Request Arrives**: Contains `progressToken` in metadata
 2. **Orchestrator Extracts Context**: Gets `sendNotification` function and `progressToken`
-3. **ProgressReporter Created**: `createMCPProgressReporter()` validates token and creates reporter
+3. **ProgressReporter Created**: `MCPProgressReporter` instance created with `sendNotification` and `progressToken`
 4. **Workflow Receives Reporter**: Passed to workflow creation function
 
 ### During Execution

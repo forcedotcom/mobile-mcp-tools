@@ -10,8 +10,7 @@ import {
   OrchestratorTool,
   OrchestratorConfig,
   WorkflowStateManager,
-  DefaultCommandRunner,
-  createMCPProgressReporter,
+  MCPProgressReporter,
   ProgressReporter,
   type Logger,
   type WorkflowEnvironment,
@@ -20,8 +19,6 @@ import {
 } from '@salesforce/magen-mcp-workflow';
 import { createMobileNativeWorkflow } from '../../../workflow/graph.js';
 import { ORCHESTRATOR_TOOL } from './metadata.js';
-import { DefaultBuildExecutor } from '../../../execution/index.js';
-import { defaultTempDirectoryManager } from '../../../common.js';
 
 /**
  * Mobile Native Orchestrator Tool
@@ -41,24 +38,12 @@ export class MobileNativeOrchestrator extends OrchestratorTool {
     const mobileNativeWorkflowStateManagerLogger =
       logger ?? createWorkflowLogger('MobileNativeWorkflowStateManager');
 
-    // Create execution dependencies
-    const commandRunner = new DefaultCommandRunner(logger);
-    const buildExecutor = new DefaultBuildExecutor(
-      commandRunner,
-      defaultTempDirectoryManager,
-      logger
-    );
-
     const config: OrchestratorConfig = {
       toolId: ORCHESTRATOR_TOOL.toolId,
       title: 'Salesforce Mobile Native Project Manager',
       description:
         'Orchestrates the end-to-end workflow for generating Salesforce native mobile apps.',
-      workflow: createMobileNativeWorkflow(
-        buildExecutor,
-        commandRunner,
-        defaultTempDirectoryManager
-      ),
+      workflow: createMobileNativeWorkflow(logger),
       stateManager: new WorkflowStateManager({
         environment,
         logger: mobileNativeWorkflowStateManagerLogger,
@@ -97,13 +82,19 @@ export class MobileNativeOrchestrator extends OrchestratorTool {
     }
   ) => {
     // Extract sendNotification and progressToken from request context
+    // sendNotification should always be provided by the MCP server
     const sendNotification = extra?.sendNotification;
+    if (!sendNotification) {
+      throw new Error(
+        'sendNotification is required but was not provided by MCP server. This indicates a configuration issue.'
+      );
+    }
     const progressToken =
       extra?._meta?.progressToken ??
       `progress-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Create MCP progress reporter and store for createThreadConfig
-    this.currentProgressReporter = createMCPProgressReporter(sendNotification, progressToken);
+    this.currentProgressReporter = new MCPProgressReporter(sendNotification, progressToken);
 
     this.logger.debug('Orchestrator tool called with input', input);
     try {
