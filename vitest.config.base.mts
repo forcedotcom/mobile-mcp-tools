@@ -48,6 +48,7 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.test.ts',
         '**/*.config.ts',
+        '**/config.ts', // Type-only config files (e.g., orchestrator config)
         '**/types/',
         '**/index.ts',
         '**/coverage/',
