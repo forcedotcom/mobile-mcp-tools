@@ -13,6 +13,8 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
+import { readFileSync, readdirSync } from 'fs';
+import { join } from 'path';
 
 /**
  * Launches the iOS app on the target simulator.
@@ -49,22 +51,16 @@ export class iOSLaunchAppNode extends BaseNode<State> {
       };
     }
 
-    try {
-      // Try to get the actual bundle ID from the installed app first
-      let bundleId = await this.getInstalledBundleId(state.targetDevice, state.projectName);
+    if (!state.projectPath) {
+      this.logger.warn('No project path specified for app launch');
+      return {
+        workflowFatalErrorMessages: ['Project path must be specified for iOS app launch'],
+      };
+    }
 
-      // Fallback to constructed bundle ID if we can't find it
-      if (!bundleId) {
-        bundleId = `${state.packageName}.${state.projectName}`;
-        this.logger.debug(
-          'Could not detect bundle ID from installed app, using constructed bundle ID',
-          {
-            bundleId,
-          }
-        );
-      } else {
-        this.logger.debug('Detected bundle ID from installed app', { bundleId });
-      }
+    try {
+      // Get bundle ID from project file (required)
+      const bundleId = this.readBundleIdFromProject(state.projectPath, state.projectName);
 
       this.logger.debug('Launching iOS app on simulator', {
         targetDevice: state.targetDevice,
@@ -122,57 +118,61 @@ export class iOSLaunchAppNode extends BaseNode<State> {
   };
 
   /**
-   * Attempts to get the actual bundle ID from the installed app on the simulator.
-   * Uses `xcrun simctl listapps` to find the bundle ID matching the project name.
+   * Reads bundle ID from the Xcode project file.
+   * Reads PRODUCT_BUNDLE_IDENTIFIER from project.pbxproj file.
+   * @throws Error if bundle ID cannot be found or read from the project file
    */
-  private async getInstalledBundleId(
-    deviceName: string,
-    projectName: string
-  ): Promise<string | null> {
+  private readBundleIdFromProject(projectPath: string, _projectName: string): string {
+    // Find the .xcodeproj directory
+    let xcodeprojPath: string | null = null;
     try {
-      const result = await this.commandRunner.execute(
-        'xcrun',
-        ['simctl', 'listapps', deviceName, '--json'],
-        {
-          timeout: 10000,
+      const files = readdirSync(projectPath);
+      for (const file of files) {
+        if (file.endsWith('.xcodeproj')) {
+          xcodeprojPath = join(projectPath, file, 'project.pbxproj');
+          break;
         }
-      );
-
-      if (!result.success) {
-        this.logger.debug('Failed to list apps, will use constructed bundle ID', {
-          stderr: result.stderr,
-        });
-        return null;
       }
-
-      try {
-        const apps = JSON.parse(result.stdout) as Record<
-          string,
-          { CFBundleName?: string; CFBundleDisplayName?: string }
-        >;
-        // Look for app matching project name (case-insensitive)
-        const projectNameLower = projectName.toLowerCase();
-        for (const [bundleId, appInfo] of Object.entries(apps)) {
-          const appName = (appInfo.CFBundleName || appInfo.CFBundleDisplayName || '').toLowerCase();
-          if (appName.includes(projectNameLower)) {
-            this.logger.debug('Found matching app in installed apps', {
-              bundleId,
-              appName: appInfo.CFBundleName || appInfo.CFBundleDisplayName,
-            });
-            return bundleId;
-          }
-        }
-      } catch (parseError) {
-        this.logger.debug('Failed to parse apps list JSON', { error: parseError });
-        return null;
-      }
-
-      return null;
     } catch (error) {
-      this.logger.debug('Error getting installed bundle ID', {
-        error: error instanceof Error ? error.message : `${error}`,
-      });
-      return null;
+      throw new Error(
+        `Failed to read project directory at ${projectPath}: ${error instanceof Error ? error.message : `${error}`}`
+      );
     }
+
+    if (!xcodeprojPath) {
+      throw new Error(`No .xcodeproj directory found in project path: ${projectPath}`);
+    }
+
+    let content: string;
+    try {
+      content = readFileSync(xcodeprojPath, 'utf-8');
+    } catch (error) {
+      throw new Error(
+        `Failed to read project.pbxproj file at ${xcodeprojPath}: ${error instanceof Error ? error.message : `${error}`}`
+      );
+    }
+
+    // Match PRODUCT_BUNDLE_IDENTIFIER patterns:
+    // PRODUCT_BUNDLE_IDENTIFIER = "com.example.app";
+    // PRODUCT_BUNDLE_IDENTIFIER = com.example.app;
+    // PRODUCT_BUNDLE_IDENTIFIER = "com.example.${PRODUCT_NAME:rfc1034identifier}";
+    const match = content.match(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*["']?([^"'\s;]+)["']?;/);
+    if (!match || !match[1]) {
+      throw new Error(`Could not find PRODUCT_BUNDLE_IDENTIFIER in project file: ${xcodeprojPath}`);
+    }
+
+    const bundleId = match[1];
+    // Check if it contains unresolved variables (we can't resolve them here)
+    if (bundleId.includes('${') || bundleId.includes('$(')) {
+      throw new Error(
+        `Bundle ID contains unresolved variables in project file ${xcodeprojPath}: ${bundleId}. The bundle identifier must be fully resolved.`
+      );
+    }
+
+    this.logger.debug('Found bundle ID in project file', {
+      file: xcodeprojPath,
+      bundleId,
+    });
+    return bundleId;
   }
 }

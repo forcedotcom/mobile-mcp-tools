@@ -13,68 +13,87 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
+import { fetchAndroidEmulators, selectBestEmulator } from './androidEmulatorUtils.js';
 
 /**
- * Lists available Android emulators/devices.
+ * Determines and selects the target Android emulator device.
+ * Selection priority:
+ * 1. Use androidEmulatorName if already set in state
+ * 2. Use running emulator if available
+ * 3. Use emulator with highest API level as fallback
+ *
+ * This node is analogous to iOSSelectSimulatorNode for the Android flow.
+ * If no emulator is found, it's a fatal error (user must create one via Android Studio).
  */
 export class AndroidListDevicesNode extends BaseNode<State> {
   protected readonly logger: Logger;
   private readonly commandRunner: CommandRunner;
 
   constructor(commandRunner: CommandRunner, logger?: Logger) {
-    super('androidListDevices');
-    this.logger = logger ?? createComponentLogger('AndroidListDevicesNode');
+    super('androidSelectEmulator');
+    this.logger = logger ?? createComponentLogger('AndroidSelectEmulatorNode');
     this.commandRunner = commandRunner;
   }
 
   execute = async (state: State, config?: WorkflowRunnableConfig): Promise<Partial<State>> => {
     if (state.platform !== 'Android') {
-      this.logger.debug('Skipping Android device listing for non-Android platform');
+      this.logger.debug('Skipping Android emulator selection for non-Android platform');
+      return {};
+    }
+
+    // If emulator name is already set, use it
+    if (state.androidEmulatorName) {
+      this.logger.debug('Android emulator already set', {
+        androidEmulatorName: state.androidEmulatorName,
+      });
       return {};
     }
 
     try {
-      this.logger.debug('Listing Android devices');
+      this.logger.debug('Selecting Android emulator device');
 
       const progressReporter = config?.configurable?.progressReporter;
 
-      const result = await this.commandRunner.execute(
-        'sf',
-        ['force', 'lightning', 'local', 'device', 'list', '-p', 'android'],
-        {
-          timeout: 30000,
-          progressReporter,
-        }
-      );
+      // Fetch available emulators
+      const result = await fetchAndroidEmulators(this.commandRunner, this.logger, {
+        progressReporter,
+      });
 
       if (!result.success) {
-        const errorMessage =
-          result.stderr || `Failed to list devices: exit code ${result.exitCode ?? 'unknown'}`;
-        this.logger.error('Failed to list Android devices', new Error(errorMessage));
-        this.logger.debug('List devices command details', {
-          exitCode: result.exitCode ?? null,
-          signal: result.signal ?? null,
-          stderr: result.stderr,
-          stdout: result.stdout,
-        });
+        this.logger.error('Failed to list Android emulators', new Error(result.error));
         return {
-          workflowFatalErrorMessages: [`Failed to list Android devices: ${errorMessage}`],
+          workflowFatalErrorMessages: [
+            `Failed to list Android emulators: ${result.error}. Please ensure Android SDK is properly installed.`,
+          ],
         };
       }
 
-      this.logger.debug('Android devices listed successfully', {
-        output: result.stdout,
+      // Select best emulator using shared utility
+      const selectedEmulator = selectBestEmulator(result.emulators, this.logger);
+
+      if (!selectedEmulator) {
+        this.logger.warn('No emulators found');
+        return {
+          workflowFatalErrorMessages: [
+            'No Android emulators found. Please create an emulator via Android Studio > Device Manager.',
+          ],
+        };
+      }
+
+      this.logger.info('Selected Android emulator', {
+        androidEmulatorName: selectedEmulator.name,
       });
-      // Store device list output in state for potential use by other nodes
-      return { androidDeviceList: result.stdout };
+      return { androidEmulatorName: selectedEmulator.name };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       this.logger.error(
-        'Error listing Android devices',
+        'Error selecting Android emulator',
         error instanceof Error ? error : new Error(errorMessage)
       );
       return {
-        workflowFatalErrorMessages: [`Failed to list Android devices: ${errorMessage}`],
+        workflowFatalErrorMessages: [
+          `Failed to select Android emulator: ${errorMessage}. Please ensure Android SDK is properly installed.`,
+        ],
       };
     }
   };

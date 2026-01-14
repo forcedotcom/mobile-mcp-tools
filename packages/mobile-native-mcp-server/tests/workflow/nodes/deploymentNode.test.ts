@@ -73,9 +73,7 @@ describe('DeploymentNode', () => {
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       expect(debugLogs.length).toBeGreaterThan(0);
-      const deploymentLog = debugLogs.find(log =>
-        log.message.includes('Deployment node executed')
-      );
+      const deploymentLog = debugLogs.find(log => log.message.includes('Deployment node executed'));
       expect(deploymentLog).toBeDefined();
     });
 

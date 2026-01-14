@@ -42,10 +42,13 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
       };
     }
 
-    // Try to get applicationId from state or read from build.gradle
-    let applicationId: string | undefined = state.androidApplicationId;
-    if (!applicationId && state.projectPath) {
-      applicationId = this.readApplicationIdFromGradle(state.projectPath);
+    // Try to get applicationId from build.gradle, fall back to packageName from state
+    let applicationId: string | undefined = this.readApplicationIdFromGradle(state.projectPath);
+    if (!applicationId && state.packageName) {
+      this.logger.debug('Using packageName as applicationId fallback', {
+        packageName: state.packageName,
+      });
+      applicationId = state.packageName;
     }
 
     if (!applicationId) {

@@ -35,7 +35,6 @@ import { PluginCheckNode } from './nodes/checkPluginSetup.js';
 import { CheckPluginValidatedRouter } from './nodes/checkPluginValidatedRouter.js';
 import { CheckProjectGenerationRouter } from './nodes/checkProjectGenerationRouter.js';
 import { CheckDeploymentPlatformRouter } from './nodes/checkDeploymentPlatformRouter.js';
-import { CheckSimulatorRunningRouter } from './nodes/checkSimulatorRunningRouter.js';
 import {
   createGetUserInputNode,
   createUserInputExtractionNode,
@@ -45,13 +44,10 @@ import {
 } from '@salesforce/magen-mcp-workflow';
 import {
   iOSSelectSimulatorNode,
-  iOSLaunchSimulatorAppNode,
-  iOSCheckSimulatorStatusNode,
   iOSBootSimulatorNode,
   iOSInstallAppNode,
   iOSLaunchAppNode,
   AndroidListDevicesNode,
-  AndroidCreateEmulatorNode,
   AndroidStartEmulatorNode,
   AndroidInstallAppNode,
   AndroidLaunchAppNode,
@@ -129,15 +125,12 @@ export function createMobileNativeWorkflow(logger?: Logger) {
 
   // Create iOS deployment nodes
   const iosSelectSimulatorNode = new iOSSelectSimulatorNode(commandRunner, logger);
-  const iosLaunchSimulatorAppNode = new iOSLaunchSimulatorAppNode(commandRunner, logger);
-  const iosCheckSimulatorStatusNode = new iOSCheckSimulatorStatusNode(commandRunner, logger);
   const iosBootSimulatorNode = new iOSBootSimulatorNode(commandRunner, logger);
   const iosInstallAppNode = new iOSInstallAppNode(commandRunner, tempDirManager, logger);
   const iosLaunchAppNode = new iOSLaunchAppNode(commandRunner, logger);
 
   // Create Android deployment nodes
-  const androidListDevicesNode = new AndroidListDevicesNode(commandRunner, logger);
-  const androidCreateEmulatorNode = new AndroidCreateEmulatorNode(commandRunner, logger);
+  const androidSelectEmulatorNode = new AndroidListDevicesNode(commandRunner, logger);
   const androidStartEmulatorNode = new AndroidStartEmulatorNode(commandRunner, logger);
   const androidInstallAppNode = new AndroidInstallAppNode(commandRunner, logger);
   const androidLaunchAppNode = new AndroidLaunchAppNode(commandRunner, logger);
@@ -161,13 +154,8 @@ export function createMobileNativeWorkflow(logger?: Logger) {
 
   const checkDeploymentPlatformRouterInstance = new CheckDeploymentPlatformRouter(
     iosSelectSimulatorNode.name,
-    androidListDevicesNode.name,
+    androidSelectEmulatorNode.name,
     failureNode.name
-  );
-
-  const checkSimulatorRunningRouterInstance = new CheckSimulatorRunningRouter(
-    iosBootSimulatorNode.name,
-    iosInstallAppNode.name
   );
 
   return (
@@ -190,14 +178,11 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       .addNode(deploymentNode.name, deploymentNode.execute)
       // iOS deployment nodes
       .addNode(iosSelectSimulatorNode.name, iosSelectSimulatorNode.execute)
-      .addNode(iosLaunchSimulatorAppNode.name, iosLaunchSimulatorAppNode.execute)
-      .addNode(iosCheckSimulatorStatusNode.name, iosCheckSimulatorStatusNode.execute)
       .addNode(iosBootSimulatorNode.name, iosBootSimulatorNode.execute)
       .addNode(iosInstallAppNode.name, iosInstallAppNode.execute)
       .addNode(iosLaunchAppNode.name, iosLaunchAppNode.execute)
       // Android deployment nodes
-      .addNode(androidListDevicesNode.name, androidListDevicesNode.execute)
-      .addNode(androidCreateEmulatorNode.name, androidCreateEmulatorNode.execute)
+      .addNode(androidSelectEmulatorNode.name, androidSelectEmulatorNode.execute)
       .addNode(androidStartEmulatorNode.name, androidStartEmulatorNode.execute)
       .addNode(androidInstallAppNode.name, androidInstallAppNode.execute)
       .addNode(androidLaunchAppNode.name, androidLaunchAppNode.execute)
@@ -234,18 +219,12 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       // Deployment flow - route based on platform
       .addConditionalEdges(deploymentNode.name, checkDeploymentPlatformRouterInstance.execute)
       // iOS deployment flow
-      .addEdge(iosSelectSimulatorNode.name, iosLaunchSimulatorAppNode.name)
-      .addEdge(iosLaunchSimulatorAppNode.name, iosCheckSimulatorStatusNode.name)
-      .addConditionalEdges(
-        iosCheckSimulatorStatusNode.name,
-        checkSimulatorRunningRouterInstance.execute
-      )
+      .addEdge(iosSelectSimulatorNode.name, iosBootSimulatorNode.name)
       .addEdge(iosBootSimulatorNode.name, iosInstallAppNode.name)
       .addEdge(iosInstallAppNode.name, iosLaunchAppNode.name)
       .addEdge(iosLaunchAppNode.name, completionNode.name)
       // Android deployment flow
-      .addEdge(androidListDevicesNode.name, androidCreateEmulatorNode.name)
-      .addEdge(androidCreateEmulatorNode.name, androidStartEmulatorNode.name)
+      .addEdge(androidSelectEmulatorNode.name, androidStartEmulatorNode.name)
       .addEdge(androidStartEmulatorNode.name, androidInstallAppNode.name)
       .addEdge(androidInstallAppNode.name, androidLaunchAppNode.name)
       .addEdge(androidLaunchAppNode.name, completionNode.name)

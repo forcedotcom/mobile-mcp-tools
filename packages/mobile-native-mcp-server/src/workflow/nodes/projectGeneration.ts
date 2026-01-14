@@ -66,6 +66,7 @@ export class ProjectGenerationNode extends BaseNode<State> {
 
       this.logger.debug('Executing project generation command', {
         template: state.selectedTemplate,
+        templateSource: MOBILE_SDK_TEMPLATES_PATH,
         projectName: state.projectName,
         platform: state.platform,
         packageName: state.packageName,
