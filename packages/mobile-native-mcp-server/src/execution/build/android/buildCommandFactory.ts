@@ -54,7 +54,7 @@ export class AndroidBuildCommandFactory implements BuildCommandFactory {
   create(params: BuildCommandParams): Command {
     return {
       executable: 'sh',
-      args: ['-c', `cd "${params.projectPath}" && ./gradlew build`],
+      args: ['-c', `cd "${params.projectPath}" && ./gradlew assemble`],
       env: process.env,
       cwd: params.projectPath,
     };
