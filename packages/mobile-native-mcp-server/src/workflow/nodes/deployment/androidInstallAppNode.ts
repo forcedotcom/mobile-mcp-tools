@@ -65,6 +65,7 @@ export class AndroidInstallAppNode extends BaseNode<State> {
           timeout: 300000,
           cwd: state.projectPath,
           progressReporter,
+          commandName: 'Android App Installation',
         }
       );
 

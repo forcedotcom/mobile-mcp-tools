@@ -78,6 +78,7 @@ export class iOSLaunchAppNode extends BaseNode<State> {
         {
           timeout: 30000, // Launch command should return immediately
           progressReporter,
+          commandName: 'iOS App Launch',
         }
       );
 

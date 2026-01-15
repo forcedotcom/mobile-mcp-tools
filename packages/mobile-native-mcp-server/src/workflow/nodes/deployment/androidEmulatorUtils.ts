@@ -56,6 +56,7 @@ export async function fetchAndroidEmulators(
   const avdListResult = await commandRunner.execute('emulator', ['-list-avds'], {
     timeout,
     progressReporter: options?.progressReporter,
+    commandName: 'List Android Emulators',
   });
 
   if (!avdListResult.success) {
@@ -63,6 +64,7 @@ export async function fetchAndroidEmulators(
     const avdManagerResult = await commandRunner.execute('avdmanager', ['list', 'avd', '-c'], {
       timeout,
       progressReporter: options?.progressReporter,
+      commandName: 'List Android Emulators (AVD Manager)',
     });
 
     if (!avdManagerResult.success) {
@@ -157,6 +159,7 @@ async function getRunningEmulators(
   const result = await commandRunner.execute('adb', ['devices'], {
     timeout,
     progressReporter,
+    commandName: 'Check Running Android Devices',
   });
 
   if (!result.success) {
@@ -306,6 +309,7 @@ export async function waitForEmulatorReady(
   const waitResult = await commandRunner.execute('adb', ['wait-for-device'], {
     timeout: Math.min(60000, maxWaitTime),
     progressReporter: options?.progressReporter,
+    commandName: 'Wait for Android Emulator',
   });
 
   if (!waitResult.success) {
@@ -323,6 +327,7 @@ export async function waitForEmulatorReady(
       {
         timeout: 10000,
         progressReporter: options?.progressReporter,
+        commandName: 'Check Android Emulator Boot Status',
       }
     );
 

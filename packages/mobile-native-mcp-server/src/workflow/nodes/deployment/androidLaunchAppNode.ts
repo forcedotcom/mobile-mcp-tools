@@ -71,6 +71,7 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
         {
           timeout: 30000,
           progressReporter,
+          commandName: 'Android App Launch',
         }
       );
 

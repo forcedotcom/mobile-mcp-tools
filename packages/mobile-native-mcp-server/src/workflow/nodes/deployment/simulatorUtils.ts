@@ -65,6 +65,7 @@ export async function fetchSimulatorDevices(
     {
       timeout: options?.timeout ?? 30000,
       progressReporter: options?.progressReporter,
+      commandName: 'List iOS Simulators',
     }
   );
 

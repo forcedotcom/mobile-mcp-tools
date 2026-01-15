@@ -41,6 +41,7 @@ export class iOSLaunchSimulatorAppNode extends BaseNode<State> {
       const result = await this.commandRunner.execute('open', ['-a', 'Simulator'], {
         timeout: 30000,
         progressReporter,
+        commandName: 'Launch Simulator App',
       });
 
       if (!result.success) {

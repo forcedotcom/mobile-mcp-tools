@@ -65,6 +65,7 @@ export class iOSInstallAppNode extends BaseNode<State> {
         {
           timeout: 120000,
           progressReporter,
+          commandName: 'iOS App Installation',
         }
       );
 

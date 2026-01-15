@@ -54,6 +54,7 @@ export class iOSBootSimulatorNode extends BaseNode<State> {
         {
           timeout: 60000,
           progressReporter,
+          commandName: 'Boot iOS Simulator',
         }
       );
 
@@ -202,7 +203,7 @@ export class iOSBootSimulatorNode extends BaseNode<State> {
       const result = await this.commandRunner.execute(
         'xcrun',
         ['simctl', 'spawn', deviceName, 'launchctl', 'print', 'system'],
-        { timeout: 10000, progressReporter }
+        { timeout: 10000, progressReporter, commandName: 'Verify iOS Simulator Responsiveness' }
       );
       return result.success;
     } catch {
@@ -222,6 +223,7 @@ export class iOSBootSimulatorNode extends BaseNode<State> {
       const result = await this.commandRunner.execute('open', ['-a', 'Simulator'], {
         timeout: 10000,
         progressReporter,
+        commandName: 'Open Simulator App',
       });
 
       if (!result.success) {

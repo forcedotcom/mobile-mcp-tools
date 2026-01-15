@@ -66,6 +66,7 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
           timeout: 120000,
           cwd: state.projectPath,
           progressReporter,
+          commandName: 'Start Android Emulator',
         }
       );
 
@@ -144,7 +145,7 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
       const result = await this.commandRunner.execute(
         'adb',
         ['shell', 'getprop', 'sys.boot_completed'],
-        { timeout: 10000, progressReporter }
+        { timeout: 10000, progressReporter, commandName: 'Verify Android Emulator Responsiveness' }
       );
       return result.success && result.stdout.trim() === '1';
     } catch {
