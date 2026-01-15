@@ -26,7 +26,6 @@ export {
   type AndroidEmulatorDeviceWithMetadata,
   type FetchAndroidEmulatorsResult,
   fetchAndroidEmulators,
-  extractApiLevelFromName,
   selectBestEmulator,
   findEmulatorByName,
   hasCompatibleEmulator,

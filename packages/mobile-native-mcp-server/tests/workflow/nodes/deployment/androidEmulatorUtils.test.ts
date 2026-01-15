@@ -8,7 +8,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   fetchAndroidEmulators,
-  extractApiLevelFromName,
   selectBestEmulator,
   findEmulatorByName,
   hasCompatibleEmulator,
@@ -30,118 +29,189 @@ describe('androidEmulatorUtils', () => {
   });
 
   describe('fetchAndroidEmulators', () => {
-    it('should successfully fetch emulators using emulator command', async () => {
-      const avdListResult: CommandResult = {
+    it('should successfully fetch emulators using sf command', async () => {
+      const sfDeviceListResult: CommandResult = {
         exitCode: 0,
         signal: null,
-        stdout: 'Pixel_8_API_34\nPixel_7_API_33',
+        stdout: JSON.stringify({
+          outputContent: [
+            {
+              id: 'Pixel_8_API_34',
+              name: 'Pixel 8 API 34',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: { major: 34, minor: 0, patch: 0 },
+              isPlayStore: false,
+              port: -1,
+            },
+            {
+              id: 'Pixel_7_API_33',
+              name: 'Pixel 7 API 33',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: { major: 33, minor: 0, patch: 0 },
+              isPlayStore: false,
+              port: -1,
+            },
+          ],
+        }),
         stderr: '',
         success: true,
         duration: 500,
       };
 
-      const adbDevicesResult: CommandResult = {
-        exitCode: 0,
-        signal: null,
-        stdout: 'List of devices attached\nemulator-5554\tdevice\n',
-        stderr: '',
-        success: true,
-        duration: 100,
-      };
-
-      vi.mocked(mockCommandRunner.execute)
-        .mockResolvedValueOnce(avdListResult)
-        .mockResolvedValueOnce(adbDevicesResult);
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
 
       const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger);
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.emulators.length).toBeGreaterThan(0);
+        expect(result.emulators.length).toBe(2);
+        expect(result.emulators[0].name).toBe('Pixel_8_API_34');
+        expect(result.emulators[0].apiLevel).toBe(34);
+        expect(result.emulators[0].isRunning).toBe(false);
+        expect(result.emulators[1].name).toBe('Pixel_7_API_33');
+        expect(result.emulators[1].apiLevel).toBe(33);
       }
     });
 
-    it('should fallback to avdmanager when emulator command fails', async () => {
-      const avdListResult: CommandResult = {
+    it('should handle sf command failure', async () => {
+      const sfDeviceListResult: CommandResult = {
         exitCode: 1,
         signal: null,
         stdout: '',
-        stderr: 'emulator: command not found',
+        stderr: 'sf: command not found',
         success: false,
         duration: 100,
       };
 
-      const avdManagerResult: CommandResult = {
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
+
+      const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('sf: command not found');
+      }
+    });
+
+    it('should handle invalid JSON output', async () => {
+      const sfDeviceListResult: CommandResult = {
         exitCode: 0,
         signal: null,
-        stdout: 'Pixel_8_API_34',
+        stdout: 'not valid json',
         stderr: '',
         success: true,
         duration: 500,
       };
 
-      const adbDevicesResult: CommandResult = {
-        exitCode: 0,
-        signal: null,
-        stdout: 'List of devices attached\n',
-        stderr: '',
-        success: true,
-        duration: 100,
-      };
-
-      vi.mocked(mockCommandRunner.execute)
-        .mockResolvedValueOnce(avdListResult)
-        .mockResolvedValueOnce(avdManagerResult)
-        .mockResolvedValueOnce(adbDevicesResult);
-
-      const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger);
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should handle complete failure', async () => {
-      const avdListResult: CommandResult = {
-        exitCode: 1,
-        signal: null,
-        stdout: '',
-        stderr: 'emulator: command not found',
-        success: false,
-        duration: 100,
-      };
-
-      const avdManagerResult: CommandResult = {
-        exitCode: 1,
-        signal: null,
-        stdout: '',
-        stderr: 'avdmanager: command not found',
-        success: false,
-        duration: 100,
-      };
-
-      vi.mocked(mockCommandRunner.execute)
-        .mockResolvedValueOnce(avdListResult)
-        .mockResolvedValueOnce(avdManagerResult);
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
 
       const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger);
 
       expect(result.success).toBe(false);
-    });
-  });
-
-  describe('extractApiLevelFromName', () => {
-    it('should extract API level from hyphen pattern', () => {
-      expect(extractApiLevelFromName('pixel-28')).toBe(28);
-      expect(extractApiLevelFromName('device-30')).toBe(30);
+      if (!result.success) {
+        expect(result.error).toContain('Failed to parse device list JSON');
+      }
     });
 
-    it('should extract API level from API_ pattern', () => {
-      expect(extractApiLevelFromName('Pixel_3a_API_30')).toBe(30);
-      expect(extractApiLevelFromName('Nexus_5X_API_28_x86')).toBe(28);
-      expect(extractApiLevelFromName('PixelAPI34')).toBe(34);
+    it('should handle empty device list', async () => {
+      const sfDeviceListResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          outputContent: [],
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
+
+      const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.emulators.length).toBe(0);
+      }
     });
 
-    it('should return undefined when no pattern matches', () => {
-      expect(extractApiLevelFromName('UnknownDevice')).toBeUndefined();
+    it('should handle osVersion as string (no apiLevel extraction)', async () => {
+      const sfDeviceListResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          outputContent: [
+            {
+              id: 'Custom_Device',
+              name: 'Custom Device',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: '33.0.0',
+              isPlayStore: false,
+              port: -1,
+            },
+          ],
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
+
+      const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.emulators.length).toBe(1);
+        expect(result.emulators[0].name).toBe('Custom_Device');
+        expect(result.emulators[0].apiLevel).toBeUndefined();
+      }
+    });
+
+    it('should correctly apply minSdk filtering for compatibility', async () => {
+      const sfDeviceListResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          outputContent: [
+            {
+              id: 'Pixel_8_API_34',
+              name: 'Pixel 8 API 34',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: { major: 34, minor: 0, patch: 0 },
+              isPlayStore: false,
+              port: -1,
+            },
+            {
+              id: 'Pixel_7_API_30',
+              name: 'Pixel 7 API 30',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: { major: 30, minor: 0, patch: 0 },
+              isPlayStore: false,
+              port: -1,
+            },
+          ],
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
+
+      const result = await fetchAndroidEmulators(mockCommandRunner, mockLogger, { minSdk: 33 });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.emulators.length).toBe(2);
+        expect(result.emulators[0].isCompatible).toBe(true); // API 34 >= 33
+        expect(result.emulators[1].isCompatible).toBe(false); // API 30 < 33
+      }
     });
   });
 
