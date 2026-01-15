@@ -5,7 +5,17 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
+import type {
+  ProgressNotification,
+  LoggingMessageNotification,
+} from '@modelcontextprotocol/sdk/types.js';
 import { Logger, createComponentLogger } from '../logging/logger.js';
+
+/**
+ * Union type for the notifications sent by MCPProgressReporter.
+ * Uses the strongly-typed SDK notification types.
+ */
+type ProgressReporterNotification = ProgressNotification | LoggingMessageNotification;
 
 /**
  * Simple interface for reporting progress of long-running operations.
@@ -31,10 +41,9 @@ export class MCPProgressReporter implements ProgressReporter {
   private readonly logger: Logger;
 
   constructor(
-    private readonly sendNotification: (notification: {
-      method: string;
-      params?: unknown;
-    }) => Promise<void>,
+    private readonly sendNotification: (
+      notification: ProgressReporterNotification
+    ) => Promise<void>,
     private readonly progressToken: string
   ) {
     if (!progressToken) {
@@ -54,7 +63,7 @@ export class MCPProgressReporter implements ProgressReporter {
     // Fire-and-forget notification pattern
     // Use MCP notification format: notifications/progress with progressToken, message, progress, total
     try {
-      const notification = {
+      const progressNotification: ProgressNotification = {
         method: 'notifications/progress',
         params: {
           progressToken: this.progressToken,
@@ -64,14 +73,17 @@ export class MCPProgressReporter implements ProgressReporter {
         },
       };
 
-      // Send message notification for clients that don't support progress notifications
-      this.sendNotification({
+      // Send logging message notification for clients that don't support progress notifications
+      const loggingNotification: LoggingMessageNotification = {
         method: 'notifications/message',
         params: {
-          message: message ? `Progress: ${percentage}%: ${message}` : `Progress: ${percentage}%`,
+          level: 'info',
+          data: message ? `Progress: ${percentage}%: ${message}` : `Progress: ${percentage}%`,
         },
-      });
-      this.sendNotification(notification).catch(error => {
+      };
+
+      this.sendNotification(loggingNotification);
+      this.sendNotification(progressNotification).catch(error => {
         // Log notification errors but don't block execution
         this.logger.error('Failed to send progress notification', error as Error);
       });

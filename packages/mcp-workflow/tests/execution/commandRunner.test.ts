@@ -91,7 +91,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should spawn process with correct command and args', async () => {
-      const promise = commandRunner.execute('echo', ['hello']);
+      const promise = commandRunner.execute('echo', ['hello'], { commandName: 'Test Command' });
 
       // Trigger exit to resolve promise
       setTimeout(() => {
@@ -128,7 +128,10 @@ describe('DefaultCommandRunner', () => {
 
     it('should use custom environment variables', async () => {
       const customEnv = { ...process.env, CUSTOM_VAR: 'test' };
-      const promise = commandRunner.execute('echo', ['hello'], { env: customEnv });
+      const promise = commandRunner.execute('echo', ['hello'], {
+        env: customEnv,
+        commandName: 'Test Command',
+      });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(0, null));
@@ -170,7 +173,10 @@ describe('DefaultCommandRunner', () => {
         LANG: 'fr_FR.UTF-8',
         LC_ALL: 'fr_FR.UTF-8',
       };
-      const promise = commandRunner.execute('echo', ['hello'], { env: customEnv });
+      const promise = commandRunner.execute('echo', ['hello'], {
+        env: customEnv,
+        commandName: 'Test Command',
+      });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(0, null));
@@ -192,7 +198,10 @@ describe('DefaultCommandRunner', () => {
 
     it('should use custom working directory', async () => {
       const customCwd = '/tmp/test';
-      const promise = commandRunner.execute('pwd', [], { cwd: customCwd });
+      const promise = commandRunner.execute('pwd', [], {
+        cwd: customCwd,
+        commandName: 'Test Command',
+      });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(0, null));
@@ -210,7 +219,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should capture stdout', async () => {
-      const promise = commandRunner.execute('echo', ['hello']);
+      const promise = commandRunner.execute('echo', ['hello'], { commandName: 'Test Command' });
 
       setTimeout(() => {
         stdoutHandlers.forEach(handler => handler(Buffer.from('hello\n')));
@@ -225,7 +234,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should capture stderr', async () => {
-      const promise = commandRunner.execute('echo', ['error']);
+      const promise = commandRunner.execute('echo', ['error'], { commandName: 'Test Command' });
 
       setTimeout(() => {
         stderrHandlers.forEach(handler => handler(Buffer.from('error message\n')));
@@ -238,7 +247,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should handle non-zero exit code as failure', async () => {
-      const promise = commandRunner.execute('false', []);
+      const promise = commandRunner.execute('false', [], { commandName: 'Test Command' });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(1, null));
@@ -251,7 +260,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should handle process termination by signal', async () => {
-      const promise = commandRunner.execute('test', []);
+      const promise = commandRunner.execute('test', [], { commandName: 'Test Command' });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(null, 'SIGTERM'));
@@ -265,7 +274,7 @@ describe('DefaultCommandRunner', () => {
 
     it('should calculate duration', async () => {
       const startTime = Date.now();
-      const promise = commandRunner.execute('sleep', ['0.1']);
+      const promise = commandRunner.execute('sleep', ['0.1'], { commandName: 'Test Command' });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(0, null));
@@ -285,6 +294,7 @@ describe('DefaultCommandRunner', () => {
 
       const promise = commandRunner.execute('echo', ['hello'], {
         progressReporter: mockProgressReporter,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -296,7 +306,7 @@ describe('DefaultCommandRunner', () => {
       expect(mockProgressReporter.report).toHaveBeenCalledWith(
         0,
         100,
-        'Starting command execution...'
+        'Starting "Test Command" command execution...'
       );
     });
 
@@ -307,6 +317,7 @@ describe('DefaultCommandRunner', () => {
 
       const promise = commandRunner.execute('echo', ['hello'], {
         progressReporter: mockProgressReporter,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -336,6 +347,7 @@ describe('DefaultCommandRunner', () => {
       const promise = commandRunner.execute('echo', ['complete'], {
         progressReporter: mockProgressReporter,
         progressParser: mockParser,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -361,6 +373,7 @@ describe('DefaultCommandRunner', () => {
       const promise = commandRunner.execute('echo', ['test'], {
         progressReporter: mockProgressReporter,
         progressParser: failingParser,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -381,6 +394,7 @@ describe('DefaultCommandRunner', () => {
 
       const promise = commandRunner.execute('echo', ['hello'], {
         progressReporter: mockProgressReporter,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -392,7 +406,7 @@ describe('DefaultCommandRunner', () => {
       expect(mockProgressReporter.report).toHaveBeenCalledWith(
         100,
         100,
-        'Command completed successfully'
+        '"Test Command" command completed successfully'
       );
     });
 
@@ -403,6 +417,7 @@ describe('DefaultCommandRunner', () => {
 
       const promise = commandRunner.execute('false', [], {
         progressReporter: mockProgressReporter,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -425,6 +440,7 @@ describe('DefaultCommandRunner', () => {
 
       const promise = commandRunner.execute('test', [], {
         progressReporter: mockProgressReporter,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -441,7 +457,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should handle process errors', async () => {
-      const promise = commandRunner.execute('nonexistent', []);
+      const promise = commandRunner.execute('nonexistent', [], { commandName: 'Test Command' });
 
       setTimeout(() => {
         errorHandlers.forEach(handler => handler(new Error('Process error')));
@@ -457,6 +473,7 @@ describe('DefaultCommandRunner', () => {
 
       const promise = commandRunner.execute('nonexistent', [], {
         progressReporter: mockProgressReporter,
+        commandName: 'Test Command',
       });
 
       setTimeout(() => {
@@ -468,7 +485,7 @@ describe('DefaultCommandRunner', () => {
       expect(mockProgressReporter.report).toHaveBeenCalledWith(
         100,
         100,
-        'Command execution error: Process error'
+        '"Test Command" command execution error: Process error'
       );
     });
 
@@ -478,6 +495,7 @@ describe('DefaultCommandRunner', () => {
       try {
         const promise = commandRunner.execute('echo', ['test output'], {
           outputFilePath: outputFile,
+          commandName: 'Test Command',
         });
 
         setTimeout(() => {
@@ -499,7 +517,9 @@ describe('DefaultCommandRunner', () => {
     it('should handle timeout', async () => {
       const commandRunnerWithTimeout = new DefaultCommandRunner(mockLogger, 100);
 
-      const promise = commandRunnerWithTimeout.execute('sleep', ['10']);
+      const promise = commandRunnerWithTimeout.execute('sleep', ['10'], {
+        commandName: 'Test Command',
+      });
 
       // Don't trigger exit - let timeout happen
       await expect(promise).rejects.toThrow(/Command timeout/);
@@ -510,7 +530,9 @@ describe('DefaultCommandRunner', () => {
     it('should not timeout when timeout is 0', async () => {
       const commandRunnerNoTimeout = new DefaultCommandRunner(mockLogger, 0);
 
-      const promise = commandRunnerNoTimeout.execute('echo', ['hello']);
+      const promise = commandRunnerNoTimeout.execute('echo', ['hello'], {
+        commandName: 'Test Command',
+      });
 
       setTimeout(() => {
         exitHandlers.forEach(handler => handler(0, null));
@@ -522,7 +544,10 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should use custom timeout from options', async () => {
-      const promise = commandRunner.execute('sleep', ['10'], { timeout: 50 });
+      const promise = commandRunner.execute('sleep', ['10'], {
+        timeout: 50,
+        commandName: 'Test Command',
+      });
 
       await expect(promise).rejects.toThrow(/Command timeout/);
 
@@ -530,7 +555,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should work without progress reporter', async () => {
-      const promise = commandRunner.execute('echo', ['hello']);
+      const promise = commandRunner.execute('echo', ['hello'], { commandName: 'Test Command' });
 
       setTimeout(() => {
         stdoutHandlers.forEach(handler => handler(Buffer.from('hello\n')));
@@ -544,7 +569,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should accumulate multiple stdout chunks', async () => {
-      const promise = commandRunner.execute('echo', ['hello']);
+      const promise = commandRunner.execute('echo', ['hello'], { commandName: 'Test Command' });
 
       setTimeout(() => {
         stdoutHandlers.forEach(handler => {
@@ -560,7 +585,7 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should accumulate multiple stderr chunks', async () => {
-      const promise = commandRunner.execute('echo', ['error']);
+      const promise = commandRunner.execute('echo', ['error'], { commandName: 'Test Command' });
 
       setTimeout(() => {
         stderrHandlers.forEach(handler => {
@@ -599,6 +624,7 @@ describe('DefaultCommandRunner', () => {
           progressReporter: mockProgressReporter,
           progressParser: mockParser,
           progressDebounceMs: 2000,
+          commandName: 'Test Command',
         });
 
         // Simulate multiple stdout chunks with different progress
@@ -643,6 +669,7 @@ describe('DefaultCommandRunner', () => {
           progressReporter: mockProgressReporter,
           progressParser: mockParser,
           progressDebounceMs: 2000,
+          commandName: 'Test Command',
         });
 
         // Simulate multiple stdout chunks with same progress
@@ -693,6 +720,7 @@ describe('DefaultCommandRunner', () => {
           progressReporter: mockProgressReporter,
           progressParser: mockParser,
           progressDebounceMs: 500, // Custom debounce time
+          commandName: 'Test Command',
         });
 
         setTimeout(() => {
@@ -729,6 +757,7 @@ describe('DefaultCommandRunner', () => {
         const promise = commandRunner.execute('echo', ['test'], {
           progressReporter: mockProgressReporter,
           progressDebounceMs: 2000,
+          commandName: 'Test Command',
         });
 
         // Simulate multiple stdout chunks (progress stays at 0 without parser)
@@ -771,6 +800,7 @@ describe('DefaultCommandRunner', () => {
           progressReporter: mockProgressReporter,
           progressParser: failingParser,
           progressDebounceMs: 2000,
+          commandName: 'Test Command',
         });
 
         // Simulate multiple stdout chunks (progress stays at 0 when parser fails)
@@ -817,6 +847,7 @@ describe('DefaultCommandRunner', () => {
           progressReporter: mockProgressReporter,
           progressParser: mockParser,
           progressDebounceMs: 2000,
+          commandName: 'Test Command',
         });
 
         // First chunk - should report
@@ -868,6 +899,7 @@ describe('DefaultCommandRunner', () => {
         const promise = commandRunner.execute('echo', ['test'], {
           progressReporter: mockProgressReporter,
           progressParser: mockParser,
+          commandName: 'Test Command',
           // progressDebounceMs not specified - should use default 2000ms
         });
 

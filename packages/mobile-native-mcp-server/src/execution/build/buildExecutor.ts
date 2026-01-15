@@ -97,6 +97,7 @@ export class DefaultBuildExecutor implements BuildExecutor {
       });
 
       // Execute command with progress reporting
+      const commandName = `${params.platform} Build`;
       const result = await this.commandRunner.execute(command.executable, command.args, {
         env: command.env,
         cwd: command.cwd,
@@ -104,6 +105,7 @@ export class DefaultBuildExecutor implements BuildExecutor {
           factory.parseProgress(output, currentProgress),
         progressReporter,
         outputFilePath: buildOutputFilePath,
+        commandName,
       });
 
       this.logger.info('Build execution completed', {

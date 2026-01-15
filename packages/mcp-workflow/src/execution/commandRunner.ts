@@ -47,7 +47,7 @@ export class DefaultCommandRunner implements CommandRunner {
   async execute(
     command: string,
     args: string[],
-    options: CommandExecutionOptions = {}
+    options: CommandExecutionOptions = { commandName: 'Command' }
   ): Promise<CommandResult> {
     const {
       env: providedEnv = process.env,
@@ -56,6 +56,7 @@ export class DefaultCommandRunner implements CommandRunner {
       progressParser,
       progressReporter,
       outputFilePath,
+      commandName,
       progressDebounceMs = DefaultCommandRunner.DEFAULT_PROGRESS_DEBOUNCE_MS,
     } = options;
 
@@ -86,11 +87,8 @@ export class DefaultCommandRunner implements CommandRunner {
 
       // Initialize progress reporting
       if (progressReporter) {
-        progressReporter.report(
-          0,
-          DefaultCommandRunner.PROGRESS_TOTAL,
-          'Starting command execution...'
-        );
+        const startMessage = `Starting "${commandName}" command execution...`;
+        progressReporter.report(0, DefaultCommandRunner.PROGRESS_TOTAL, startMessage);
       }
 
       // Capture stdout and report progress on each chunk to keep task alive
@@ -119,10 +117,12 @@ export class DefaultCommandRunner implements CommandRunner {
                 lastReportTime === null || now - lastReportTime >= progressDebounceMs;
 
               if (progressChanged || debounceElapsed) {
+                const progressMessage =
+                  parseResult.message || `${commandName}... (${elapsedSeconds}s elapsed)`;
                 progressReporter.report(
                   currentProgress,
                   DefaultCommandRunner.PROGRESS_TOTAL,
-                  parseResult.message || `Command in progress... (${elapsedSeconds}s elapsed)`
+                  progressMessage
                 );
                 lastReportedProgress = currentProgress;
                 lastReportTime = now;
@@ -134,10 +134,11 @@ export class DefaultCommandRunner implements CommandRunner {
                 lastReportTime === null || now - lastReportTime >= progressDebounceMs;
 
               if (progressChanged || debounceElapsed) {
+                const progressMessage = `${commandName}... (${elapsedSeconds}s elapsed)`;
                 progressReporter.report(
                   currentProgress,
                   DefaultCommandRunner.PROGRESS_TOTAL,
-                  `Command in progress... (${elapsedSeconds}s elapsed)`
+                  progressMessage
                 );
                 lastReportedProgress = currentProgress;
                 lastReportTime = now;
@@ -150,10 +151,13 @@ export class DefaultCommandRunner implements CommandRunner {
               lastReportTime === null || now - lastReportTime >= progressDebounceMs;
 
             if (progressChanged || debounceElapsed) {
+              const progressMessage = commandName
+                ? `${commandName}... (${elapsedSeconds}s elapsed)`
+                : `Command in progress... (${elapsedSeconds}s elapsed)`;
               progressReporter.report(
                 currentProgress,
                 DefaultCommandRunner.PROGRESS_TOTAL,
-                `Command in progress... (${elapsedSeconds}s elapsed)`
+                progressMessage
               );
               lastReportedProgress = currentProgress;
               lastReportTime = now;
@@ -178,10 +182,11 @@ export class DefaultCommandRunner implements CommandRunner {
 
         if (progressReporter) {
           if (success) {
+            const successMessage = `"${commandName}" command completed successfully`;
             progressReporter.report(
               DefaultCommandRunner.PROGRESS_TOTAL,
               DefaultCommandRunner.PROGRESS_TOTAL,
-              'Command completed successfully'
+              successMessage
             );
           } else {
             const errorMsg = signal
@@ -210,10 +215,11 @@ export class DefaultCommandRunner implements CommandRunner {
         outputStream?.end();
 
         if (progressReporter) {
+          const errorMessage = `"${commandName}" command execution error: ${error.message}`;
           progressReporter.report(
             DefaultCommandRunner.PROGRESS_TOTAL,
             DefaultCommandRunner.PROGRESS_TOTAL,
-            `Command execution error: ${error.message}`
+            errorMessage
           );
         }
 

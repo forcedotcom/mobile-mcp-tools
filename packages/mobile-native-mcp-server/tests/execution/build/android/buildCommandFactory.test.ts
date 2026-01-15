@@ -42,7 +42,7 @@ describe('AndroidBuildCommandFactory', () => {
       expect(command.args[1]).toContain('/custom/path');
     });
 
-    it('should include gradlew build command', () => {
+    it('should include gradlew assemble command', () => {
       const params = {
         projectPath: '/path/to/project',
         projectName: 'TestApp',
@@ -51,7 +51,7 @@ describe('AndroidBuildCommandFactory', () => {
 
       const command = factory.create(params);
 
-      expect(command.args[1]).toContain('./gradlew build');
+      expect(command.args[1]).toContain('./gradlew assemble');
     });
 
     it('should set cwd to project path', () => {

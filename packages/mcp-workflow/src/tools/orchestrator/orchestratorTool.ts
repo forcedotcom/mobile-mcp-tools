@@ -16,6 +16,8 @@ import {
   WORKFLOW_PROPERTY_NAMES,
   WorkflowStateData,
 } from '../../common/metadata.js';
+import type { BaseGraphConfig } from '../../common/graphConfig.js';
+import type { ProgressReporter } from '../../execution/progressReporter.js';
 import { WorkflowStateManager } from '../../checkpointing/workflowStateManager.js';
 import { OrchestratorConfig } from './config.js';
 import {
@@ -108,9 +110,8 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
       isResumption: !!input.workflowStateData?.thread_id,
     });
 
-    // Thread configuration for LangGraph - subclasses can override createThreadConfig
-    // to add additional configurable properties (e.g., progressReporter)
-    const threadConfig = this.createThreadConfig(threadId);
+    // Thread configuration for LangGraph - includes optional progress reporter
+    const threadConfig = this.createThreadConfig(threadId, this.getProgressReporter());
 
     // Get checkpointer from state manager
     const checkpointer = await this.stateManager.createCheckpointer();
@@ -192,14 +193,30 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
   /**
    * Create the thread configuration for LangGraph workflow invocation.
    *
-   * Subclasses can override this method to add additional properties to
-   * `configurable`, such as progressReporter for long-running operations.
-   *
    * @param threadId - The thread ID for checkpointing
+   * @param progressReporter - Optional progress reporter for long-running operations
    * @returns Configuration object for workflow invocation
    */
-  protected createThreadConfig(threadId: string): { configurable: { thread_id: string } } {
-    return { configurable: { thread_id: threadId } };
+  protected createThreadConfig(
+    threadId: string,
+    progressReporter?: ProgressReporter
+  ): { configurable: BaseGraphConfig } {
+    return {
+      configurable: {
+        thread_id: threadId,
+        progressReporter,
+      },
+    };
+  }
+
+  /**
+   * Get the progress reporter for the current request.
+   * Subclasses can override this to provide a progress reporter.
+   *
+   * @returns The progress reporter, or undefined if not available
+   */
+  protected getProgressReporter(): ProgressReporter | undefined {
+    return undefined;
   }
 
   /**

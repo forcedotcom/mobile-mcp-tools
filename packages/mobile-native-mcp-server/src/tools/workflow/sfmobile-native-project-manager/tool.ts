@@ -9,17 +9,18 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   OrchestratorTool,
   OrchestratorConfig,
+  OrchestratorInput,
   WorkflowStateManager,
   MCPProgressReporter,
   ProgressReporter,
   type Logger,
   type WorkflowEnvironment,
   createWorkflowLogger,
-  type OrchestratorInput,
 } from '@salesforce/magen-mcp-workflow';
 import { createMobileNativeWorkflow } from '../../../workflow/graph.js';
 import { ORCHESTRATOR_TOOL } from './metadata.js';
-
+import type { ServerRequest, ServerNotification } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 /**
  * Mobile Native Orchestrator Tool
  *
@@ -55,50 +56,38 @@ export class MobileNativeOrchestrator extends OrchestratorTool {
   }
 
   /**
-   * Override createThreadConfig to include progressReporter in the config.
-   * This allows any node to access it via config.configurable.progressReporter.
+   * Override getProgressReporter to provide the current request's progress reporter.
+   * The base class calls this when creating thread config for workflow invocation.
    */
-  protected override createThreadConfig(threadId: string): {
-    configurable: { thread_id: string; progressReporter?: ProgressReporter };
-  } {
-    return {
-      configurable: {
-        thread_id: threadId,
-        progressReporter: this.currentProgressReporter,
-      },
-    };
+  protected override getProgressReporter(): ProgressReporter | undefined {
+    return this.currentProgressReporter;
   }
 
   /**
    * Override handleRequest to create progress reporter for each request.
    * Creates MCPProgressReporter from the MCP request context and stores it
-   * so createThreadConfig can include it in the workflow config.
+   * so getProgressReporter can return it for the base class.
    */
   public override handleRequest = async (
-    input: OrchestratorInput,
-    extra?: {
-      sendNotification?: (notification: { method: string; params?: unknown }) => Promise<void>;
-      _meta?: { progressToken?: string };
-    }
+    input: unknown,
+    extra?: RequestHandlerExtra<ServerRequest, ServerNotification>
   ) => {
-    // Extract sendNotification and progressToken from request context
-    // sendNotification should always be provided by the MCP server
-    const sendNotification = extra?.sendNotification;
-    if (!sendNotification) {
+    if (!extra) {
       throw new Error(
-        'sendNotification is required but was not provided by MCP server. This indicates a configuration issue.'
+        'MCP request context is required but was not provided. This indicates a configuration issue.'
       );
     }
-    const progressToken =
-      extra?._meta?.progressToken ??
-      `progress-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const { sendNotification } = extra;
+    const progressToken = String(
+      extra._meta?.progressToken ??
+        `progress-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    );
 
-    // Create MCP progress reporter and store for createThreadConfig
     this.currentProgressReporter = new MCPProgressReporter(sendNotification, progressToken);
 
     this.logger.debug('Orchestrator tool called with input', input);
     try {
-      const result = await this.processRequest(input);
+      const result = await this.processRequest(input as OrchestratorInput);
       this.logger.debug('Orchestrator returning result', result);
 
       return {

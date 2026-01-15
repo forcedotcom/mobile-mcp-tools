@@ -53,6 +53,12 @@ export interface CommandExecutionOptions {
   progressReporter?: ProgressReporter;
   outputFilePath?: string;
   /**
+   * Human-readable name for the command being executed.
+   * Used in progress messages to make them more specific.
+   * Example: "Project Generation", "iOS Build", "Android Build"
+   */
+  commandName: string;
+  /**
    * Debounce time in milliseconds for reporting identical progress values.
    * Defaults to 2000ms (2 seconds). Progress changes are always reported immediately.
    */

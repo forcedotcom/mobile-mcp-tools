@@ -91,7 +91,7 @@ describe('DefaultBuildExecutor', () => {
       expect(mockCommandRunner.execute).toHaveBeenCalled();
       const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
       expect(callArgs[0]).toBe('sh');
-      expect(callArgs[1][1]).toContain('./gradlew build');
+      expect(callArgs[1][1]).toContain('./gradlew assemble');
     });
 
     it('should return successful result when build succeeds', async () => {

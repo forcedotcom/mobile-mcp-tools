@@ -85,6 +85,7 @@ export class ProjectGenerationNode extends BaseNode<State> {
         timeout: 120000,
         cwd: process.cwd(),
         progressReporter,
+        commandName: 'Project Generation',
       });
 
       if (!result.success) {

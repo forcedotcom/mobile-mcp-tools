@@ -40,11 +40,12 @@ describe('ProgressReporter', () => {
       // Wait for async notification
       await new Promise(resolve => setTimeout(resolve, 10));
 
-      expect(mockSendNotification).toHaveBeenCalledTimes(2); // One for message, one for progress
+      expect(mockSendNotification).toHaveBeenCalledTimes(2); // One for logging message, one for progress
       expect(mockSendNotification).toHaveBeenCalledWith({
         method: 'notifications/message',
         params: {
-          message: 'Progress: 50%: Building...',
+          level: 'info',
+          data: 'Progress: 50%: Building...',
         },
       });
       expect(mockSendNotification).toHaveBeenCalledWith({

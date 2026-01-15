@@ -6,21 +6,10 @@
  */
 
 import { StateType, StateDefinition } from '@langchain/langgraph';
-import { RunnableConfig } from '@langchain/core/runnables';
-import type { ProgressReporter } from '../execution/progressReporter.js';
+import type { WorkflowRunnableConfig } from '../common/graphConfig.js';
 
-/**
- * Extended RunnableConfig with workflow-specific configurable properties.
- * Nodes can access runtime dependencies via config.configurable.
- */
-export interface WorkflowRunnableConfig extends RunnableConfig {
-  configurable?: RunnableConfig['configurable'] & {
-    /** Thread ID for checkpointing */
-    thread_id?: string;
-    /** Progress reporter for long-running operations */
-    progressReporter?: ProgressReporter;
-  };
-}
+// Re-export for backwards compatibility
+export type { WorkflowRunnableConfig } from '../common/graphConfig.js';
 
 /**
  * Base class for all workflow nodes
