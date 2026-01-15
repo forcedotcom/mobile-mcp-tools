@@ -1,0 +1,338 @@
+/*
+ * Copyright (c) 2025, salesforce.com, inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: MIT
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
+ */
+
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { iOSLaunchAppNode } from '../../../../src/workflow/nodes/deployment/iOSLaunchAppNode.js';
+import { MockLogger } from '../../../utils/MockLogger.js';
+import { createTestState } from '../../../utils/stateBuilders.js';
+import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
+import { readdirSync, readFileSync } from 'fs';
+
+vi.mock('fs', async importOriginal => {
+  const actual = await importOriginal<typeof import('fs')>();
+  return {
+    ...actual,
+    readdirSync: vi.fn(),
+    readFileSync: vi.fn(),
+  };
+});
+
+describe('iOSLaunchAppNode', () => {
+  let node: iOSLaunchAppNode;
+  let mockLogger: MockLogger;
+  let mockCommandRunner: CommandRunner;
+
+  beforeEach(() => {
+    mockLogger = new MockLogger();
+    mockCommandRunner = {
+      execute: vi.fn(),
+    };
+    node = new iOSLaunchAppNode(mockCommandRunner, mockLogger);
+    vi.mocked(mockCommandRunner.execute).mockReset();
+    vi.mocked(readdirSync).mockReset();
+    vi.mocked(readFileSync).mockReset();
+    mockLogger.reset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Constructor', () => {
+    it('should initialize with correct node name', () => {
+      expect(node.name).toBe('iosLaunchApp');
+    });
+
+    it('should extend BaseNode', () => {
+      expect(node).toBeDefined();
+      expect(node.name).toBeDefined();
+      expect(node.execute).toBeDefined();
+    });
+
+    it('should use provided logger', () => {
+      expect(node['logger']).toBe(mockLogger);
+    });
+
+    it('should create default logger when none provided', () => {
+      const nodeWithoutLogger = new iOSLaunchAppNode(mockCommandRunner);
+      expect(nodeWithoutLogger['logger']).toBeDefined();
+      expect(nodeWithoutLogger['logger']).not.toBe(mockLogger);
+    });
+  });
+
+  describe('execute()', () => {
+    it('should skip for non-iOS platform', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        targetDevice: 'Pixel 8',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({});
+      expect(mockCommandRunner.execute).not.toHaveBeenCalled();
+      expect(
+        mockLogger.hasLoggedMessage('Skipping iOS app launch for non-iOS platform', 'debug')
+      ).toBe(true);
+    });
+
+    it('should return error when targetDevice is missing', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: undefined,
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: ['Target device must be specified for iOS deployment'],
+      });
+      expect(mockCommandRunner.execute).not.toHaveBeenCalled();
+    });
+
+    it('should return error when packageName is missing', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: undefined,
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          'Package name and project name must be specified for iOS app launch',
+        ],
+      });
+    });
+
+    it('should return error when projectPath is missing', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: undefined,
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: ['Project path must be specified for iOS app launch'],
+      });
+    });
+
+    it('should successfully launch app', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFileSync).mockReturnValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+
+      const launchResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: 'com.test.app: 12345',
+        stderr: '',
+        success: true,
+        duration: 1000,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(launchResult);
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        deploymentStatus: 'success',
+      });
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'xcrun',
+        ['simctl', 'launch', 'iPhone 15 Pro', 'com.test.app'],
+        expect.objectContaining({
+          timeout: 30000,
+          commandName: 'iOS App Launch',
+        })
+      );
+      expect(mockLogger.hasLoggedMessage('iOS app launched successfully', 'info')).toBe(true);
+    });
+
+    it('should handle launch failure', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFileSync).mockReturnValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+
+      const launchResult: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'Failed to launch app',
+        success: false,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(launchResult);
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          'Failed to launch iOS app on simulator "iPhone 15 Pro": Failed to launch app',
+        ],
+      });
+    });
+
+    it('should handle error reading project directory', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockImplementation(() => {
+        throw new Error('Permission denied');
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          'Failed to launch iOS app: Failed to read project directory at /path/to/project: Permission denied',
+        ],
+      });
+    });
+
+    it('should handle error when no .xcodeproj found', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['somefile.txt'] as unknown as string[]);
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          'Failed to launch iOS app: No .xcodeproj directory found in project path: /path/to/project',
+        ],
+      });
+    });
+
+    it('should handle error reading project.pbxproj', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFileSync).mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          expect.stringContaining('Failed to read project.pbxproj file'),
+        ],
+      });
+    });
+
+    it('should handle missing PRODUCT_BUNDLE_IDENTIFIER', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFileSync).mockReturnValue('// No bundle identifier here');
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          expect.stringContaining('Could not find PRODUCT_BUNDLE_IDENTIFIER'),
+        ],
+      });
+    });
+
+    it('should handle bundle ID with unresolved variables', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFileSync).mockReturnValue(
+        'PRODUCT_BUNDLE_IDENTIFIER = "com.test.${PRODUCT_NAME:rfc1034identifier}";'
+      );
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          expect.stringContaining('Bundle ID contains unresolved variables'),
+        ],
+      });
+    });
+
+    it('should handle exception during launch', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        targetDevice: 'iPhone 15 Pro',
+        packageName: 'com.test.app',
+        projectName: 'TestApp',
+        projectPath: '/path/to/project',
+      });
+
+      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFileSync).mockReturnValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+
+      vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: ['Failed to launch iOS app: Network error'],
+      });
+    });
+  });
+});

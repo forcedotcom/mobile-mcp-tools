@@ -1,0 +1,293 @@
+/*
+ * Copyright (c) 2025, salesforce.com, inc.
+ * All rights reserved.
+ * SPDX-License-Identifier: MIT
+ * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
+ */
+
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { AndroidStartEmulatorNode } from '../../../../src/workflow/nodes/deployment/androidStartEmulatorNode.js';
+import { MockLogger } from '../../../utils/MockLogger.js';
+import { createTestState } from '../../../utils/stateBuilders.js';
+import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
+
+describe('AndroidStartEmulatorNode', () => {
+  let node: AndroidStartEmulatorNode;
+  let mockLogger: MockLogger;
+  let mockCommandRunner: CommandRunner;
+
+  beforeEach(() => {
+    mockLogger = new MockLogger();
+    mockCommandRunner = {
+      execute: vi.fn(),
+    };
+    node = new AndroidStartEmulatorNode(mockCommandRunner, mockLogger);
+    vi.mocked(mockCommandRunner.execute).mockReset();
+    mockLogger.reset();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Constructor', () => {
+    it('should initialize with correct node name', () => {
+      expect(node.name).toBe('androidStartEmulator');
+    });
+
+    it('should extend BaseNode', () => {
+      expect(node).toBeDefined();
+      expect(node.name).toBeDefined();
+      expect(node.execute).toBeDefined();
+    });
+
+    it('should use provided logger', () => {
+      expect(node['logger']).toBe(mockLogger);
+    });
+
+    it('should create default logger when none provided', () => {
+      const nodeWithoutLogger = new AndroidStartEmulatorNode(mockCommandRunner);
+      expect(nodeWithoutLogger['logger']).toBeDefined();
+      expect(nodeWithoutLogger['logger']).not.toBe(mockLogger);
+    });
+  });
+
+  describe('execute()', () => {
+    it('should skip for non-Android platform', async () => {
+      const state = createTestState({
+        platform: 'iOS',
+        androidEmulatorName: 'Pixel_8_API_34',
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({});
+      expect(mockCommandRunner.execute).not.toHaveBeenCalled();
+      expect(
+        mockLogger.hasLoggedMessage(
+          'Skipping Android emulator start for non-Android platform',
+          'debug'
+        )
+      ).toBe(true);
+    });
+
+    it('should return error when androidEmulatorName is missing', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        androidEmulatorName: undefined,
+      });
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: ['Emulator name must be specified for Android deployment'],
+      });
+      expect(mockCommandRunner.execute).not.toHaveBeenCalled();
+    });
+
+    it('should skip if emulator is already responsive', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        androidEmulatorName: 'Pixel_8_API_34',
+        projectPath: '/path/to/project',
+      });
+
+      const verifyResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '1',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(verifyResult);
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({});
+      expect(mockCommandRunner.execute).toHaveBeenCalledTimes(1);
+      expect(
+        mockLogger.hasLoggedMessage('Emulator is already running and responsive', 'info')
+      ).toBe(true);
+    });
+
+    it('should successfully start emulator', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        androidEmulatorName: 'Pixel_8_API_34',
+        projectPath: '/path/to/project',
+      });
+
+      const verifyResult: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'device not found',
+        success: false,
+        duration: 100,
+      };
+
+      const startResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: 'Starting emulator...',
+        stderr: '',
+        success: true,
+        duration: 5000,
+      };
+
+      const waitResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '1',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      const waitForDeviceResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        success: true,
+        duration: 1000,
+      };
+
+      vi.useFakeTimers();
+      vi.mocked(mockCommandRunner.execute)
+        .mockResolvedValueOnce(verifyResult)
+        .mockResolvedValueOnce(startResult)
+        .mockResolvedValueOnce(waitForDeviceResult)
+        .mockResolvedValueOnce(waitResult);
+
+      const executePromise = node.execute(state);
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const result = await executePromise;
+
+      expect(result).toEqual({});
+      vi.useRealTimers();
+    });
+
+    it('should handle already running emulator', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        androidEmulatorName: 'Pixel_8_API_34',
+        projectPath: '/path/to/project',
+      });
+
+      const verifyResult: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'device not found',
+        success: false,
+        duration: 100,
+      };
+
+      const startResult: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'Emulator already running',
+        success: false,
+        duration: 100,
+      };
+
+      const waitResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '1',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      const waitForDeviceResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        success: true,
+        duration: 1000,
+      };
+
+      vi.useFakeTimers();
+      vi.mocked(mockCommandRunner.execute)
+        .mockResolvedValueOnce(verifyResult)
+        .mockResolvedValueOnce(startResult)
+        .mockResolvedValueOnce(waitForDeviceResult)
+        .mockResolvedValueOnce(waitResult);
+
+      const executePromise = node.execute(state);
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const result = await executePromise;
+
+      expect(result).toEqual({});
+      expect(mockLogger.hasLoggedMessage('Emulator already running', 'info')).toBe(true);
+      vi.useRealTimers();
+    });
+
+    it('should handle start failure', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        androidEmulatorName: 'Pixel_8_API_34',
+        projectPath: '/path/to/project',
+      });
+
+      const verifyResult: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'device not found',
+        success: false,
+        duration: 100,
+      };
+
+      const startResult: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'Failed to start emulator',
+        success: false,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute)
+        .mockResolvedValueOnce(verifyResult)
+        .mockResolvedValueOnce(startResult);
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          'Failed to start Android emulator "Pixel_8_API_34": Failed to start emulator',
+        ],
+      });
+    });
+
+    it('should handle exception during start', async () => {
+      const state = createTestState({
+        platform: 'Android',
+        androidEmulatorName: 'Pixel_8_API_34',
+        projectPath: '/path/to/project',
+      });
+
+      // First call is verifyEmulatorResponsive, second is the actual start
+      vi.mocked(mockCommandRunner.execute)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(new Error('Network error'));
+
+      const result = await node.execute(state);
+
+      expect(result).toEqual({
+        workflowFatalErrorMessages: ['Failed to start Android emulator: Network error'],
+      });
+    });
+  });
+});

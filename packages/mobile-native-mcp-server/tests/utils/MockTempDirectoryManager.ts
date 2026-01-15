@@ -42,4 +42,9 @@ export class MockTempDirectoryManager extends TempDirectoryManager {
   override getAppArtifactRootPath(projectName: string): string {
     return `${this.mockTempDir}/${projectName}`;
   }
+
+  override getAppArtifactPath(projectName: string, platform: PlatformEnum): string {
+    const extension = platform === 'iOS' ? '.app' : '.apk';
+    return `${this.mockTempDir}/${projectName}/${projectName}${extension}`;
+  }
 }
