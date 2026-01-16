@@ -8,6 +8,8 @@
 import z from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ServerRequest, ServerNotification } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { Command } from '@langchain/langgraph';
 import { createWorkflowLogger } from '../../logging/logger.js';
 import { AbstractTool } from '../base/abstractTool.js';
@@ -16,8 +18,8 @@ import {
   WORKFLOW_PROPERTY_NAMES,
   WorkflowStateData,
 } from '../../common/metadata.js';
-import type { BaseGraphConfig } from '../../common/graphConfig.js';
-import type { ProgressReporter } from '../../execution/progressReporter.js';
+import type { WorkflowRunnableConfig } from '../../common/graphConfig.js';
+import { MCPProgressReporter, type ProgressReporter } from '../../execution/progressReporter.js';
 import { WorkflowStateManager } from '../../checkpointing/workflowStateManager.js';
 import { OrchestratorConfig } from './config.js';
 import {
@@ -49,6 +51,7 @@ function generateUniqueThreadId(): string {
  */
 export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
   private readonly stateManager: WorkflowStateManager;
+  private currentProgressReporter: ProgressReporter | undefined;
 
   constructor(
     server: McpServer,
@@ -66,7 +69,13 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
   /**
    * Handle orchestrator requests - manages workflow state and execution
    */
-  public handleRequest = async (input: OrchestratorInput) => {
+  public handleRequest = async (
+    input: OrchestratorInput,
+    extra: RequestHandlerExtra<ServerRequest, ServerNotification>
+  ) => {
+    // Create progress reporter from MCP context
+    this.currentProgressReporter = this.createProgressReporter(extra);
+
     this.logger.debug('Orchestrator tool called with input', input);
     try {
       const result = await this.processRequest(input);
@@ -84,8 +93,27 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
     } catch (error) {
       this.logger.error('Error in orchestrator tool execution', error as Error);
       throw error;
+    } finally {
+      // Clear progress reporter after request completes
+      this.currentProgressReporter = undefined;
     }
   };
+
+  /**
+   * Creates a progress reporter from MCP request context.
+   *
+   * Subclasses can override this to provide custom progress reporting behavior.
+   *
+   * @param extra - The MCP request context containing sendNotification and metadata
+   * @returns A progress reporter instance, or undefined if progress reporting is disabled
+   */
+  protected createProgressReporter(
+    extra: RequestHandlerExtra<ServerRequest, ServerNotification>
+  ): ProgressReporter | undefined {
+    const { sendNotification, _meta } = extra;
+    const progressToken = _meta?.progressToken ? String(_meta.progressToken) : undefined;
+    return new MCPProgressReporter(sendNotification, progressToken);
+  }
 
   protected async processRequest(input: OrchestratorInput): Promise<OrchestratorOutput> {
     // Generate or use existing thread ID for workflow session
@@ -200,7 +228,7 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
   protected createThreadConfig(
     threadId: string,
     progressReporter?: ProgressReporter
-  ): { configurable: BaseGraphConfig } {
+  ): WorkflowRunnableConfig {
     return {
       configurable: {
         thread_id: threadId,
@@ -211,12 +239,11 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
 
   /**
    * Get the progress reporter for the current request.
-   * Subclasses can override this to provide a progress reporter.
    *
-   * @returns The progress reporter, or undefined if not available
+   * @returns The progress reporter created from the current MCP request context, or undefined
    */
   protected getProgressReporter(): ProgressReporter | undefined {
-    return undefined;
+    return this.currentProgressReporter;
   }
 
   /**

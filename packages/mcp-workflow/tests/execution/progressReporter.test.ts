@@ -23,14 +23,40 @@ describe('ProgressReporter', () => {
       expect(typeof reporter.report).toBe('function');
     });
 
-    it('should throw error if progressToken is missing', () => {
-      expect(() => {
-        new MCPProgressReporter(mockSendNotification, '');
-      }).toThrow('Progress token is required for MCPProgressReporter');
+    it('should generate progress token when not provided', async () => {
+      const reporter = new MCPProgressReporter(mockSendNotification);
+      reporter.report(50, 100, 'Test');
 
-      expect(() => {
-        new MCPProgressReporter(mockSendNotification, undefined as unknown as string);
-      }).toThrow('Progress token is required for MCPProgressReporter');
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Should have sent notifications with a generated token
+      expect(mockSendNotification).toHaveBeenCalledTimes(2);
+      const progressCall = mockSendNotification.mock.calls.find(
+        call => call[0].method === 'notifications/progress'
+      );
+      expect(progressCall).toBeDefined();
+      const generatedToken = progressCall![0].params.progressToken;
+      expect(generatedToken).toBeDefined();
+      expect(typeof generatedToken).toBe('string');
+      expect(generatedToken.startsWith('progress-')).toBe(true);
+    });
+
+    it('should use provided progress token when available', async () => {
+      const customToken = 'custom-token-456';
+      const reporter = new MCPProgressReporter(mockSendNotification, customToken);
+      reporter.report(50, 100, 'Test');
+
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      expect(mockSendNotification).toHaveBeenCalledWith({
+        method: 'notifications/progress',
+        params: {
+          progressToken: customToken,
+          message: 'Test',
+          progress: 50,
+          total: 100,
+        },
+      });
     });
 
     it('should send progress notification with correct format', async () => {

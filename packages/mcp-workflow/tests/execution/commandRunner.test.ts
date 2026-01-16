@@ -7,9 +7,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { spawn } from 'child_process';
-import { unlinkSync, existsSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { createWriteStream } from 'fs';
 import { DefaultCommandRunner } from '../../src/execution/commandRunner.js';
 import { ProgressReporter } from '../../src/execution/progressReporter.js';
 import { MockLogger } from '../utils/MockLogger.js';
@@ -19,6 +17,13 @@ import type { ProgressParser } from '../../src/execution/types.js';
 vi.mock('child_process', () => {
   return {
     spawn: vi.fn(),
+  };
+});
+
+// Mock fs.createWriteStream
+vi.mock('fs', () => {
+  return {
+    createWriteStream: vi.fn(),
   };
 });
 
@@ -490,28 +495,32 @@ describe('DefaultCommandRunner', () => {
     });
 
     it('should write output to file when outputFilePath provided', async () => {
-      const outputFile = join(tmpdir(), `test-output-${Date.now()}.txt`);
+      const mockWriteStream = {
+        write: vi.fn(),
+        end: vi.fn(),
+      };
+      vi.mocked(createWriteStream).mockReturnValue(
+        mockWriteStream as unknown as ReturnType<typeof createWriteStream>
+      );
 
-      try {
-        const promise = commandRunner.execute('echo', ['test output'], {
-          outputFilePath: outputFile,
-          commandName: 'Test Command',
-        });
+      const promise = commandRunner.execute('echo', ['test output'], {
+        outputFilePath: '/tmp/test-output.txt',
+        commandName: 'Test Command',
+      });
 
-        setTimeout(() => {
-          stdoutHandlers.forEach(handler => handler(Buffer.from('test output\n')));
-          exitHandlers.forEach(handler => handler(0, null));
-        }, 10);
+      setTimeout(() => {
+        stdoutHandlers.forEach(handler => handler(Buffer.from('test output\n')));
+        exitHandlers.forEach(handler => handler(0, null));
+      }, 10);
 
-        await promise;
+      await promise;
 
-        // File should exist and contain output
-        expect(existsSync(outputFile)).toBe(true);
-      } finally {
-        if (existsSync(outputFile)) {
-          unlinkSync(outputFile);
-        }
-      }
+      // Verify createWriteStream was called with the output file path
+      expect(createWriteStream).toHaveBeenCalledWith('/tmp/test-output.txt');
+      // Verify output was written to the stream
+      expect(mockWriteStream.write).toHaveBeenCalledWith('test output\n');
+      // Verify stream was closed
+      expect(mockWriteStream.end).toHaveBeenCalled();
     });
 
     it('should handle timeout', async () => {

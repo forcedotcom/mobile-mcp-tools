@@ -8,8 +8,11 @@
 import { State } from '../metadata.js';
 import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
 import { MOBILE_SDK_TEMPLATES_PATH } from '../../common.js';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { TEMPLATE_LIST_SCHEMA, TemplateListOutput } from '../../common/schemas.js';
+import { readFileSync, unlinkSync, openSync, closeSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 export class TemplateOptionsFetchNode extends BaseNode<State> {
   protected readonly logger: Logger;
@@ -36,8 +39,48 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
     let templateOptions: TemplateListOutput;
 
     try {
-      const output = execSync(command, { encoding: 'utf-8', timeout: 30000 });
-      templateOptions = this.parseTemplateOutput(output);
+      // Use temporary file to capture output and avoid pipe buffer limits
+      // This completely bypasses any OS-level pipe buffer size restrictions
+      const outputFile = join(
+        tmpdir(),
+        `template-options-${Date.now()}-${Math.random().toString(36).substring(7)}.json`
+      );
+      let result: ReturnType<typeof spawnSync>;
+      try {
+        // Open file for writing stdout directly (avoids pipe buffer limits)
+        const outputFd = openSync(outputFile, 'w');
+        try {
+          // Redirect stdout directly to file to avoid pipe buffer limits
+          result = spawnSync(command, {
+            encoding: 'utf-8',
+            timeout: 30000,
+            stdio: ['ignore', outputFd, 'pipe'], // stdin: ignore, stdout: file, stderr: pipe
+            shell: true, // Execute through shell to handle command properly
+          });
+
+          if (result.error) {
+            throw result.error;
+          }
+
+          if (result.status !== 0) {
+            const errorMsg = result.stderr || 'Command failed';
+            throw new Error(`Command failed with exit code ${result.status}: ${errorMsg}`);
+          }
+        } finally {
+          closeSync(outputFd);
+        }
+
+        // Read the complete output from file
+        const output = readFileSync(outputFile, 'utf-8');
+        templateOptions = this.parseTemplateOutput(output);
+      } finally {
+        // Clean up temporary file
+        try {
+          unlinkSync(outputFile);
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       const errorObj = error instanceof Error ? error : new Error(errorMessage);
@@ -56,7 +99,6 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
   private parseTemplateOutput(output: string): TemplateListOutput {
     try {
       const parsed = JSON.parse(output);
-
       return TEMPLATE_LIST_SCHEMA.parse(parsed);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;

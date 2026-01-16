@@ -39,16 +39,17 @@ export interface ProgressReporter {
 export class MCPProgressReporter implements ProgressReporter {
   private static readonly PROGRESS_TOTAL = 100;
   private readonly logger: Logger;
+  private readonly progressToken: string;
 
   constructor(
     private readonly sendNotification: (
       notification: ProgressReporterNotification
     ) => Promise<void>,
-    private readonly progressToken: string
+    progressToken?: string
   ) {
-    if (!progressToken) {
-      throw new Error('Progress token is required for MCPProgressReporter');
-    }
+    // Generate a unique progress token if not provided
+    this.progressToken =
+      progressToken ?? `progress-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     this.logger = createComponentLogger('MCPProgressReporter');
   }
 
