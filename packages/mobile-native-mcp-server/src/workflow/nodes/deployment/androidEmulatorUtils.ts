@@ -98,7 +98,7 @@ export async function fetchAndroidEmulators(
   // Use SF CLI to list Android devices
   const result = await commandRunner.execute(
     'sf',
-    ['force', 'lightning', 'local', 'device', 'list', '-p', 'android', '--json'],
+    ['force', 'lightning', 'local', 'device', 'list', '-p', 'android', '--json', '-o', 'all'],
     {
       timeout,
       progressReporter: options?.progressReporter,
