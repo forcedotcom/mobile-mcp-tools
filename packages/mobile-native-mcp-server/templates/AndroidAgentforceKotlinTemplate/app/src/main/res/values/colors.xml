@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Salesforce Brand Colors -->
+    <color name="salesforce_blue">#0176D3</color>
+    <color name="salesforce_blue_dark">#014486</color>
+    <color name="salesforce_blue_light">#1B96FF</color>
+
+    <!-- Secondary Colors -->
+    <color name="purple">#7526E3</color>
+    <color name="green">#2E844A</color>
+
+    <!-- Neutral Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="background_light">#FEFBFF</color>
+    <color name="background_dark">#1B1B1F</color>
+    <color name="surface_light">#FEFBFF</color>
+    <color name="surface_dark">#1B1B1F</color>
+    <color name="on_surface_light">#1B1B1F</color>
+    <color name="on_surface_dark">#E3E2E6</color>
+</resources>

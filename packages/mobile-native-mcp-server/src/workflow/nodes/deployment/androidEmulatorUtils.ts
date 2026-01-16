@@ -136,8 +136,9 @@ export async function fetchAndroidEmulators(
     return {
       name: device.id, // Use id as the device name for emulator commands
       apiLevel,
+      // Note: We no longer check if the emulator is running since we are using the SF CLI to start the emulator. Once the emulator is selected, sf command can start it regardless of its state.
       isRunning: false, // Cannot be inferred from SF CLI output
-      isCompatible: apiLevel === undefined || apiLevel >= minSdk,
+      isCompatible: apiLevel === undefined ? true : apiLevel >= minSdk,
     };
   });
 

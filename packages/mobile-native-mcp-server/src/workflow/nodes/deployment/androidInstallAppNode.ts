@@ -72,7 +72,7 @@ export class AndroidInstallAppNode extends BaseNode<State> {
       });
 
       const progressReporter = config?.configurable?.progressReporter;
-
+      const GRADLE_INSTALL_TIMEOUT_MS = 300000; // 5 minutes for installation
       const result = await this.commandRunner.execute(
         'sf',
         [
@@ -89,7 +89,7 @@ export class AndroidInstallAppNode extends BaseNode<State> {
           apkPath,
         ],
         {
-          timeout: 300000,
+          timeout: GRADLE_INSTALL_TIMEOUT_MS,
           cwd: state.projectPath,
           progressReporter,
           commandName: 'Android App Installation',

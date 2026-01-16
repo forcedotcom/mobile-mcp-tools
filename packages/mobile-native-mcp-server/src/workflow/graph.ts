@@ -47,8 +47,8 @@ import {
   iOSBootSimulatorNode,
   iOSInstallAppNode,
   iOSLaunchAppNode,
-  AndroidListDevicesNode,
   AndroidCreateEmulatorNode,
+  AndroidSelectEmulatorNode,
   AndroidStartEmulatorNode,
   AndroidInstallAppNode,
   AndroidLaunchAppNode,
@@ -135,8 +135,8 @@ export function createMobileNativeWorkflow(logger?: Logger) {
   const iosLaunchAppNode = new iOSLaunchAppNode(commandRunner, logger);
 
   // Create Android deployment nodes
-  const androidSelectEmulatorNode = new AndroidListDevicesNode(commandRunner, logger);
   const androidCreateEmulatorNode = new AndroidCreateEmulatorNode(commandRunner, logger);
+  const androidSelectEmulatorNode = new AndroidSelectEmulatorNode(commandRunner, logger);
   const androidStartEmulatorNode = new AndroidStartEmulatorNode(commandRunner, logger);
   const androidInstallAppNode = new AndroidInstallAppNode(commandRunner, logger);
   const androidLaunchAppNode = new AndroidLaunchAppNode(commandRunner, logger);

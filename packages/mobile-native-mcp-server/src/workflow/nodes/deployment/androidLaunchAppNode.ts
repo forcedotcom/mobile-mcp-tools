@@ -43,7 +43,9 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
     }
 
     // Try to get applicationId from build.gradle, fall back to packageName from state
-    let applicationId: string | undefined = this.readApplicationIdFromGradle(state.projectPath);
+    let applicationId: string | undefined = await this.readApplicationIdFromGradle(
+      state.projectPath
+    );
     if (!applicationId && state.packageName) {
       this.logger.debug('Using packageName as applicationId fallback', {
         packageName: state.packageName,
@@ -148,33 +150,29 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
   /**
    * Attempts to read applicationId from build.gradle or build.gradle.kts file.
    */
-  private readApplicationIdFromGradle(projectPath: string): string | undefined {
-    try {
-      const gradleFiles = [
-        join(projectPath, 'app', 'build.gradle'),
-        join(projectPath, 'app', 'build.gradle.kts'),
-      ];
+  private async readApplicationIdFromGradle(projectPath: string): Promise<string | undefined> {
+    const gradleFiles = [
+      join(projectPath, 'app', 'build.gradle'),
+      join(projectPath, 'app', 'build.gradle.kts'),
+    ];
 
-      for (const gradleFile of gradleFiles) {
-        try {
-          const content = readFileSync(gradleFile, 'utf-8');
-          // Try to match applicationId patterns: applicationId = "com.example.app" or applicationId "com.example.app"
-          const applicationIdPattern = /applicationId\s*[=:]\s*["']([^"']+)["']/;
-          const match = applicationIdPattern.exec(content);
-          if (match?.[1]) {
-            this.logger.debug('Found applicationId in build.gradle', {
-              file: gradleFile,
-              applicationId: match[1],
-            });
-            return match[1];
-          }
-        } catch {
-          // File doesn't exist or can't be read, try next file
-          continue;
+    for (const gradleFile of gradleFiles) {
+      try {
+        const content = readFileSync(gradleFile, 'utf-8');
+        // Try to match applicationId patterns: applicationId = "com.example.app" or applicationId "com.example.app"
+        const applicationIdPattern = /applicationId\s*[=:]\s*["']([^"']+)["']/;
+        const match = applicationIdPattern.exec(content);
+        if (match?.[1]) {
+          this.logger.debug('Found applicationId in build.gradle', {
+            file: gradleFile,
+            applicationId: match[1],
+          });
+          return match[1];
         }
+      } catch {
+        // File doesn't exist or can't be read, try next file
+        continue;
       }
-    } catch (error) {
-      this.logger.debug('Error reading applicationId from gradle files', { error });
     }
 
     return undefined;

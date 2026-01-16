@@ -15,6 +15,7 @@ export {
   fetchSimulatorDevices,
   parseSimctlDevicesJson,
   parseIOSVersionToNumber,
+  extractIOSVersion,
   findSimulatorByName,
   selectBestSimulator,
 } from './simulatorUtils.js';
@@ -39,8 +40,9 @@ export { iOSInstallAppNode } from './iOSInstallAppNode.js';
 export { iOSLaunchAppNode } from './iOSLaunchAppNode.js';
 
 // Android deployment nodes
-export { AndroidListDevicesNode } from './androidListDevicesNode.js';
 export { AndroidCreateEmulatorNode } from './androidCreateEmulatorNode.js';
+// Android deployment nodes (same pattern as iOS - no emulator creation)
+export { AndroidSelectEmulatorNode } from './androidSelectEmulatorNode.js';
 export { AndroidStartEmulatorNode } from './androidStartEmulatorNode.js';
 export { AndroidInstallAppNode } from './androidInstallAppNode.js';
 export { AndroidLaunchAppNode } from './androidLaunchAppNode.js';

@@ -10,13 +10,13 @@ import { AndroidLaunchAppNode } from '../../../../src/workflow/nodes/deployment/
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
-import { readFileSync } from 'fs';
+import { readFile } from 'fs/promises';
 
-vi.mock('fs', async importOriginal => {
-  const actual = await importOriginal<typeof import('fs')>();
+vi.mock('fs/promises', async importOriginal => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
   return {
     ...actual,
-    readFileSync: vi.fn(),
+    readFile: vi.fn(),
   };
 });
 
@@ -32,7 +32,7 @@ describe('AndroidLaunchAppNode', () => {
     };
     node = new AndroidLaunchAppNode(mockCommandRunner, mockLogger);
     vi.mocked(mockCommandRunner.execute).mockReset();
-    vi.mocked(readFileSync).mockReset();
+    vi.mocked(readFile).mockReset();
     mockLogger.reset();
   });
 
@@ -100,9 +100,7 @@ describe('AndroidLaunchAppNode', () => {
         packageName: 'com.test.app',
       });
 
-      vi.mocked(readFileSync).mockImplementation(() => {
-        throw new Error('File not found');
-      });
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
 
       const launchResult: CommandResult = {
         exitCode: 0,
@@ -138,7 +136,7 @@ describe('AndroidLaunchAppNode', () => {
         packageName: undefined,
       });
 
-      vi.mocked(readFileSync).mockReturnValue('applicationId = "com.test.app"');
+      vi.mocked(readFile).mockResolvedValue('applicationId = "com.test.app"');
 
       const launchResult: CommandResult = {
         exitCode: 0,
@@ -173,9 +171,7 @@ describe('AndroidLaunchAppNode', () => {
         packageName: undefined,
       });
 
-      vi.mocked(readFileSync).mockImplementation(() => {
-        throw new Error('File not found');
-      });
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
 
       const result = await node.execute(state);
 
@@ -193,9 +189,7 @@ describe('AndroidLaunchAppNode', () => {
         packageName: 'com.test.app',
       });
 
-      vi.mocked(readFileSync).mockImplementation(() => {
-        throw new Error('File not found');
-      });
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
 
       const launchResult: CommandResult = {
         exitCode: 1,
@@ -224,9 +218,7 @@ describe('AndroidLaunchAppNode', () => {
         packageName: 'com.test.app',
       });
 
-      vi.mocked(readFileSync).mockImplementation(() => {
-        throw new Error('File not found');
-      });
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 

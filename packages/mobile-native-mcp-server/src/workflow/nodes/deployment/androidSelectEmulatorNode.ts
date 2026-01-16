@@ -25,7 +25,7 @@ import { fetchAndroidEmulators, selectBestEmulator } from './androidEmulatorUtil
  * This node is analogous to iOSSelectSimulatorNode for the Android flow.
  * If no emulator is found, it's a fatal error (user must create one via Android Studio).
  */
-export class AndroidListDevicesNode extends BaseNode<State> {
+export class AndroidSelectEmulatorNode extends BaseNode<State> {
   protected readonly logger: Logger;
   private readonly commandRunner: CommandRunner;
 

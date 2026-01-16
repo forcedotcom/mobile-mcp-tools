@@ -1514,6 +1514,8 @@ mobile-native-mcp-server/
 │       └── logger.ts
 ├── templates/     # Official Salesforce Mobile SDK Templates (packaged with NPM)
 │   ├── iOSNativeSwiftTemplate/
+│   ├── AgentforceDemo/
+│   ├── AndroidAgentforceKotlinTemplate/
 │   ├── AndroidNativeKotlinTemplate/
 │   ├── MobileSyncExplorerSwift/
 │   ├── MobileSyncExplorerKotlinTemplate/

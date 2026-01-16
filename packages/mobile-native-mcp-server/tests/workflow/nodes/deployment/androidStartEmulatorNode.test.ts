@@ -80,7 +80,9 @@ describe('AndroidStartEmulatorNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({
-        workflowFatalErrorMessages: ['Emulator name must be specified for Android deployment'],
+        workflowFatalErrorMessages: [
+          'Emulator name must be selected before starting. Ensure AndroidSelectEmulatorNode ran successfully.',
+        ],
       });
       expect(mockCommandRunner.execute).not.toHaveBeenCalled();
     });

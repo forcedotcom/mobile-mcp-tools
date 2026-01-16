@@ -13,7 +13,7 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-import { readFileSync, readdirSync } from 'fs';
+import { readFile, readdir } from 'fs/promises';
 import { join } from 'path';
 
 /**
@@ -60,7 +60,7 @@ export class iOSLaunchAppNode extends BaseNode<State> {
 
     try {
       // Get bundle ID from project file (required)
-      const bundleId = this.readBundleIdFromProject(state.projectPath, state.projectName);
+      const bundleId = await this.readBundleIdFromProject(state.projectPath);
 
       this.logger.debug('Launching iOS app on simulator', {
         targetDevice: state.targetDevice,
@@ -69,8 +69,10 @@ export class iOSLaunchAppNode extends BaseNode<State> {
 
       const progressReporter = config?.configurable?.progressReporter;
 
-      // Wait a moment after install to ensure app is ready
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Brief delay after install to ensure the app is registered with SpringBoard
+      // and ready to launch. Without this, simctl launch can fail with "app not found".
+      const POST_INSTALL_DELAY_MS = 2000;
+      await new Promise(resolve => setTimeout(resolve, POST_INSTALL_DELAY_MS));
 
       const result = await this.commandRunner.execute(
         'xcrun',
@@ -123,11 +125,11 @@ export class iOSLaunchAppNode extends BaseNode<State> {
    * Reads PRODUCT_BUNDLE_IDENTIFIER from project.pbxproj file.
    * @throws Error if bundle ID cannot be found or read from the project file
    */
-  private readBundleIdFromProject(projectPath: string, _projectName: string): string {
+  private async readBundleIdFromProject(projectPath: string): Promise<string> {
     // Find the .xcodeproj directory
     let xcodeprojPath: string | null = null;
     try {
-      const files = readdirSync(projectPath);
+      const files = await readdir(projectPath);
       for (const file of files) {
         if (file.endsWith('.xcodeproj')) {
           xcodeprojPath = join(projectPath, file, 'project.pbxproj');
@@ -146,7 +148,7 @@ export class iOSLaunchAppNode extends BaseNode<State> {
 
     let content: string;
     try {
-      content = readFileSync(xcodeprojPath, 'utf-8');
+      content = await readFile(xcodeprojPath, 'utf-8');
     } catch (error) {
       throw new Error(
         `Failed to read project.pbxproj file at ${xcodeprojPath}: ${error instanceof Error ? error.message : `${error}`}`
