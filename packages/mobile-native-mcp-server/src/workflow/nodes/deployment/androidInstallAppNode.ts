@@ -56,13 +56,17 @@ export class AndroidInstallAppNode extends BaseNode<State> {
       const isWindows = process.platform === 'win32';
       const gradleCommand = isWindows ? 'gradlew.bat' : './gradlew';
 
+      // We use shell execution (sh -c / cmd /c) here because ./gradlew requires
+      // shell interpretation for the "./" prefix on Unix systems. Direct execution
+      // via commandRunner.execute('./gradlew', [...]) would fail without shell.
+      const GRADLE_INSTALL_TIMEOUT_MS = 300000; // 5 minutes for installation
       const result = await this.commandRunner.execute(
         isWindows ? 'cmd' : 'sh',
         isWindows
           ? ['/c', `${gradleCommand} ${gradleTask}`]
           : ['-c', `${gradleCommand} ${gradleTask}`],
         {
-          timeout: 300000,
+          timeout: GRADLE_INSTALL_TIMEOUT_MS,
           cwd: state.projectPath,
           progressReporter,
           commandName: 'Android App Installation',

@@ -130,7 +130,7 @@ export function parseSimctlDevicesJson(
  * Extracts iOS version from a runtime identifier.
  * e.g., "com.apple.CoreSimulator.SimRuntime.iOS-18-0" -> "18.0"
  */
-function extractIOSVersion(runtimeIdentifier: string): string | null {
+export function extractIOSVersion(runtimeIdentifier: string): string | null {
   // Match patterns like "iOS-18-0" or "iOS-17-5"
   const match = runtimeIdentifier.match(/iOS-(\d+)-(\d+)/);
   if (match) {

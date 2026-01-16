@@ -6,13 +6,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { AndroidListDevicesNode } from '../../../../src/workflow/nodes/deployment/androidListDevicesNode.js';
+import { AndroidSelectEmulatorNode } from '../../../../src/workflow/nodes/deployment/androidSelectEmulatorNode.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
 
-describe('AndroidListDevicesNode', () => {
-  let node: AndroidListDevicesNode;
+describe('AndroidSelectEmulatorNode', () => {
+  let node: AndroidSelectEmulatorNode;
   let mockLogger: MockLogger;
   let mockCommandRunner: CommandRunner;
 
@@ -21,7 +21,7 @@ describe('AndroidListDevicesNode', () => {
     mockCommandRunner = {
       execute: vi.fn(),
     };
-    node = new AndroidListDevicesNode(mockCommandRunner, mockLogger);
+    node = new AndroidSelectEmulatorNode(mockCommandRunner, mockLogger);
     vi.mocked(mockCommandRunner.execute).mockReset();
     mockLogger.reset();
   });
@@ -46,7 +46,7 @@ describe('AndroidListDevicesNode', () => {
     });
 
     it('should create default logger when none provided', () => {
-      const nodeWithoutLogger = new AndroidListDevicesNode(mockCommandRunner);
+      const nodeWithoutLogger = new AndroidSelectEmulatorNode(mockCommandRunner);
       expect(nodeWithoutLogger['logger']).toBeDefined();
       expect(nodeWithoutLogger['logger']).not.toBe(mockLogger);
     });

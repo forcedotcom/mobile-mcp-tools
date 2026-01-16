@@ -129,7 +129,10 @@ async function parseEmulatorListAndEnrich(
     return {
       name,
       apiLevel,
-      isRunning: runningEmulators.includes(name) || runningEmulators.length > 0,
+      // Note: adb devices returns serial like "emulator-5554", not the AVD name.
+      // We check if any emulator is running since we can't reliably map serial to AVD name.
+      // The selectBestEmulator function will prefer running emulators regardless.
+      isRunning: runningEmulators.length > 0,
       isCompatible: apiLevel !== undefined ? apiLevel >= minSdk : true,
     };
   });

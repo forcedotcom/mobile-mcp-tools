@@ -41,7 +41,9 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
     if (!state.androidEmulatorName) {
       this.logger.warn('No emulator name specified for emulator start');
       return {
-        workflowFatalErrorMessages: ['Emulator name must be specified for Android deployment'],
+        workflowFatalErrorMessages: [
+          'Emulator name must be selected before starting. Ensure AndroidSelectEmulatorNode ran successfully.',
+        ],
       };
     }
 

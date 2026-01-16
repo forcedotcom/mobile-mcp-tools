@@ -10,14 +10,14 @@ import { iOSLaunchAppNode } from '../../../../src/workflow/nodes/deployment/iOSL
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
-import { readdirSync, readFileSync } from 'fs';
+import { readdir, readFile } from 'fs/promises';
 
-vi.mock('fs', async importOriginal => {
-  const actual = await importOriginal<typeof import('fs')>();
+vi.mock('fs/promises', async importOriginal => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
   return {
     ...actual,
-    readdirSync: vi.fn(),
-    readFileSync: vi.fn(),
+    readdir: vi.fn(),
+    readFile: vi.fn(),
   };
 });
 
@@ -33,8 +33,8 @@ describe('iOSLaunchAppNode', () => {
     };
     node = new iOSLaunchAppNode(mockCommandRunner, mockLogger);
     vi.mocked(mockCommandRunner.execute).mockReset();
-    vi.mocked(readdirSync).mockReset();
-    vi.mocked(readFileSync).mockReset();
+    vi.mocked(readdir).mockReset();
+    vi.mocked(readFile).mockReset();
     mockLogger.reset();
   });
 
@@ -143,8 +143,8 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
-      vi.mocked(readFileSync).mockReturnValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
 
       const launchResult: CommandResult = {
         exitCode: 0,
@@ -182,8 +182,8 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
-      vi.mocked(readFileSync).mockReturnValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
 
       const launchResult: CommandResult = {
         exitCode: 1,
@@ -214,9 +214,7 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockImplementation(() => {
-        throw new Error('Permission denied');
-      });
+      vi.mocked(readdir).mockRejectedValue(new Error('Permission denied'));
 
       const result = await node.execute(state);
 
@@ -236,7 +234,7 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['somefile.txt'] as unknown as string[]);
+      vi.mocked(readdir).mockResolvedValue(['somefile.txt'] as unknown as string[]);
 
       const result = await node.execute(state);
 
@@ -256,10 +254,8 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
-      vi.mocked(readFileSync).mockImplementation(() => {
-        throw new Error('File not found');
-      });
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
 
       const result = await node.execute(state);
 
@@ -279,8 +275,8 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
-      vi.mocked(readFileSync).mockReturnValue('// No bundle identifier here');
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('// No bundle identifier here');
 
       const result = await node.execute(state);
 
@@ -300,8 +296,8 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
-      vi.mocked(readFileSync).mockReturnValue(
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue(
         'PRODUCT_BUNDLE_IDENTIFIER = "com.test.${PRODUCT_NAME:rfc1034identifier}";'
       );
 
@@ -323,8 +319,8 @@ describe('iOSLaunchAppNode', () => {
         projectPath: '/path/to/project',
       });
 
-      vi.mocked(readdirSync).mockReturnValue(['TestApp.xcodeproj'] as unknown as string[]);
-      vi.mocked(readFileSync).mockReturnValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 
