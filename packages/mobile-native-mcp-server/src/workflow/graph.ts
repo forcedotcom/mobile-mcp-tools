@@ -48,9 +48,14 @@ import {
   iOSInstallAppNode,
   iOSLaunchAppNode,
   AndroidListDevicesNode,
+  AndroidCreateEmulatorNode,
   AndroidStartEmulatorNode,
   AndroidInstallAppNode,
   AndroidLaunchAppNode,
+  CheckEmulatorFoundRouter,
+  CheckEmulatorCreatedRouter,
+  CheckEmulatorStartedRouter,
+  CheckAppInstalledRouter,
 } from './nodes/deployment/index.js';
 import { SFMOBILE_NATIVE_GET_INPUT_TOOL_ID } from '../tools/utils/sfmobile-native-get-input/metadata.js';
 import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../tools/utils/sfmobile-native-input-extraction/metadata.js';
@@ -131,6 +136,7 @@ export function createMobileNativeWorkflow(logger?: Logger) {
 
   // Create Android deployment nodes
   const androidSelectEmulatorNode = new AndroidListDevicesNode(commandRunner, logger);
+  const androidCreateEmulatorNode = new AndroidCreateEmulatorNode(commandRunner, logger);
   const androidStartEmulatorNode = new AndroidStartEmulatorNode(commandRunner, logger);
   const androidInstallAppNode = new AndroidInstallAppNode(commandRunner, logger);
   const androidLaunchAppNode = new AndroidLaunchAppNode(commandRunner, logger);
@@ -155,6 +161,26 @@ export function createMobileNativeWorkflow(logger?: Logger) {
   const checkDeploymentPlatformRouterInstance = new CheckDeploymentPlatformRouter(
     iosSelectSimulatorNode.name,
     androidSelectEmulatorNode.name,
+    failureNode.name
+  );
+
+  const checkEmulatorFoundRouter = new CheckEmulatorFoundRouter(
+    androidStartEmulatorNode.name,
+    androidCreateEmulatorNode.name
+  );
+
+  const checkEmulatorCreatedRouter = new CheckEmulatorCreatedRouter(
+    androidStartEmulatorNode.name,
+    failureNode.name
+  );
+
+  const checkEmulatorStartedRouter = new CheckEmulatorStartedRouter(
+    androidInstallAppNode.name,
+    failureNode.name
+  );
+
+  const checkAppInstalledRouter = new CheckAppInstalledRouter(
+    androidLaunchAppNode.name,
     failureNode.name
   );
 
@@ -183,6 +209,7 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       .addNode(iosLaunchAppNode.name, iosLaunchAppNode.execute)
       // Android deployment nodes
       .addNode(androidSelectEmulatorNode.name, androidSelectEmulatorNode.execute)
+      .addNode(androidCreateEmulatorNode.name, androidCreateEmulatorNode.execute)
       .addNode(androidStartEmulatorNode.name, androidStartEmulatorNode.execute)
       .addNode(androidInstallAppNode.name, androidInstallAppNode.execute)
       .addNode(androidLaunchAppNode.name, androidLaunchAppNode.execute)
@@ -224,9 +251,10 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       .addEdge(iosInstallAppNode.name, iosLaunchAppNode.name)
       .addEdge(iosLaunchAppNode.name, completionNode.name)
       // Android deployment flow
-      .addEdge(androidSelectEmulatorNode.name, androidStartEmulatorNode.name)
-      .addEdge(androidStartEmulatorNode.name, androidInstallAppNode.name)
-      .addEdge(androidInstallAppNode.name, androidLaunchAppNode.name)
+      .addConditionalEdges(androidSelectEmulatorNode.name, checkEmulatorFoundRouter.execute)
+      .addConditionalEdges(androidCreateEmulatorNode.name, checkEmulatorCreatedRouter.execute)
+      .addConditionalEdges(androidStartEmulatorNode.name, checkEmulatorStartedRouter.execute)
+      .addConditionalEdges(androidInstallAppNode.name, checkAppInstalledRouter.execute)
       .addEdge(androidLaunchAppNode.name, completionNode.name)
       // Completion and failure
       .addEdge(completionNode.name, END)

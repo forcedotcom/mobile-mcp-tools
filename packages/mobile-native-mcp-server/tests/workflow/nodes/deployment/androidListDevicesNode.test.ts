@@ -150,7 +150,7 @@ describe('AndroidListDevicesNode', () => {
       });
     });
 
-    it('should return error when no emulators found', async () => {
+    it('should return empty state when no emulators found (router handles creation)', async () => {
       const state = createTestState({
         platform: 'Android',
         androidEmulatorName: undefined,
@@ -171,11 +171,9 @@ describe('AndroidListDevicesNode', () => {
 
       const result = await node.execute(state);
 
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          'No Android emulators found. Please create an emulator via Android Studio > Device Manager.',
-        ],
-      });
+      // When no emulators found, returns empty state - router will route to create emulator
+      expect(result).toEqual({});
+      expect(mockLogger.hasLoggedMessage('No emulators found, will create one', 'warn')).toBe(true);
     });
 
     it('should handle exception during selection', async () => {

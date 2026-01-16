@@ -50,15 +50,9 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
     const progressReporter = config?.configurable?.progressReporter;
 
     try {
-      // Check if emulator is already running and responsive
-      const isResponsive = await this.verifyEmulatorResponsive(progressReporter);
-      if (isResponsive) {
-        this.logger.info('Emulator is already running and responsive', { emulatorName });
-        return {};
-      }
-
       this.logger.debug('Starting Android emulator', { emulatorName });
 
+      // If emulator is already running, start command will ignore it and return success.
       const result = await this.commandRunner.execute(
         'sf',
         ['force', 'lightning', 'local', 'device', 'start', '-p', 'android', '-t', emulatorName],
@@ -133,23 +127,6 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
 
     if (!result.success) {
       throw new Error(result.error || 'Emulator did not become ready');
-    }
-  }
-
-  /**
-   * Verifies the emulator is actually responsive by running a simple command.
-   * This catches cases where the emulator is "running" but not yet accepting commands.
-   */
-  private async verifyEmulatorResponsive(progressReporter?: ProgressReporter): Promise<boolean> {
-    try {
-      const result = await this.commandRunner.execute(
-        'adb',
-        ['shell', 'getprop', 'sys.boot_completed'],
-        { timeout: 10000, progressReporter, commandName: 'Verify Android Emulator Responsiveness' }
-      );
-      return result.success && result.stdout.trim() === '1';
-    } catch {
-      return false;
     }
   }
 }
