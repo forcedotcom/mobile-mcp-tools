@@ -7,7 +7,7 @@
 
 import { createGetUserInputNode, PropertyMetadataCollection } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
-import { SFMOBILE_NATIVE_GET_INPUT_TOOL_ID } from '../../tools/utils/sfmobile-native-get-input/metadata.js';
+import { SFMOBILE_NATIVE_GET_INPUT_TOOL_ID } from '../../common.js';
 import z from 'zod';
 
 /**

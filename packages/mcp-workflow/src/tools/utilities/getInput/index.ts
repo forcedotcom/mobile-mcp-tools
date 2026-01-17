@@ -5,6 +5,4 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-export * from './tool.js';
 export * from './metadata.js';
-export * from './factory.js';

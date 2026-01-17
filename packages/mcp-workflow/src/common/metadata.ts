@@ -36,20 +36,82 @@ export const WORKFLOW_TOOL_BASE_INPUT_SCHEMA = z.object({
 });
 
 /**
- * MCP tool invocation data structure used in LangGraph interrupts
- * Contains all information needed for the orchestrator to create tool invocation instructions
+ * Base interrupt data interface - shared properties for all interrupt types.
  *
- * @template TWorkflowInputSchema - The full workflow input schema (includes workflowStateData)
+ * This is the parent interface for both delegate mode (MCPToolInvocationData) and
+ * direct guidance mode (NodeGuidanceData). Contains only the truly shared `input` property.
+ *
+ * @template TInputSchema - The input schema (includes workflowStateData)
  */
-export interface MCPToolInvocationData<TWorkflowInputSchema extends z.ZodObject<z.ZodRawShape>> {
-  /** Metadata about the tool to invoke */
+export interface BaseInterruptData<TInputSchema extends z.ZodObject<z.ZodRawShape>> {
+  /** Input parameters - typed to business logic schema only (excludes workflowStateData) */
+  input: Omit<z.infer<TInputSchema>, 'workflowStateData'>;
+}
+
+/**
+ * MCP tool invocation data structure used in LangGraph interrupts (Delegate Mode).
+ *
+ * When the orchestrator receives this data, it instructs the LLM to invoke a separate
+ * MCP tool with the provided metadata and input.
+ *
+ * @template TInputSchema - The full workflow input schema (includes workflowStateData)
+ */
+export interface MCPToolInvocationData<TInputSchema extends z.ZodObject<z.ZodRawShape>>
+  extends BaseInterruptData<TInputSchema> {
+  /** Metadata about the tool to invoke, including the input schema for LLM context */
   llmMetadata: {
     name: string;
     description: string;
-    inputSchema: TWorkflowInputSchema;
+    /** Zod schema for input validation and LLM context */
+    inputSchema: TInputSchema;
   };
-  /** Input parameters for the tool invocation - typed to business logic schema only */
-  input: Omit<z.infer<TWorkflowInputSchema>, 'workflowStateData'>;
+}
+
+/**
+ * Node guidance data structure used in LangGraph interrupts (Direct Guidance Mode).
+ *
+ * When the orchestrator receives this data, it generates guidance directly inline
+ * instead of delegating to a separate tool. This reduces latency by eliminating
+ * an intermediate tool call.
+ *
+ * @template TInputSchema - The input schema (includes workflowStateData)
+ */
+export interface NodeGuidanceData<TInputSchema extends z.ZodObject<z.ZodRawShape>>
+  extends BaseInterruptData<TInputSchema> {
+  /** Unique identifier for this node - used for logging and debugging */
+  nodeId: string;
+  /** The task guidance/prompt that instructs the LLM what to do */
+  taskGuidance: string;
+  /** Zod schema for input validation and LLM context */
+  inputSchema: TInputSchema;
+  /** Zod schema defining expected output structure for result validation */
+  resultSchema: z.ZodObject<z.ZodRawShape>;
+  /**
+   * Optional example output to help the LLM understand the expected response format.
+   * When provided, this concrete example is shown alongside the schema to improve
+   * LLM compliance with the expected structure.
+   */
+  exampleOutput?: string;
+}
+
+/**
+ * Union type for all interrupt data types.
+ * The orchestrator uses this to handle both delegate and direct guidance modes.
+ */
+export type InterruptData<TInputSchema extends z.ZodObject<z.ZodRawShape>> =
+  | MCPToolInvocationData<TInputSchema>
+  | NodeGuidanceData<TInputSchema>;
+
+/**
+ * Type guard to check if interrupt data is NodeGuidanceData (direct guidance mode).
+ *
+ * @param data - The interrupt data to check
+ * @returns true if the data is NodeGuidanceData, false if it's MCPToolInvocationData
+ */
+export function isNodeGuidanceData<TInputSchema extends z.ZodObject<z.ZodRawShape>>(
+  data: InterruptData<TInputSchema>
+): data is NodeGuidanceData<TInputSchema> {
+  return 'taskGuidance' in data && 'resultSchema' in data && 'nodeId' in data;
 }
 
 /**

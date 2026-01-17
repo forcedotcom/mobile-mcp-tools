@@ -508,7 +508,22 @@ export class OrchestratorTool<
     });
   }
 
+  /**
+   * Create the thread configuration for LangGraph workflow invocation.
+   *
+   * Subclasses can override this method to add additional properties to
+   * `configurable`, such as progressReporter for long-running operations.
+   *
+   * @param threadId - The thread ID for checkpointing
+   * @returns Configuration object for workflow invocation
+   */
+  protected createThreadConfig(threadId: string): { configurable: { thread_id: string } } {
+    return { configurable: { thread_id: threadId } };
+  }
+
   // ... handleRequest method uses this.compiledWorkflow ...
+  // ... createOrchestrationPrompt for delegate mode ...
+  // ... createDirectGuidancePrompt for direct guidance mode ...
 }
 ````
 
@@ -773,7 +788,7 @@ export interface WorkflowToolMetadata<
   readonly resultSchema: TResultSchema;
 }
 
-/** MCP tool invocation data for LangGraph interrupts */
+/** MCP tool invocation data for LangGraph interrupts (Delegate Mode) */
 export interface MCPToolInvocationData<TWorkflowInputSchema extends z.ZodObject<z.ZodRawShape>> {
   llmMetadata: {
     name: string;
@@ -781,6 +796,29 @@ export interface MCPToolInvocationData<TWorkflowInputSchema extends z.ZodObject<
     inputSchema: TWorkflowInputSchema;
   };
   input: Omit<z.infer<TWorkflowInputSchema>, 'workflowStateData'>;
+}
+
+/**
+ * Node guidance data for direct guidance mode.
+ * The orchestrator generates guidance directly instead of delegating to a separate tool.
+ */
+export interface NodeGuidanceData<TInputSchema extends z.ZodObject<z.ZodRawShape>> {
+  /** Unique identifier for this node - used for logging and debugging */
+  nodeId: string;
+  /** The task guidance/prompt that instructs the LLM what to do */
+  taskGuidance: string;
+  /** Zod schema for input validation and LLM context */
+  inputSchema: TInputSchema;
+  /** Input parameters - typed to business logic schema only (excludes workflowStateData) */
+  input: Omit<z.infer<TInputSchema>, 'workflowStateData'>;
+  /** Zod schema defining expected output structure for result validation */
+  resultSchema: z.ZodObject<z.ZodRawShape>;
+  /**
+   * Optional example output to help the LLM understand the expected response format.
+   * When provided, this concrete example is shown alongside the schema to improve
+   * LLM compliance with the expected structure.
+   */
+  exampleOutput?: string;
 }
 ```
 
@@ -796,6 +834,65 @@ While the orchestrator and base classes provide the workflow infrastructure, man
 - Extracting structured data from unstructured user utterances
 
 Rather than force every consumer to implement these common patterns, we provide them as part of the framework.
+
+##### 5.0 Direct Guidance Mode (Orchestrator-Handled)
+
+**Purpose**: Allows the orchestrator to handle certain tasks directly by generating guidance prompts inline, eliminating the need for an intermediate tool call.
+
+**Background**: The standard workflow (delegate mode) involves two tool calls:
+1. The workflow interrupts and instructs the LLM to invoke a separate MCP tool
+2. The tool returns a prompt, and the LLM executes the task
+3. The LLM returns the result to the orchestrator
+
+This adds latency and complexity. The **direct guidance mode** streamlines this by having the orchestrator generate the task prompt directly using `NodeGuidanceData`.
+
+**How It Works**:
+
+When a workflow node needs to provide direct guidance, it creates an interrupt with `NodeGuidanceData`:
+
+```typescript
+const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> = {
+  nodeId: 'get-user-input',
+  taskGuidance: 'Ask the user for the following properties...',
+  inputSchema: GET_INPUT_WORKFLOW_INPUT_SCHEMA,
+  input: {
+    propertiesRequiringInput: [
+      { propertyName: 'platform', friendlyName: 'Platform', description: 'Target platform' },
+    ],
+  },
+  resultSchema: GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+  // Optional: provide example to improve LLM compliance
+  exampleOutput: JSON.stringify({
+    userUtterance: { platform: "<user's Platform value>" }
+  }, null, 2),
+};
+return interrupt(nodeGuidanceData);
+```
+
+The orchestrator detects `NodeGuidanceData` (via the `isNodeGuidanceData` type guard) and generates a direct guidance prompt that includes:
+1. Task guidance instructions
+2. Input schema and data
+3. Post-task instructions for returning to the orchestrator
+4. Output format schema (placed at the end for better LLM attention)
+5. Optional example output to improve LLM compliance
+
+**Flow Comparison**:
+
+```
+Delegate Mode (MCPToolInvocationData):
+  Node → interrupt → Orchestrator → LLM calls separate tool → Tool returns prompt → LLM executes → Returns to Orchestrator
+
+Direct Guidance Mode (NodeGuidanceData):
+  Node → interrupt → Orchestrator generates prompt directly → LLM executes → Returns to Orchestrator
+```
+
+**Benefits**:
+- Reduced latency (eliminates one tool call round-trip)
+- Simpler flow for common operations
+- Example output support improves LLM compliance with expected schemas
+- Same result validation preserved for compatibility
+
+**Implementation**: Services like `GetInputService` automatically create `NodeGuidanceData` with appropriate example output, so existing node usage benefits without code changes.
 
 ##### 5.1 Get Input Tool
 
@@ -929,14 +1026,9 @@ export class InputExtractionTool extends AbstractWorkflowTool<InputExtractionToo
   }
 
   public handleRequest = async (input: InputExtractionWorkflowInput) => {
-    const guidance = this.generateInputExtractionGuidance(input);
+    const guidance = generateInputExtractionTaskGuidance(input);
     return this.finalizeWorkflowToolOutput(guidance, input.workflowStateData, input.resultSchema);
   };
-
-  private generateInputExtractionGuidance(input: InputExtractionWorkflowInput): string {
-    // Generate LLM prompt for extracting structured data from user utterance
-    // (Implementation extracted from mobile-native-mcp-server)
-  }
 }
 ```
 
@@ -1195,6 +1287,7 @@ orchestrator.register({
 | Version | Date       | Author       | Changes              |
 | ------- | ---------- | ------------ | -------------------- |
 | 1.0     | 2025-10-22 | AI Assistant | Initial TDD creation |
+| 1.1     | 2026-01-13 | AI Assistant | Added NodeGuidanceData interface with exampleOutput support, documented direct guidance mode, added createThreadConfig method for OrchestratorTool extensibility |
 
 ---
 

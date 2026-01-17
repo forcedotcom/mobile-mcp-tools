@@ -106,7 +106,7 @@ describe('InputExtractionService', () => {
       );
     });
 
-    it('should call tool executor with correct metadata', () => {
+    it('should call tool executor with NodeGuidanceData', () => {
       mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
@@ -118,10 +118,45 @@ describe('InputExtractionService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      expect(call.llmMetadata.name).toBe(toolId);
+      // Now uses NodeGuidanceData structure
+      expect(call.nodeId).toBe(toolId);
       expect(call.input).toHaveProperty('userUtterance');
       expect(call.input).toHaveProperty('propertiesToExtract');
       expect(call.input).toHaveProperty('resultSchema');
+    });
+
+    it('should include taskGuidance in NodeGuidanceData', () => {
+      mockToolExecutor.setResult(toolId, {
+        extractedProperties: {
+          platform: 'iOS',
+        },
+      });
+
+      service.extractProperties('iOS app', properties);
+
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory.length).toBe(1);
+      const call = callHistory[0];
+      // NodeGuidanceData should have taskGuidance
+      expect(call.taskGuidance).toBeDefined();
+      expect(typeof call.taskGuidance).toBe('string');
+      expect(call.taskGuidance).toContain('data extraction');
+    });
+
+    it('should include resultSchema in NodeGuidanceData', () => {
+      mockToolExecutor.setResult(toolId, {
+        extractedProperties: {
+          platform: 'iOS',
+        },
+      });
+
+      service.extractProperties('iOS app', properties);
+
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory.length).toBe(1);
+      const call = callHistory[0];
+      // NodeGuidanceData should have resultSchema
+      expect(call.resultSchema).toBeDefined();
     });
 
     it('should include userUtterance in tool call', () => {

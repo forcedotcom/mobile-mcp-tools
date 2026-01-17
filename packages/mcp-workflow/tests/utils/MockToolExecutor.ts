@@ -7,50 +7,59 @@
 
 import z from 'zod';
 import { ToolExecutor } from '../../src/nodes/toolExecutor.js';
-import { MCPToolInvocationData } from '../../src/common/metadata.js';
+import { InterruptData, isNodeGuidanceData } from '../../src/common/metadata.js';
 
 /**
  * Test implementation of ToolExecutor that returns pre-configured results.
  * Useful for unit testing nodes without requiring the full LangGraph runtime.
+ * Supports both MCPToolInvocationData (delegate mode) and NodeGuidanceData (direct guidance mode).
  */
 export class MockToolExecutor implements ToolExecutor {
   private results: Map<string, unknown> = new Map();
-  private callHistory: Array<MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>> = [];
+  private callHistory: Array<InterruptData<z.ZodObject<z.ZodRawShape>>> = [];
 
   /**
-   * Configures the mock to return a specific result for a given tool.
+   * Configures the mock to return a specific result for a given tool/node.
    *
-   * @param toolName The name of the tool (from llmMetadata.name)
-   * @param result The result to return when this tool is executed
+   * @param toolOrNodeId The tool name (from llmMetadata.name) or node ID (from nodeId)
+   * @param result The result to return when this tool/node is executed
    */
-  setResult(toolName: string, result: unknown): void {
-    this.results.set(toolName, result);
+  setResult(toolOrNodeId: string, result: unknown): void {
+    this.results.set(toolOrNodeId, result);
   }
 
   /**
    * Executes a tool by returning the pre-configured result.
-   * If no result is configured for this tool, returns undefined.
+   * If no result is configured for this tool/node, returns undefined.
    *
-   * @param toolInvocationData The tool invocation data
-   * @returns The pre-configured result for this tool
+   * Handles both MCPToolInvocationData and NodeGuidanceData.
+   *
+   * @param interruptData The interrupt data (tool invocation or node guidance)
+   * @returns The pre-configured result for this tool/node
    */
-  execute(toolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>): unknown {
-    this.callHistory.push(toolInvocationData);
-    return this.results.get(toolInvocationData.llmMetadata.name);
+  execute(interruptData: InterruptData<z.ZodObject<z.ZodRawShape>>): unknown {
+    this.callHistory.push(interruptData);
+
+    // Get the identifier based on the interrupt data type
+    const id = isNodeGuidanceData(interruptData)
+      ? interruptData.nodeId
+      : interruptData.llmMetadata.name;
+
+    return this.results.get(id);
   }
 
   /**
-   * Returns the history of all tool invocations.
-   * Useful for asserting that tools were called with correct parameters.
+   * Returns the history of all tool/node invocations.
+   * Useful for asserting that tools/nodes were called with correct parameters.
    */
-  getCallHistory(): ReadonlyArray<MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>> {
+  getCallHistory(): ReadonlyArray<InterruptData<z.ZodObject<z.ZodRawShape>>> {
     return [...this.callHistory];
   }
 
   /**
-   * Returns the most recent tool invocation, or undefined if no calls have been made.
+   * Returns the most recent tool/node invocation, or undefined if no calls have been made.
    */
-  getLastCall(): MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> | undefined {
+  getLastCall(): InterruptData<z.ZodObject<z.ZodRawShape>> | undefined {
     return this.callHistory[this.callHistory.length - 1];
   }
 

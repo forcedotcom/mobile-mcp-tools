@@ -233,7 +233,7 @@ describe('FailureNode', () => {
 
       // Check for pre-execution log
       const preExecutionLog = debugLogs.find(log =>
-        log.message.includes('Tool invocation data (pre-execution)')
+        log.message.includes('Interrupt data (pre-execution)')
       );
       expect(preExecutionLog).toBeDefined();
     });

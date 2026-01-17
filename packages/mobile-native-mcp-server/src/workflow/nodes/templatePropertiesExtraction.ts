@@ -10,7 +10,7 @@ import {
   PropertyMetadataCollection,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
-import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../../tools/utils/sfmobile-native-input-extraction/metadata.js';
+import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../../common.js';
 import z from 'zod';
 
 /**
