@@ -11,7 +11,6 @@ import {
   Logger,
   CommandRunner,
   WorkflowRunnableConfig,
-  ProgressReporter,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { waitForEmulatorReady } from './androidEmulatorUtils.js';
@@ -48,87 +47,69 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
     }
 
     const emulatorName = state.androidEmulatorName;
-
     const progressReporter = config?.configurable?.progressReporter;
 
-    try {
-      this.logger.debug('Starting Android emulator', { emulatorName });
+    this.logger.debug('Starting Android emulator', { emulatorName });
 
-      // If emulator is already running, start command will ignore it and return success.
-      const result = await this.commandRunner.execute(
-        'sf',
-        ['force', 'lightning', 'local', 'device', 'start', '-p', 'android', '-t', emulatorName],
-        {
-          timeout: 120000,
-          cwd: state.projectPath,
-          progressReporter,
-          commandName: 'Start Android Emulator',
-        }
-      );
-
-      if (!result.success) {
-        // Check if it's already running - this is SUCCESS, not failure
-        const isAlreadyRunning =
-          result.stderr?.includes('already running') ||
-          result.stdout?.includes('already running') ||
-          result.stderr?.includes('already booted');
-
-        if (isAlreadyRunning) {
-          this.logger.info('Emulator already running, verifying responsiveness', { emulatorName });
-
-          // Wait for emulator to be fully ready
-          await this.waitForEmulatorReadyWithRetry(progressReporter);
-          return {};
-        }
-
-        const errorMessage =
-          result.stderr || `Failed to start emulator: exit code ${result.exitCode ?? 'unknown'}`;
-        this.logger.error('Failed to start Android emulator', new Error(errorMessage));
-        this.logger.debug('Start emulator command details', {
-          exitCode: result.exitCode ?? null,
-          signal: result.signal ?? null,
-          stderr: result.stderr,
-          stdout: result.stdout,
-        });
-        return {
-          workflowFatalErrorMessages: [
-            `Failed to start Android emulator "${emulatorName}": ${errorMessage}`,
-          ],
-        };
+    const result = await this.commandRunner.execute(
+      'sf',
+      ['force', 'lightning', 'local', 'device', 'start', '-p', 'android', '-t', emulatorName],
+      {
+        timeout: 120000,
+        cwd: state.projectPath,
+        progressReporter,
+        commandName: 'Start Android Emulator',
       }
+    );
 
-      this.logger.info('Android emulator start command completed', { emulatorName });
+    // Check if it's already running - this is SUCCESS, not failure
+    const isAlreadyRunning =
+      result.stderr?.includes('already running') ||
+      result.stdout?.includes('already running') ||
+      result.stderr?.includes('already booted');
 
-      // Wait for emulator to be fully ready (start command returns but emulator may not be ready)
-      this.logger.debug('Waiting for emulator to be fully ready');
-      await this.waitForEmulatorReadyWithRetry(progressReporter);
-
-      this.logger.info('Android emulator started successfully and ready', { emulatorName });
-      return {};
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `${error}`;
-      this.logger.error(
-        'Error starting Android emulator',
-        error instanceof Error ? error : new Error(errorMessage)
-      );
+    if (!result.success && !isAlreadyRunning) {
+      const errorMessage =
+        result.stderr || `Failed to start emulator: exit code ${result.exitCode ?? 'unknown'}`;
+      this.logger.error('Failed to start Android emulator', new Error(errorMessage));
+      this.logger.debug('Start emulator command details', {
+        exitCode: result.exitCode ?? null,
+        signal: result.signal ?? null,
+        stderr: result.stderr,
+        stdout: result.stdout,
+      });
       return {
-        workflowFatalErrorMessages: [`Failed to start Android emulator: ${errorMessage}`],
+        workflowFatalErrorMessages: [
+          `Failed to start Android emulator "${emulatorName}": ${errorMessage}`,
+        ],
       };
     }
-  };
 
-  /**
-   * Waits for the emulator to be fully ready with error handling.
-   */
-  private async waitForEmulatorReadyWithRetry(progressReporter?: ProgressReporter): Promise<void> {
-    const result = await waitForEmulatorReady(this.commandRunner, this.logger, {
+    if (isAlreadyRunning) {
+      this.logger.info('Emulator already running, verifying responsiveness', { emulatorName });
+    } else {
+      this.logger.info('Android emulator start command completed', { emulatorName });
+    }
+
+    // Wait for emulator to be fully ready
+    this.logger.debug('Waiting for emulator to be fully ready');
+    const readyResult = await waitForEmulatorReady(this.commandRunner, this.logger, {
       progressReporter,
       maxWaitTime: 120000,
       pollInterval: 3000,
     });
 
-    if (!result.success) {
-      throw new Error(result.error || 'Emulator did not become ready');
+    if (!readyResult.success) {
+      this.logger.error(
+        'Emulator did not become ready',
+        new Error(readyResult.error ?? 'Unknown error')
+      );
+      return {
+        workflowFatalErrorMessages: [readyResult.error ?? 'Emulator did not become ready'],
+      };
     }
-  }
+
+    this.logger.info('Android emulator started successfully and ready', { emulatorName });
+    return {};
+  };
 }

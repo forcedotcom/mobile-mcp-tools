@@ -281,7 +281,7 @@ describe('AndroidLaunchAppNode', () => {
       });
     });
 
-    it('should handle exception during launch', async () => {
+    it('should propagate exception during launch', async () => {
       const state = createTestState({
         platform: 'Android',
         projectPath: '/path/to/project',
@@ -306,11 +306,8 @@ describe('AndroidLaunchAppNode', () => {
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: ['Failed to launch Android app: Network error'],
-      });
+      // Exceptions now propagate (consistent with refactored pattern)
+      await expect(node.execute(state)).rejects.toThrow('Network error');
     });
   });
 });

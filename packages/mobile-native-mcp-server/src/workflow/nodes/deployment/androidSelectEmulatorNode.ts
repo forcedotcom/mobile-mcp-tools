@@ -23,7 +23,7 @@ import { fetchAndroidEmulators, selectBestEmulator } from './androidEmulatorUtil
  * 3. Use emulator with highest API level as fallback
  *
  * This node is analogous to iOSSelectSimulatorNode for the Android flow.
- * If no emulator is found, it's a fatal error (user must create one via Android Studio).
+ * If no emulator is found, it returns empty (AndroidCreateEmulatorNode will create one).
  */
 export class AndroidSelectEmulatorNode extends BaseNode<State> {
   protected readonly logger: Logger;
@@ -49,48 +49,35 @@ export class AndroidSelectEmulatorNode extends BaseNode<State> {
       return {};
     }
 
-    try {
-      this.logger.debug('Selecting Android emulator device');
+    this.logger.debug('Selecting Android emulator device');
 
-      const progressReporter = config?.configurable?.progressReporter;
+    const progressReporter = config?.configurable?.progressReporter;
 
-      // Fetch available emulators
-      const result = await fetchAndroidEmulators(this.commandRunner, this.logger, {
-        progressReporter,
-      });
+    // Fetch available emulators
+    const result = await fetchAndroidEmulators(this.commandRunner, this.logger, {
+      progressReporter,
+    });
 
-      if (!result.success) {
-        this.logger.error('Failed to list Android emulators', new Error(result.error));
-        return {
-          workflowFatalErrorMessages: [
-            `Failed to list Android emulators: ${result.error}. Please ensure Android SDK is properly installed.`,
-          ],
-        };
-      }
-
-      // Select best emulator using shared utility
-      const selectedEmulator = selectBestEmulator(result.emulators, this.logger);
-
-      if (!selectedEmulator) {
-        this.logger.warn('No emulators found, will create one');
-        return {};
-      }
-
-      this.logger.info('Selected Android emulator', {
-        androidEmulatorName: selectedEmulator.name,
-      });
-      return { androidEmulatorName: selectedEmulator.name };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `${error}`;
-      this.logger.error(
-        'Error selecting Android emulator',
-        error instanceof Error ? error : new Error(errorMessage)
-      );
+    if (!result.success) {
+      this.logger.error('Failed to list Android emulators', new Error(result.error));
       return {
         workflowFatalErrorMessages: [
-          `Failed to select Android emulator: ${errorMessage}. Please ensure Android SDK is properly installed.`,
+          `Failed to list Android emulators: ${result.error}. Please ensure Android SDK is properly installed.`,
         ],
       };
     }
+
+    // Select best emulator using shared utility
+    const selectedEmulator = selectBestEmulator(result.emulators, this.logger);
+
+    if (!selectedEmulator) {
+      this.logger.warn('No emulators found, will create one');
+      return {};
+    }
+
+    this.logger.info('Selected Android emulator', {
+      androidEmulatorName: selectedEmulator.name,
+    });
+    return { androidEmulatorName: selectedEmulator.name };
   };
 }

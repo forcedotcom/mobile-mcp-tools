@@ -16,6 +16,11 @@ import {
 import { State } from '../../metadata.js';
 
 /**
+ * Timeout for Android app installation (5 minutes).
+ */
+const INSTALL_TIMEOUT_MS = 300000;
+
+/**
  * Installs the Android app using Salesforce CLI (sf force lightning local app install).
  */
 export class AndroidInstallAppNode extends BaseNode<State> {
@@ -63,69 +68,58 @@ export class AndroidInstallAppNode extends BaseNode<State> {
       `app-${buildType}.apk`
     );
 
-    try {
-      this.logger.debug('Installing Android app using sf CLI', {
-        projectPath: state.projectPath,
-        buildType,
+    this.logger.debug('Installing Android app using sf CLI', {
+      projectPath: state.projectPath,
+      buildType,
+      targetDevice,
+      apkPath,
+    });
+
+    const progressReporter = config?.configurable?.progressReporter;
+
+    const result = await this.commandRunner.execute(
+      'sf',
+      [
+        'force',
+        'lightning',
+        'local',
+        'app',
+        'install',
+        '-p',
+        'android',
+        '-t',
         targetDevice,
+        '-a',
         apkPath,
-      });
-
-      const progressReporter = config?.configurable?.progressReporter;
-      const GRADLE_INSTALL_TIMEOUT_MS = 300000; // 5 minutes for installation
-      const result = await this.commandRunner.execute(
-        'sf',
-        [
-          'force',
-          'lightning',
-          'local',
-          'app',
-          'install',
-          '-p',
-          'android',
-          '-t',
-          targetDevice,
-          '-a',
-          apkPath,
-        ],
-        {
-          timeout: GRADLE_INSTALL_TIMEOUT_MS,
-          cwd: state.projectPath,
-          progressReporter,
-          commandName: 'Android App Installation',
-        }
-      );
-
-      if (!result.success) {
-        const errorMessage =
-          result.stderr || `Failed to install app: exit code ${result.exitCode ?? 'unknown'}`;
-        this.logger.error('Failed to install Android app', new Error(errorMessage));
-        this.logger.debug('Install command details', {
-          exitCode: result.exitCode ?? null,
-          signal: result.signal ?? null,
-          stderr: result.stderr,
-          stdout: result.stdout,
-        });
-        return {
-          workflowFatalErrorMessages: [`Failed to install Android app: ${errorMessage}`],
-        };
+      ],
+      {
+        timeout: INSTALL_TIMEOUT_MS,
+        cwd: state.projectPath,
+        progressReporter,
+        commandName: 'Android App Installation',
       }
+    );
 
-      this.logger.info('Android app installed successfully', {
-        buildType,
-        targetDevice,
-        apkPath,
+    if (!result.success) {
+      const errorMessage =
+        result.stderr || `Failed to install app: exit code ${result.exitCode ?? 'unknown'}`;
+      this.logger.error('Failed to install Android app', new Error(errorMessage));
+      this.logger.debug('Install command details', {
+        exitCode: result.exitCode ?? null,
+        signal: result.signal ?? null,
+        stderr: result.stderr,
+        stdout: result.stdout,
       });
-      return {};
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `${error}`;
-      this.logger.error(
-        'Error installing Android app',
-        error instanceof Error ? error : new Error(errorMessage)
-      );
       return {
         workflowFatalErrorMessages: [`Failed to install Android app: ${errorMessage}`],
       };
     }
+
+    this.logger.info('Android app installed successfully', {
+      buildType,
+      targetDevice,
+      apkPath,
+    });
+    return {};
   };
 }

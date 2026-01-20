@@ -19,7 +19,7 @@ import { PLATFORM_API_LEVELS } from '../checkPlatformSetup.js';
  * Creates an Android emulator when none exists.
  * Uses the SF CLI to create a Pixel emulator with the configured API level.
  *
- * This node is invoked when AndroidListDevicesNode finds no emulators.
+ * This node is invoked when AndroidSelectEmulatorNode finds no emulators.
  * On success, sets androidEmulatorName in state.
  * On failure, sets workflowFatalErrorMessages.
  */
@@ -47,63 +47,51 @@ export class AndroidCreateEmulatorNode extends BaseNode<State> {
 
     const progressReporter = config?.configurable?.progressReporter;
 
-    try {
-      this.logger.info('Creating Android emulator', { emulatorName, apiLevel });
+    this.logger.info('Creating Android emulator', { emulatorName, apiLevel });
 
-      // Execute: sf force lightning local device create -n <name> -d pixel -p android -l <apiLevel>
-      const result = await this.commandRunner.execute(
-        'sf',
-        [
-          'force',
-          'lightning',
-          'local',
-          'device',
-          'create',
-          '-n',
-          emulatorName,
-          '-d',
-          'pixel',
-          '-p',
-          'android',
-          '-l',
-          apiLevel,
-        ],
-        {
-          timeout: 300000, // 5 minutes for emulator creation
-          cwd: state.projectPath,
-          progressReporter,
-          commandName: 'Create Android Emulator',
-        }
-      );
-
-      if (!result.success) {
-        const errorMessage =
-          result.stderr || `Failed to create emulator: exit code ${result.exitCode ?? 'unknown'}`;
-        this.logger.error('Failed to create Android emulator', new Error(errorMessage));
-        this.logger.debug('Create emulator command details', {
-          exitCode: result.exitCode ?? null,
-          signal: result.signal ?? null,
-          stderr: result.stderr,
-          stdout: result.stdout,
-        });
-        return {
-          workflowFatalErrorMessages: [
-            `Failed to create Android emulator "${emulatorName}": ${errorMessage}`,
-          ],
-        };
+    const result = await this.commandRunner.execute(
+      'sf',
+      [
+        'force',
+        'lightning',
+        'local',
+        'device',
+        'create',
+        '-n',
+        emulatorName,
+        '-d',
+        'pixel',
+        '-p',
+        'android',
+        '-l',
+        apiLevel,
+      ],
+      {
+        timeout: 300000, // 5 minutes for emulator creation
+        cwd: state.projectPath,
+        progressReporter,
+        commandName: 'Create Android Emulator',
       }
+    );
 
-      this.logger.info('Android emulator created successfully', { emulatorName });
-      return { androidEmulatorName: emulatorName };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `${error}`;
-      this.logger.error(
-        'Error creating Android emulator',
-        error instanceof Error ? error : new Error(errorMessage)
-      );
+    if (!result.success) {
+      const errorMessage =
+        result.stderr || `Failed to create emulator: exit code ${result.exitCode ?? 'unknown'}`;
+      this.logger.error('Failed to create Android emulator', new Error(errorMessage));
+      this.logger.debug('Create emulator command details', {
+        exitCode: result.exitCode ?? null,
+        signal: result.signal ?? null,
+        stderr: result.stderr,
+        stdout: result.stdout,
+      });
       return {
-        workflowFatalErrorMessages: [`Failed to create Android emulator: ${errorMessage}`],
+        workflowFatalErrorMessages: [
+          `Failed to create Android emulator "${emulatorName}": ${errorMessage}`,
+        ],
       };
     }
+
+    this.logger.info('Android emulator created successfully', { emulatorName });
+    return { androidEmulatorName: emulatorName };
   };
 }

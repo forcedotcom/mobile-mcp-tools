@@ -258,23 +258,17 @@ describe('AndroidStartEmulatorNode', () => {
       });
     });
 
-    it('should handle exception during start', async () => {
+    it('should propagate exception during start', async () => {
       const state = createTestState({
         platform: 'Android',
         androidEmulatorName: 'Pixel_8_API_34',
         projectPath: '/path/to/project',
       });
 
-      // First call is verifyEmulatorResponsive, second is the actual start
-      vi.mocked(mockCommandRunner.execute)
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockRejectedValueOnce(new Error('Network error'));
+      vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: ['Failed to start Android emulator: Network error'],
-      });
+      // Exceptions now propagate (consistent with refactored pattern)
+      await expect(node.execute(state)).rejects.toThrow('Network error');
     });
   });
 });

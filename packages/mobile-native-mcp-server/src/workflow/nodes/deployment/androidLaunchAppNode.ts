@@ -13,8 +13,10 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  readApplicationIdFromGradle,
+  readLaunchActivityFromManifest,
+} from './androidEmulatorUtils.js';
 
 /**
  * Launches the Android app on the emulator.
@@ -42,10 +44,8 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
       };
     }
 
-    // Try to get applicationId from build.gradle, fall back to packageName from state
-    let applicationId: string | undefined = await this.readApplicationIdFromGradle(
-      state.projectPath
-    );
+    // Get applicationId from build.gradle, fall back to packageName from state
+    let applicationId = readApplicationIdFromGradle(state.projectPath, this.logger);
     if (!applicationId && state.packageName) {
       this.logger.debug('Using packageName as applicationId fallback', {
         packageName: state.packageName,
@@ -74,7 +74,7 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
     }
 
     // Get the launcher activity from AndroidManifest.xml
-    const activityClass = this.readLaunchActivityFromManifest(state.projectPath);
+    const activityClass = readLaunchActivityFromManifest(state.projectPath, this.logger);
     if (!activityClass) {
       this.logger.warn('Could not determine launcher activity from AndroidManifest.xml');
       return {
@@ -87,139 +87,52 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
     // Construct the launch intent in format: packageId/activityClass
     const launchIntent = `${applicationId}/${activityClass}`;
 
-    try {
-      this.logger.debug('Launching Android app', { applicationId, targetDevice, launchIntent });
+    this.logger.debug('Launching Android app', { applicationId, targetDevice, launchIntent });
 
-      const progressReporter = config?.configurable?.progressReporter;
+    const progressReporter = config?.configurable?.progressReporter;
 
-      const result = await this.commandRunner.execute(
-        'sf',
-        [
-          'force',
-          'lightning',
-          'local',
-          'app',
-          'launch',
-          '-p',
-          'android',
-          '-t',
-          targetDevice,
-          '-i',
-          launchIntent,
+    const result = await this.commandRunner.execute(
+      'sf',
+      [
+        'force',
+        'lightning',
+        'local',
+        'app',
+        'launch',
+        '-p',
+        'android',
+        '-t',
+        targetDevice,
+        '-i',
+        launchIntent,
+      ],
+      {
+        timeout: 30000,
+        progressReporter,
+        commandName: 'Android App Launch',
+      }
+    );
+
+    if (!result.success) {
+      const errorMessage =
+        result.stderr || `Failed to launch app: exit code ${result.exitCode ?? 'unknown'}`;
+      this.logger.error('Failed to launch Android app', new Error(errorMessage));
+      this.logger.debug('Launch command details', {
+        exitCode: result.exitCode ?? null,
+        signal: result.signal ?? null,
+        stderr: result.stderr,
+        stdout: result.stdout,
+      });
+      return {
+        workflowFatalErrorMessages: [
+          `Failed to launch Android app "${applicationId}": ${errorMessage}`,
         ],
-        {
-          timeout: 30000,
-          progressReporter,
-          commandName: 'Android App Launch',
-        }
-      );
-
-      if (!result.success) {
-        const errorMessage =
-          result.stderr || `Failed to launch app: exit code ${result.exitCode ?? 'unknown'}`;
-        this.logger.error('Failed to launch Android app', new Error(errorMessage));
-        this.logger.debug('Launch command details', {
-          exitCode: result.exitCode ?? null,
-          signal: result.signal ?? null,
-          stderr: result.stderr,
-          stdout: result.stdout,
-        });
-        return {
-          workflowFatalErrorMessages: [
-            `Failed to launch Android app "${applicationId}": ${errorMessage}`,
-          ],
-        };
-      }
-
-      this.logger.info('Android app launched successfully', { applicationId, targetDevice });
-      return {
-        deploymentStatus: 'success',
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `${error}`;
-      this.logger.error(
-        'Error launching Android app',
-        error instanceof Error ? error : new Error(errorMessage)
-      );
-      return {
-        workflowFatalErrorMessages: [`Failed to launch Android app: ${errorMessage}`],
       };
     }
+
+    this.logger.info('Android app launched successfully', { applicationId, targetDevice });
+    return {
+      deploymentStatus: 'success',
+    };
   };
-
-  /**
-   * Attempts to read applicationId from build.gradle or build.gradle.kts file.
-   */
-  private async readApplicationIdFromGradle(projectPath: string): Promise<string | undefined> {
-    const gradleFiles = [
-      join(projectPath, 'app', 'build.gradle'),
-      join(projectPath, 'app', 'build.gradle.kts'),
-    ];
-
-    for (const gradleFile of gradleFiles) {
-      try {
-        const content = readFileSync(gradleFile, 'utf-8');
-        // Try to match applicationId patterns: applicationId = "com.example.app" or applicationId "com.example.app"
-        const applicationIdPattern = /applicationId\s*[=:]\s*["']([^"']+)["']/;
-        const match = applicationIdPattern.exec(content);
-        if (match?.[1]) {
-          this.logger.debug('Found applicationId in build.gradle', {
-            file: gradleFile,
-            applicationId: match[1],
-          });
-          return match[1];
-        }
-      } catch {
-        // File doesn't exist or can't be read, try next file
-        continue;
-      }
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Reads the AndroidManifest.xml file and extracts the launcher activity class name.
-   * Looks for an activity with android.intent.category.LAUNCHER intent-filter.
-   */
-  private readLaunchActivityFromManifest(projectPath: string): string | undefined {
-    try {
-      const manifestPath = join(projectPath, 'app', 'src', 'main', 'AndroidManifest.xml');
-      const content = readFileSync(manifestPath, 'utf-8');
-
-      // Find activity blocks that contain the LAUNCHER category
-      // Pattern matches: <activity android:name=".MainActivity" ...> ... <category android:name="android.intent.category.LAUNCHER" /> ... </activity>
-      const activityPattern =
-        /<activity[^>]*android:name\s*=\s*["']([^"']+)["'][^>]*>[\s\S]*?<category\s+android:name\s*=\s*["']android\.intent\.category\.LAUNCHER["']\s*\/>[\s\S]*?<\/activity>/g;
-
-      const match = activityPattern.exec(content);
-      if (match?.[1]) {
-        this.logger.debug('Found launcher activity in AndroidManifest.xml', {
-          activityName: match[1],
-        });
-        return match[1];
-      }
-
-      // Alternative pattern: activity name might come after other attributes
-      const altPattern =
-        /<activity[^>]*>[\s\S]*?<category\s+android:name\s*=\s*["']android\.intent\.category\.LAUNCHER["']\s*\/>[\s\S]*?<\/activity>/g;
-      let activityBlock: RegExpExecArray | null;
-      while ((activityBlock = altPattern.exec(content)) !== null) {
-        const namePattern = /android:name\s*=\s*["']([^"']+)["']/;
-        const nameMatch = namePattern.exec(activityBlock[0]);
-        if (nameMatch?.[1]) {
-          this.logger.debug('Found launcher activity in AndroidManifest.xml (alt pattern)', {
-            activityName: nameMatch[1],
-          });
-          return nameMatch[1];
-        }
-      }
-
-      this.logger.debug('No launcher activity found in AndroidManifest.xml');
-    } catch (error) {
-      this.logger.debug('Error reading AndroidManifest.xml', { error });
-    }
-
-    return undefined;
-  }
 }
