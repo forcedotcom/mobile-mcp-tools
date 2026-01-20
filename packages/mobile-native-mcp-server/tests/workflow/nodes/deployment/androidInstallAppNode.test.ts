@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import path from 'node:path';
 import { AndroidInstallAppNode } from '../../../../src/workflow/nodes/deployment/androidInstallAppNode.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
@@ -107,6 +108,15 @@ describe('AndroidInstallAppNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({});
+      const expectedApkPath = path.join(
+        '/path/to/project',
+        'app',
+        'build',
+        'outputs',
+        'apk',
+        'debug',
+        'app-debug.apk'
+      );
       expect(mockCommandRunner.execute).toHaveBeenCalledWith(
         'sf',
         [
@@ -120,12 +130,13 @@ describe('AndroidInstallAppNode', () => {
           '-t',
           'Pixel_8_API_34',
           '-a',
-          '/path/to/project/app/build/outputs/apk/debug/app-debug.apk',
+          expectedApkPath,
         ],
         expect.objectContaining({
           timeout: 300000,
           cwd: '/path/to/project',
           commandName: 'Android App Installation',
+          progressReporter: undefined,
         })
       );
       expect(mockLogger.hasLoggedMessage('Android app installed successfully', 'info')).toBe(true);
@@ -153,6 +164,15 @@ describe('AndroidInstallAppNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({});
+      const expectedApkPath = path.join(
+        '/path/to/project',
+        'app',
+        'build',
+        'outputs',
+        'apk',
+        'release',
+        'app-release.apk'
+      );
       expect(mockCommandRunner.execute).toHaveBeenCalledWith(
         'sf',
         [
@@ -166,12 +186,13 @@ describe('AndroidInstallAppNode', () => {
           '-t',
           'Pixel_8_API_34',
           '-a',
-          '/path/to/project/app/build/outputs/apk/release/app-release.apk',
+          expectedApkPath,
         ],
         expect.objectContaining({
           timeout: 300000,
           cwd: '/path/to/project',
           commandName: 'Android App Installation',
+          progressReporter: undefined,
         })
       );
     });
