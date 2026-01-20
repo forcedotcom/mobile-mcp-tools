@@ -50,5 +50,6 @@ export { AndroidLaunchAppNode } from './androidLaunchAppNode.js';
 // Android deployment routers
 export { CheckEmulatorFoundRouter } from './checkEmulatorFoundRouter.js';
 export { CheckEmulatorCreatedRouter } from './checkEmulatorCreatedRouter.js';
-export { CheckEmulatorStartedRouter } from './checkEmulatorStartedRouter.js';
-export { CheckAppInstalledRouter } from './checkAppInstalledRouter.js';
+
+// Generic fatal error router (replaces CheckEmulatorStartedRouter and CheckAppInstalledRouter)
+export { CheckFatalErrorsRouter } from './checkFatalErrorsRouter.js';

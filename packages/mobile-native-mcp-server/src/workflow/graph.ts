@@ -54,8 +54,7 @@ import {
   AndroidLaunchAppNode,
   CheckEmulatorFoundRouter,
   CheckEmulatorCreatedRouter,
-  CheckEmulatorStartedRouter,
-  CheckAppInstalledRouter,
+  CheckFatalErrorsRouter,
 } from './nodes/deployment/index.js';
 import { SFMOBILE_NATIVE_GET_INPUT_TOOL_ID } from '../tools/utils/sfmobile-native-get-input/metadata.js';
 import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../tools/utils/sfmobile-native-input-extraction/metadata.js';
@@ -174,14 +173,16 @@ export function createMobileNativeWorkflow(logger?: Logger) {
     failureNode.name
   );
 
-  const checkEmulatorStartedRouter = new CheckEmulatorStartedRouter(
+  const checkEmulatorStartedRouter = new CheckFatalErrorsRouter(
     androidInstallAppNode.name,
-    failureNode.name
+    failureNode.name,
+    'CheckEmulatorStartedRouter'
   );
 
-  const checkAppInstalledRouter = new CheckAppInstalledRouter(
+  const checkAppInstalledRouter = new CheckFatalErrorsRouter(
     androidLaunchAppNode.name,
-    failureNode.name
+    failureNode.name,
+    'CheckAppInstalledRouter'
   );
 
   return (
