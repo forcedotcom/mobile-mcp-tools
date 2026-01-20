@@ -197,3 +197,125 @@ export function selectBestSimulator(
   });
   return newestSimulator;
 }
+
+/**
+ * Verifies the simulator is actually responsive by running a simple command.
+ * This catches cases where the simulator is "Booted" but not yet accepting commands.
+ */
+export async function verifySimulatorResponsive(
+  commandRunner: CommandRunner,
+  deviceName: string,
+  progressReporter?: ProgressReporter
+): Promise<boolean> {
+  try {
+    const result = await commandRunner.execute(
+      'xcrun',
+      ['simctl', 'spawn', deviceName, 'launchctl', 'print', 'system'],
+      { timeout: 10000, progressReporter, commandName: 'Verify iOS Simulator Responsiveness' }
+    );
+    return result.success;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Waits for a simulator to be fully ready and responsive.
+ * Polls the simulator state and verifies it's actually accepting commands.
+ */
+export async function waitForSimulatorReady(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  deviceName: string,
+  options?: {
+    progressReporter?: ProgressReporter;
+    maxWaitTime?: number;
+    pollInterval?: number;
+  }
+): Promise<{ success: boolean; error?: string }> {
+  const maxWaitTime = options?.maxWaitTime ?? 120000;
+  const pollInterval = options?.pollInterval ?? 2000;
+  const startTime = Date.now();
+  let lastError: string | undefined;
+
+  logger.debug('Waiting for simulator to be ready', { deviceName, maxWaitTime });
+
+  while (Date.now() - startTime < maxWaitTime) {
+    const result = await fetchSimulatorDevices(commandRunner, logger, {
+      progressReporter: options?.progressReporter,
+      timeout: 10000,
+    });
+
+    if (!result.success) {
+      lastError = result.error;
+      logger.debug('Failed to list devices', { error: lastError });
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      continue;
+    }
+
+    const targetDevice = findSimulatorByName(result.devices, deviceName);
+
+    if (targetDevice?.state === 'Booted') {
+      // Verify simulator is actually responsive
+      const isResponsive = await verifySimulatorResponsive(
+        commandRunner,
+        deviceName,
+        options?.progressReporter
+      );
+
+      if (isResponsive) {
+        logger.debug('Simulator is responsive and ready', {
+          deviceName,
+          elapsedMs: Date.now() - startTime,
+        });
+        return { success: true };
+      }
+
+      logger.debug('Simulator booted but not yet responsive, continuing to wait');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  return {
+    success: false,
+    error: `Simulator "${deviceName}" did not become ready within ${maxWaitTime}ms. Last error: ${lastError ?? 'Unknown'}`,
+  };
+}
+
+/**
+ * Opens the Simulator.app GUI so the user can see the running simulator.
+ * Note: `simctl boot` boots the simulator headless; this opens the visual window.
+ * This is idempotent - if Simulator.app is already open, it just brings it to focus.
+ */
+export async function openSimulatorApp(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  progressReporter?: ProgressReporter
+): Promise<void> {
+  try {
+    logger.debug('Opening Simulator.app GUI');
+
+    const result = await commandRunner.execute('open', ['-a', 'Simulator'], {
+      timeout: 10000,
+      progressReporter,
+      commandName: 'Open Simulator App',
+    });
+
+    if (!result.success) {
+      // Non-fatal - simulator is still booted, user can open it manually
+      logger.warn('Failed to open Simulator.app GUI', {
+        stderr: result.stderr,
+        exitCode: result.exitCode,
+      });
+      return;
+    }
+
+    logger.debug('Simulator.app GUI opened successfully');
+  } catch (error) {
+    // Non-fatal - simulator is still booted, user can open it manually
+    logger.warn('Error opening Simulator.app GUI', {
+      error: error instanceof Error ? error.message : `${error}`,
+    });
+  }
+}

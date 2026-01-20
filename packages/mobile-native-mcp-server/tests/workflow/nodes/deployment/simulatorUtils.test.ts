@@ -12,6 +12,9 @@ import {
   findSimulatorByName,
   selectBestSimulator,
   parseIOSVersionToNumber,
+  verifySimulatorResponsive,
+  waitForSimulatorReady,
+  openSimulatorApp,
 } from '../../../../src/workflow/nodes/deployment/simulatorUtils.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
@@ -254,6 +257,255 @@ describe('simulatorUtils', () => {
       expect(parseIOSVersionToNumber('18.0')).toBe(18000);
       expect(parseIOSVersionToNumber('17.5')).toBe(17050);
       expect(parseIOSVersionToNumber('17.5.1')).toBe(17051);
+    });
+  });
+
+  describe('verifySimulatorResponsive', () => {
+    it('should return true when simulator is responsive', async () => {
+      const result: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: 'system output',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(result);
+
+      const isResponsive = await verifySimulatorResponsive(mockCommandRunner, 'iPhone 15 Pro');
+
+      expect(isResponsive).toBe(true);
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'xcrun',
+        ['simctl', 'spawn', 'iPhone 15 Pro', 'launchctl', 'print', 'system'],
+        expect.objectContaining({ timeout: 10000 })
+      );
+    });
+
+    it('should return false when simulator is not responsive', async () => {
+      const result: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'Not ready',
+        success: false,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(result);
+
+      const isResponsive = await verifySimulatorResponsive(mockCommandRunner, 'iPhone 15 Pro');
+
+      expect(isResponsive).toBe(false);
+    });
+
+    it('should return false when command throws', async () => {
+      vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('timeout'));
+
+      const isResponsive = await verifySimulatorResponsive(mockCommandRunner, 'iPhone 15 Pro');
+
+      expect(isResponsive).toBe(false);
+    });
+  });
+
+  describe('waitForSimulatorReady', () => {
+    it('should return success when simulator is booted and responsive', async () => {
+      const listDevicesResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          devices: {
+            'com.apple.CoreSimulator.SimRuntime.iOS-18-0': [
+              {
+                name: 'iPhone 15 Pro',
+                udid: 'test-udid',
+                state: 'Booted',
+                isAvailable: true,
+              },
+            ],
+          },
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      const verifyResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute)
+        .mockResolvedValueOnce(listDevicesResult)
+        .mockResolvedValueOnce(verifyResult);
+
+      const result = await waitForSimulatorReady(mockCommandRunner, mockLogger, 'iPhone 15 Pro', {
+        maxWaitTime: 5000,
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should return error when timeout exceeded', async () => {
+      const listDevicesResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          devices: {
+            'com.apple.CoreSimulator.SimRuntime.iOS-18-0': [
+              {
+                name: 'iPhone 15 Pro',
+                udid: 'test-udid',
+                state: 'Shutdown', // Not booted
+                isAvailable: true,
+              },
+            ],
+          },
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      vi.useFakeTimers();
+      vi.mocked(mockCommandRunner.execute).mockResolvedValue(listDevicesResult);
+
+      const resultPromise = waitForSimulatorReady(mockCommandRunner, mockLogger, 'iPhone 15 Pro', {
+        maxWaitTime: 1000,
+        pollInterval: 100,
+      });
+
+      await vi.advanceTimersByTimeAsync(2000);
+
+      const result = await resultPromise;
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('did not become ready');
+      vi.useRealTimers();
+    });
+
+    it('should poll until simulator is ready', async () => {
+      const listDevicesResultShutdown: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          devices: {
+            'com.apple.CoreSimulator.SimRuntime.iOS-18-0': [
+              {
+                name: 'iPhone 15 Pro',
+                udid: 'test-udid',
+                state: 'Shutdown',
+                isAvailable: true,
+              },
+            ],
+          },
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      const listDevicesResultBooted: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: JSON.stringify({
+          devices: {
+            'com.apple.CoreSimulator.SimRuntime.iOS-18-0': [
+              {
+                name: 'iPhone 15 Pro',
+                udid: 'test-udid',
+                state: 'Booted',
+                isAvailable: true,
+              },
+            ],
+          },
+        }),
+        stderr: '',
+        success: true,
+        duration: 500,
+      };
+
+      const verifyResult: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      vi.useFakeTimers();
+      vi.mocked(mockCommandRunner.execute)
+        .mockResolvedValueOnce(listDevicesResultShutdown)
+        .mockResolvedValueOnce(listDevicesResultBooted)
+        .mockResolvedValueOnce(verifyResult);
+
+      const resultPromise = waitForSimulatorReady(mockCommandRunner, mockLogger, 'iPhone 15 Pro', {
+        maxWaitTime: 10000,
+        pollInterval: 100,
+      });
+
+      await vi.advanceTimersByTimeAsync(500);
+
+      const result = await resultPromise;
+
+      expect(result.success).toBe(true);
+      vi.useRealTimers();
+    });
+  });
+
+  describe('openSimulatorApp', () => {
+    it('should successfully open Simulator.app', async () => {
+      const result: CommandResult = {
+        exitCode: 0,
+        signal: null,
+        stdout: '',
+        stderr: '',
+        success: true,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(result);
+
+      await openSimulatorApp(mockCommandRunner, mockLogger);
+
+      expect(mockCommandRunner.execute).toHaveBeenCalledWith(
+        'open',
+        ['-a', 'Simulator'],
+        expect.objectContaining({ timeout: 10000 })
+      );
+    });
+
+    it('should handle failure gracefully', async () => {
+      const result: CommandResult = {
+        exitCode: 1,
+        signal: null,
+        stdout: '',
+        stderr: 'Failed to open',
+        success: false,
+        duration: 100,
+      };
+
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(result);
+
+      // Should not throw
+      await openSimulatorApp(mockCommandRunner, mockLogger);
+
+      expect(mockLogger.hasLoggedMessage('Failed to open Simulator.app GUI', 'warn')).toBe(true);
+    });
+
+    it('should handle exception gracefully', async () => {
+      vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('timeout'));
+
+      // Should not throw
+      await openSimulatorApp(mockCommandRunner, mockLogger);
+
+      expect(mockLogger.hasLoggedMessage('Error opening Simulator.app GUI', 'warn')).toBe(true);
     });
   });
 });

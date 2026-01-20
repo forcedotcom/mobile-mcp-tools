@@ -261,7 +261,7 @@ describe('iOSBootSimulatorNode', () => {
       });
     });
 
-    it('should handle exception during boot', async () => {
+    it('should propagate exception during boot', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -269,11 +269,8 @@ describe('iOSBootSimulatorNode', () => {
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: ['Failed to boot iOS simulator "iPhone 15 Pro": Network error'],
-      });
+      // The refactored node lets exceptions bubble up (consistent with Android nodes)
+      await expect(node.execute(state)).rejects.toThrow('Network error');
     });
 
     it('should wait for simulator to be ready after boot', async () => {
