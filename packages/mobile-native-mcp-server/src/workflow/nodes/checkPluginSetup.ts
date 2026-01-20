@@ -9,6 +9,7 @@ import { State } from '../metadata.js';
 import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
 import z from 'zod';
 import { execSync } from 'child_process';
+import { gte } from 'semver';
 
 const PLUGIN_INFO_SCHEMA = z.object({
   name: z.string(),
@@ -18,8 +19,9 @@ const PLUGIN_INFO_SCHEMA = z.object({
 
 type PluginInfo = z.infer<typeof PLUGIN_INFO_SCHEMA>;
 
-const MINIMUM_PLUGIN_VERSION = '13.1.0';
+const MINIMUM_PLUGIN_VERSION = '13.2.0-alpha.1';
 const PLUGIN_NAME = 'sfdx-mobilesdk-plugin';
+const PLUGIN_INSTALL_TAG = '@alpha';
 
 export class PluginCheckNode extends BaseNode<State> {
   protected readonly logger: Logger;
@@ -95,27 +97,18 @@ export class PluginCheckNode extends BaseNode<State> {
   }
 
   private isVersionSufficient(version: string): boolean {
-    const parseVersion = (v: string): number[] => {
-      return v.split('.').map(part => parseInt(part, 10) || 0);
-    };
-
-    const current = parseVersion(version);
-    const minimum = parseVersion(MINIMUM_PLUGIN_VERSION);
-
-    for (let i = 0; i < Math.max(current.length, minimum.length); i++) {
-      const currentPart = current[i] || 0;
-      const minimumPart = minimum[i] || 0;
-
-      if (currentPart > minimumPart) return true;
-      if (currentPart < minimumPart) return false;
+    try {
+      return gte(version, MINIMUM_PLUGIN_VERSION);
+    } catch (error) {
+      // If version parsing fails, log and return false to be safe
+      this.logger.warn(`Failed to parse version for comparison: ${version}`, { error });
+      return false;
     }
-
-    return true; // versions are equal
   }
 
   private installPlugin(): Partial<State> {
     try {
-      const installCommand = `sf plugins install ${PLUGIN_NAME}`;
+      const installCommand = `sf plugins install ${PLUGIN_NAME}${PLUGIN_INSTALL_TAG}`;
       this.logger.debug(`Installing plugin`, { command: installCommand });
 
       execSync(installCommand, { encoding: 'utf-8', timeout: 60000 });
@@ -149,7 +142,8 @@ export class PluginCheckNode extends BaseNode<State> {
 
   private upgradePlugin(): Partial<State> {
     try {
-      const updateCommand = `sf plugins update ${PLUGIN_NAME}`;
+      // Use install with @alpha tag to ensure we get the alpha version
+      const updateCommand = `sf plugins install ${PLUGIN_NAME}${PLUGIN_INSTALL_TAG}`;
       this.logger.debug(`Upgrading plugin`, { command: updateCommand });
 
       execSync(updateCommand, { encoding: 'utf-8', timeout: 60000 });
