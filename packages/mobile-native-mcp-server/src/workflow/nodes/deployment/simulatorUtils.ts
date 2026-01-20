@@ -7,6 +7,8 @@
 
 import { z } from 'zod';
 import { CommandRunner, Logger, ProgressReporter } from '@salesforce/magen-mcp-workflow';
+import { readFile, readdir } from 'fs/promises';
+import { join } from 'path';
 
 /**
  * Zod schema for a single simulator device from simctl JSON output
@@ -318,4 +320,66 @@ export async function openSimulatorApp(
       error: error instanceof Error ? error.message : `${error}`,
     });
   }
+}
+
+/**
+ * Reads bundle ID from the Xcode project file.
+ * Reads PRODUCT_BUNDLE_IDENTIFIER from project.pbxproj file.
+ * @throws Error if bundle ID cannot be found or read from the project file
+ */
+export async function readBundleIdFromProject(
+  projectPath: string,
+  logger: Logger
+): Promise<string> {
+  // Find the .xcodeproj directory
+  let xcodeprojPath: string | null = null;
+  try {
+    const files = await readdir(projectPath);
+    for (const file of files) {
+      if (file.endsWith('.xcodeproj')) {
+        xcodeprojPath = join(projectPath, file, 'project.pbxproj');
+        break;
+      }
+    }
+  } catch (error) {
+    throw new Error(
+      `Failed to read project directory at ${projectPath}: ${error instanceof Error ? error.message : `${error}`}`
+    );
+  }
+
+  if (!xcodeprojPath) {
+    throw new Error(`No .xcodeproj directory found in project path: ${projectPath}`);
+  }
+
+  let content: string;
+  try {
+    content = await readFile(xcodeprojPath, 'utf-8');
+  } catch (error) {
+    throw new Error(
+      `Failed to read project.pbxproj file at ${xcodeprojPath}: ${error instanceof Error ? error.message : `${error}`}`
+    );
+  }
+
+  // Match PRODUCT_BUNDLE_IDENTIFIER patterns:
+  // PRODUCT_BUNDLE_IDENTIFIER = "com.example.app";
+  // PRODUCT_BUNDLE_IDENTIFIER = com.example.app;
+  // PRODUCT_BUNDLE_IDENTIFIER = "com.example.${PRODUCT_NAME:rfc1034identifier}";
+  const match = content.match(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*["']?([^"'\s;]+)["']?;/);
+  if (!match || !match[1]) {
+    throw new Error(`Could not find PRODUCT_BUNDLE_IDENTIFIER in project file: ${xcodeprojPath}`);
+  }
+
+  const bundleId = match[1];
+  // Check if it contains unresolved variables (we can't resolve them here)
+  if (bundleId.includes('${') || bundleId.includes('$(')) {
+    throw new Error(
+      `Bundle ID contains unresolved variables in project file ${xcodeprojPath}: ${bundleId}. The bundle identifier must be fully resolved.`
+    );
+  }
+
+  logger.debug('Found bundle ID in project file', {
+    file: xcodeprojPath,
+    bundleId,
+  });
+  return bundleId;
 }

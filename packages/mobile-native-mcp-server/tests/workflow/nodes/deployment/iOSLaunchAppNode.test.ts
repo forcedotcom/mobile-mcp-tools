@@ -205,7 +205,7 @@ describe('iOSLaunchAppNode', () => {
       });
     });
 
-    it('should handle error reading project directory', async () => {
+    it('should propagate error when reading project directory fails', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -216,16 +216,13 @@ describe('iOSLaunchAppNode', () => {
 
       vi.mocked(readdir).mockRejectedValue(new Error('Permission denied'));
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          'Failed to launch iOS app: Failed to read project directory at /path/to/project: Permission denied',
-        ],
-      });
+      // Errors from readBundleIdFromProject are propagated (consistent with refactored pattern)
+      await expect(node.execute(state)).rejects.toThrow(
+        'Failed to read project directory at /path/to/project: Permission denied'
+      );
     });
 
-    it('should handle error when no .xcodeproj found', async () => {
+    it('should propagate error when no .xcodeproj found', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -236,16 +233,12 @@ describe('iOSLaunchAppNode', () => {
 
       vi.mocked(readdir).mockResolvedValue(['somefile.txt'] as unknown as string[]);
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          'Failed to launch iOS app: No .xcodeproj directory found in project path: /path/to/project',
-        ],
-      });
+      await expect(node.execute(state)).rejects.toThrow(
+        'No .xcodeproj directory found in project path: /path/to/project'
+      );
     });
 
-    it('should handle error reading project.pbxproj', async () => {
+    it('should propagate error when reading project.pbxproj fails', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -257,16 +250,10 @@ describe('iOSLaunchAppNode', () => {
       vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
       vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          expect.stringContaining('Failed to read project.pbxproj file'),
-        ],
-      });
+      await expect(node.execute(state)).rejects.toThrow('Failed to read project.pbxproj file');
     });
 
-    it('should handle missing PRODUCT_BUNDLE_IDENTIFIER', async () => {
+    it('should propagate error when PRODUCT_BUNDLE_IDENTIFIER is missing', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -278,16 +265,10 @@ describe('iOSLaunchAppNode', () => {
       vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
       vi.mocked(readFile).mockResolvedValue('// No bundle identifier here');
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          expect.stringContaining('Could not find PRODUCT_BUNDLE_IDENTIFIER'),
-        ],
-      });
+      await expect(node.execute(state)).rejects.toThrow('Could not find PRODUCT_BUNDLE_IDENTIFIER');
     });
 
-    it('should handle bundle ID with unresolved variables', async () => {
+    it('should propagate error when bundle ID has unresolved variables', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -301,16 +282,10 @@ describe('iOSLaunchAppNode', () => {
         'PRODUCT_BUNDLE_IDENTIFIER = "com.test.${PRODUCT_NAME:rfc1034identifier}";'
       );
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          expect.stringContaining('Bundle ID contains unresolved variables'),
-        ],
-      });
+      await expect(node.execute(state)).rejects.toThrow('Bundle ID contains unresolved variables');
     });
 
-    it('should handle exception during launch', async () => {
+    it('should propagate exception during launch', async () => {
       const state = createTestState({
         platform: 'iOS',
         targetDevice: 'iPhone 15 Pro',
@@ -324,11 +299,8 @@ describe('iOSLaunchAppNode', () => {
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await node.execute(state);
-
-      expect(result).toEqual({
-        workflowFatalErrorMessages: ['Failed to launch iOS app: Network error'],
-      });
+      // Exceptions from command execution are propagated
+      await expect(node.execute(state)).rejects.toThrow('Network error');
     });
   });
 });

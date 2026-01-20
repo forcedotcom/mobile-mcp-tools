@@ -15,7 +15,18 @@ import {
   verifySimulatorResponsive,
   waitForSimulatorReady,
   openSimulatorApp,
+  readBundleIdFromProject,
 } from '../../../../src/workflow/nodes/deployment/simulatorUtils.js';
+import { readdir, readFile } from 'fs/promises';
+
+vi.mock('fs/promises', async importOriginal => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
+  return {
+    ...actual,
+    readdir: vi.fn(),
+    readFile: vi.fn(),
+  };
+});
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
 
@@ -28,6 +39,8 @@ describe('simulatorUtils', () => {
     mockCommandRunner = {
       execute: vi.fn(),
     };
+    vi.mocked(readdir).mockReset();
+    vi.mocked(readFile).mockReset();
     mockLogger.reset();
   });
 
@@ -506,6 +519,72 @@ describe('simulatorUtils', () => {
       await openSimulatorApp(mockCommandRunner, mockLogger);
 
       expect(mockLogger.hasLoggedMessage('Error opening Simulator.app GUI', 'warn')).toBe(true);
+    });
+  });
+
+  describe('readBundleIdFromProject', () => {
+    it('should read bundle ID from project.pbxproj', async () => {
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('PRODUCT_BUNDLE_IDENTIFIER = "com.test.app";');
+
+      const bundleId = await readBundleIdFromProject('/path/to/project', mockLogger);
+
+      expect(bundleId).toBe('com.test.app');
+      expect(mockLogger.hasLoggedMessage('Found bundle ID in project file', 'debug')).toBe(true);
+    });
+
+    it('should handle bundle ID without quotes', async () => {
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('PRODUCT_BUNDLE_IDENTIFIER = com.test.app;');
+
+      const bundleId = await readBundleIdFromProject('/path/to/project', mockLogger);
+
+      expect(bundleId).toBe('com.test.app');
+    });
+
+    it('should throw error when project directory cannot be read', async () => {
+      vi.mocked(readdir).mockRejectedValue(new Error('Permission denied'));
+
+      await expect(readBundleIdFromProject('/path/to/project', mockLogger)).rejects.toThrow(
+        'Failed to read project directory at /path/to/project: Permission denied'
+      );
+    });
+
+    it('should throw error when no .xcodeproj found', async () => {
+      vi.mocked(readdir).mockResolvedValue(['somefile.txt'] as unknown as string[]);
+
+      await expect(readBundleIdFromProject('/path/to/project', mockLogger)).rejects.toThrow(
+        'No .xcodeproj directory found in project path: /path/to/project'
+      );
+    });
+
+    it('should throw error when project.pbxproj cannot be read', async () => {
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockRejectedValue(new Error('File not found'));
+
+      await expect(readBundleIdFromProject('/path/to/project', mockLogger)).rejects.toThrow(
+        'Failed to read project.pbxproj file'
+      );
+    });
+
+    it('should throw error when PRODUCT_BUNDLE_IDENTIFIER is missing', async () => {
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue('// No bundle identifier here');
+
+      await expect(readBundleIdFromProject('/path/to/project', mockLogger)).rejects.toThrow(
+        'Could not find PRODUCT_BUNDLE_IDENTIFIER'
+      );
+    });
+
+    it('should throw error when bundle ID contains unresolved variables', async () => {
+      vi.mocked(readdir).mockResolvedValue(['TestApp.xcodeproj'] as unknown as string[]);
+      vi.mocked(readFile).mockResolvedValue(
+        'PRODUCT_BUNDLE_IDENTIFIER = "com.test.${PRODUCT_NAME:rfc1034identifier}";'
+      );
+
+      await expect(readBundleIdFromProject('/path/to/project', mockLogger)).rejects.toThrow(
+        'Bundle ID contains unresolved variables'
+      );
     });
   });
 });
