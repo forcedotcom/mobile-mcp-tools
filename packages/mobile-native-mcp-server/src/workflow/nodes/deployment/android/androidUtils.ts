@@ -92,3 +92,15 @@ export function readLaunchActivityFromManifest(
 
   return undefined;
 }
+
+/**
+ * Constructs the APK path based on standard Gradle output location.
+ * The path follows the pattern: app/build/outputs/apk/{buildType}/app-{buildType}.apk
+ *
+ * @param projectPath - The root path of the Android project
+ * @param buildType - The build type (e.g., 'debug', 'release'). Defaults to 'debug' if not provided.
+ * @returns The full path to the APK file
+ */
+export function getApkPath(projectPath: string, buildType: string = 'debug'): string {
+  return join(projectPath, 'app', 'build', 'outputs', 'apk', buildType, `app-${buildType}.apk`);
+}

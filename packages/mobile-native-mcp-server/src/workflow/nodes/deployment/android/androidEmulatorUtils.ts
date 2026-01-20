@@ -158,9 +158,11 @@ export async function fetchAndroidEmulators(
 /**
  * Selects the best emulator from the list.
  * Priority:
- * 1. Running emulator that is compatible
- * 2. Compatible emulator with highest API level
- * 3. Any emulator (fallback)
+ * 1. Compatible emulator with highest API level
+ * 2. Any emulator (fallback)
+ *
+ * Note: Running state detection is not currently available via SF CLI,
+ * so emulator selection is based on compatibility and API level only.
  */
 export function selectBestEmulator(
   emulators: AndroidEmulatorDeviceWithMetadata[],
@@ -170,21 +172,7 @@ export function selectBestEmulator(
     return null;
   }
 
-  // Priority 1: Find running compatible emulator
-  const runningCompatible = emulators.find(e => e.isRunning && e.isCompatible);
-  if (runningCompatible) {
-    logger.debug('Found running compatible emulator', { name: runningCompatible.name });
-    return runningCompatible;
-  }
-
-  // Priority 2: Find any running emulator
-  const running = emulators.find(e => e.isRunning);
-  if (running) {
-    logger.debug('Found running emulator (may not be compatible)', { name: running.name });
-    return running;
-  }
-
-  // Priority 3: Find compatible emulator with highest API level
+  // Priority 1: Find compatible emulator with highest API level
   const compatibleSorted = emulators
     .filter(e => e.isCompatible)
     .sort((a, b) => (b.apiLevel ?? 0) - (a.apiLevel ?? 0));
@@ -198,7 +186,7 @@ export function selectBestEmulator(
     return best;
   }
 
-  // Priority 4: Any emulator (fallback)
+  // Priority 2: Any emulator (fallback)
   const sortedByApiLevel = [...emulators].sort((a, b) => (b.apiLevel ?? 0) - (a.apiLevel ?? 0));
   const fallback = sortedByApiLevel[0];
   logger.debug('Selected fallback emulator', {

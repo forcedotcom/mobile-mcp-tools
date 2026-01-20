@@ -27,7 +27,11 @@ export {
 } from './androidEmulatorUtils.js';
 
 // Android project utilities
-export { readApplicationIdFromGradle, readLaunchActivityFromManifest } from './androidUtils.js';
+export {
+  readApplicationIdFromGradle,
+  readLaunchActivityFromManifest,
+  getApkPath,
+} from './androidUtils.js';
 
 // Android deployment nodes
 export { AndroidCreateEmulatorNode } from './androidCreateEmulatorNode.js';

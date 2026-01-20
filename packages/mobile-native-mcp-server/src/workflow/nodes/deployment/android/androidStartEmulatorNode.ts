@@ -8,9 +8,9 @@
 import {
   BaseNode,
   createComponentLogger,
-  Logger,
-  CommandRunner,
-  WorkflowRunnableConfig,
+  type Logger,
+  type CommandRunner,
+  type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { waitForEmulatorReady, startAndroidEmulator } from './androidEmulatorUtils.js';
@@ -46,40 +46,49 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
       };
     }
 
-    const emulatorName = state.androidEmulatorName;
-    const progressReporter = config?.configurable?.progressReporter;
+    try {
+      const emulatorName = state.androidEmulatorName;
+      const progressReporter = config?.configurable?.progressReporter;
 
-    const result = await startAndroidEmulator(this.commandRunner, this.logger, {
-      emulatorName,
-      projectPath: state.projectPath,
-      progressReporter,
-    });
+      const result = await startAndroidEmulator(this.commandRunner, this.logger, {
+        emulatorName,
+        projectPath: state.projectPath,
+        progressReporter,
+      });
 
-    if (!result.success) {
-      return {
-        workflowFatalErrorMessages: [result.error],
-      };
-    }
+      if (!result.success) {
+        return {
+          workflowFatalErrorMessages: [result.error],
+        };
+      }
 
-    // Wait for emulator to be fully ready
-    this.logger.debug('Waiting for emulator to be fully ready');
-    const readyResult = await waitForEmulatorReady(this.commandRunner, this.logger, {
-      progressReporter,
-      maxWaitTime: 120000,
-      pollInterval: 3000,
-    });
+      if (result.wasAlreadyRunning) {
+        this.logger.debug('Emulator was already running', { emulatorName });
+      }
 
-    if (!readyResult.success) {
+      // Wait for emulator to be fully ready
+      const readyResult = await waitForEmulatorReady(this.commandRunner, this.logger, {
+        progressReporter,
+        maxWaitTime: 120000,
+        pollInterval: 3000,
+      });
+
+      if (!readyResult.success) {
+        return {
+          workflowFatalErrorMessages: [readyResult.error ?? 'Emulator did not become ready'],
+        };
+      }
+
+      return {};
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `${error}`;
       this.logger.error(
-        'Emulator did not become ready',
-        new Error(readyResult.error ?? 'Unknown error')
+        'Error starting Android emulator',
+        error instanceof Error ? error : new Error(errorMessage)
       );
       return {
-        workflowFatalErrorMessages: [readyResult.error ?? 'Emulator did not become ready'],
+        workflowFatalErrorMessages: [`Failed to start Android emulator: ${errorMessage}`],
       };
     }
-
-    this.logger.info('Android emulator started successfully and ready', { emulatorName });
-    return {};
   };
 }

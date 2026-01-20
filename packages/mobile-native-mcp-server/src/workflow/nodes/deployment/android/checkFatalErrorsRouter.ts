@@ -43,9 +43,9 @@ export class CheckFatalErrorsRouter {
   execute = (state: State): string => {
     // If there are fatal error messages, route to failure
     if (state.workflowFatalErrorMessages && state.workflowFatalErrorMessages.length > 0) {
-      this.logger.error(
-        `Fatal errors detected, routing to ${this.failureNodeName}: ${state.workflowFatalErrorMessages.join(', ')}`
-      );
+      this.logger.warn(`Fatal errors detected, routing to ${this.failureNodeName}`, {
+        errorMessages: state.workflowFatalErrorMessages,
+      });
       return this.failureNodeName;
     }
 

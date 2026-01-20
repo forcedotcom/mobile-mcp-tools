@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import path from 'node:path';
 import { AndroidInstallAppNode } from '../../../../src/workflow/nodes/deployment/android/androidInstallAppNode.js';
+import { getApkPath } from '../../../../src/workflow/nodes/deployment/android/androidUtils.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
@@ -108,15 +108,7 @@ describe('AndroidInstallAppNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({});
-      const expectedApkPath = path.join(
-        '/path/to/project',
-        'app',
-        'build',
-        'outputs',
-        'apk',
-        'debug',
-        'app-debug.apk'
-      );
+      const expectedApkPath = getApkPath('/path/to/project', 'debug');
       expect(mockCommandRunner.execute).toHaveBeenCalledWith(
         'sf',
         [
@@ -164,15 +156,7 @@ describe('AndroidInstallAppNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({});
-      const expectedApkPath = path.join(
-        '/path/to/project',
-        'app',
-        'build',
-        'outputs',
-        'apk',
-        'release',
-        'app-release.apk'
-      );
+      const expectedApkPath = getApkPath('/path/to/project', 'release');
       expect(mockCommandRunner.execute).toHaveBeenCalledWith(
         'sf',
         [

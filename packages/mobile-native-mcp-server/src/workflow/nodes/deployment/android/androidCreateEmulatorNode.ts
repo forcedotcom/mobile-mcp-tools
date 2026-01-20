@@ -8,9 +8,9 @@
 import {
   BaseNode,
   createComponentLogger,
-  Logger,
-  CommandRunner,
-  WorkflowRunnableConfig,
+  type Logger,
+  type CommandRunner,
+  type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { PLATFORM_API_LEVELS } from '../checkPlatformSetup.js';
@@ -40,27 +40,38 @@ export class AndroidCreateEmulatorNode extends BaseNode<State> {
       return {};
     }
 
-    // Generate a unique emulator name based on project name
-    const projectName = state.projectName ?? 'App';
-    const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '_');
-    const apiLevel = PLATFORM_API_LEVELS.Android;
-    const emulatorName = `Pixel_API_${apiLevel}_${sanitizedProjectName}`;
+    try {
+      // Generate a unique emulator name based on project name
+      const projectName = state.projectName ?? 'App';
+      const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '_');
+      const apiLevel = PLATFORM_API_LEVELS.Android;
+      const emulatorName = `Pixel_API_${apiLevel}_${sanitizedProjectName}`;
 
-    const progressReporter = config?.configurable?.progressReporter;
+      const progressReporter = config?.configurable?.progressReporter;
 
-    const result = await createAndroidEmulator(this.commandRunner, this.logger, {
-      emulatorName,
-      apiLevel,
-      projectPath: state.projectPath,
-      progressReporter,
-    });
+      const result = await createAndroidEmulator(this.commandRunner, this.logger, {
+        emulatorName,
+        apiLevel,
+        projectPath: state.projectPath,
+        progressReporter,
+      });
 
-    if (!result.success) {
+      if (!result.success) {
+        return {
+          workflowFatalErrorMessages: [result.error],
+        };
+      }
+
+      return { androidEmulatorName: result.emulatorName };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `${error}`;
+      this.logger.error(
+        'Error creating Android emulator',
+        error instanceof Error ? error : new Error(errorMessage)
+      );
       return {
-        workflowFatalErrorMessages: [result.error],
+        workflowFatalErrorMessages: [`Failed to create Android emulator: ${errorMessage}`],
       };
     }
-
-    return { androidEmulatorName: result.emulatorName };
   };
 }

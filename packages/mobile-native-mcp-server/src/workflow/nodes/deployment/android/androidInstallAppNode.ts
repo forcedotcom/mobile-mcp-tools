@@ -5,16 +5,16 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import path from 'node:path';
 import {
   BaseNode,
   createComponentLogger,
-  Logger,
-  CommandRunner,
-  WorkflowRunnableConfig,
+  type Logger,
+  type CommandRunner,
+  type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { installAndroidApp } from './androidEmulatorUtils.js';
+import { getApkPath } from './androidUtils.js';
 
 /**
  * Installs the Android app using Salesforce CLI (sf force lightning local app install).
@@ -42,50 +42,45 @@ export class AndroidInstallAppNode extends BaseNode<State> {
       };
     }
 
-    const targetDevice = state.targetDevice ?? state.androidEmulatorName;
+    const targetDevice = state.androidEmulatorName;
     if (!targetDevice) {
-      this.logger.warn('No target device specified for app installation');
+      this.logger.warn('No emulator name specified for app installation');
       return {
         workflowFatalErrorMessages: [
-          'Target device or emulator must be specified for Android deployment',
+          'Emulator name must be specified for Android deployment. Ensure AndroidSelectEmulatorNode ran successfully.',
         ],
       };
     }
 
-    const buildType = state.buildType ?? 'debug';
-    // Construct the APK path based on standard Gradle output location
-    const apkPath = path.join(
-      state.projectPath,
-      'app',
-      'build',
-      'outputs',
-      'apk',
-      buildType,
-      `app-${buildType}.apk`
-    );
+    try {
+      const buildType = state.buildType ?? 'debug';
+      const apkPath = getApkPath(state.projectPath, buildType);
 
-    this.logger.debug('Installing Android app using sf CLI', {
-      projectPath: state.projectPath,
-      buildType,
-      targetDevice,
-      apkPath,
-    });
+      const progressReporter = config?.configurable?.progressReporter;
 
-    const progressReporter = config?.configurable?.progressReporter;
+      const result = await installAndroidApp(this.commandRunner, this.logger, {
+        apkPath,
+        targetDevice,
+        projectPath: state.projectPath,
+        progressReporter,
+      });
 
-    const result = await installAndroidApp(this.commandRunner, this.logger, {
-      apkPath,
-      targetDevice,
-      projectPath: state.projectPath,
-      progressReporter,
-    });
+      if (!result.success) {
+        return {
+          workflowFatalErrorMessages: [result.error],
+        };
+      }
 
-    if (!result.success) {
+      return {};
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `${error}`;
+      this.logger.error(
+        'Error installing Android app',
+        error instanceof Error ? error : new Error(errorMessage)
+      );
       return {
-        workflowFatalErrorMessages: [result.error],
+        workflowFatalErrorMessages: [`Failed to install Android app: ${errorMessage}`],
       };
     }
-
-    return {};
   };
 }

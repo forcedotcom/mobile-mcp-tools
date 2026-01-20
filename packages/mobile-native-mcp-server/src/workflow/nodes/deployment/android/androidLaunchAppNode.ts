@@ -8,9 +8,9 @@
 import {
   BaseNode,
   createComponentLogger,
-  Logger,
-  CommandRunner,
-  WorkflowRunnableConfig,
+  type Logger,
+  type CommandRunner,
+  type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { readApplicationIdFromGradle, readLaunchActivityFromManifest } from './androidUtils.js';
@@ -82,26 +82,37 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
       };
     }
 
-    // Construct the launch intent in format: packageId/activityClass
-    const launchIntent = `${applicationId}/${activityClass}`;
+    try {
+      // Construct the launch intent in format: packageId/activityClass
+      const launchIntent = `${applicationId}/${activityClass}`;
 
-    const progressReporter = config?.configurable?.progressReporter;
+      const progressReporter = config?.configurable?.progressReporter;
 
-    const result = await launchAndroidApp(this.commandRunner, this.logger, {
-      launchIntent,
-      targetDevice,
-      applicationId,
-      progressReporter,
-    });
+      const result = await launchAndroidApp(this.commandRunner, this.logger, {
+        launchIntent,
+        targetDevice,
+        applicationId,
+        progressReporter,
+      });
 
-    if (!result.success) {
+      if (!result.success) {
+        return {
+          workflowFatalErrorMessages: [result.error],
+        };
+      }
+
       return {
-        workflowFatalErrorMessages: [result.error],
+        deploymentStatus: 'success',
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `${error}`;
+      this.logger.error(
+        'Error launching Android app',
+        error instanceof Error ? error : new Error(errorMessage)
+      );
+      return {
+        workflowFatalErrorMessages: [`Failed to launch Android app: ${errorMessage}`],
       };
     }
-
-    return {
-      deploymentStatus: 'success',
-    };
   };
 }

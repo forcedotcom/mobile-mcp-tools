@@ -6,7 +6,7 @@
  */
 
 import { State } from '../../metadata.js';
-import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
+import { createComponentLogger, type Logger } from '@salesforce/magen-mcp-workflow';
 
 /**
  * Router node that determines the next step after Android emulator listing.
@@ -18,11 +18,23 @@ import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
 export class CheckEmulatorFoundRouter {
   private readonly androidStartEmulatorNodeName: string;
   private readonly androidCreateEmulatorNodeName: string;
-  private readonly logger = createComponentLogger('CheckEmulatorFoundRouter');
+  private readonly logger: Logger;
 
-  constructor(androidStartEmulatorNodeName: string, androidCreateEmulatorNodeName: string) {
+  /**
+   * Creates a new CheckEmulatorFoundRouter.
+   *
+   * @param androidStartEmulatorNodeName - The name of the node to route to when an emulator is found
+   * @param androidCreateEmulatorNodeName - The name of the node to route to when no emulator is found
+   * @param routerName - Optional name for this router instance (used in logging)
+   */
+  constructor(
+    androidStartEmulatorNodeName: string,
+    androidCreateEmulatorNodeName: string,
+    routerName = 'CheckEmulatorFoundRouter'
+  ) {
     this.androidStartEmulatorNodeName = androidStartEmulatorNodeName;
     this.androidCreateEmulatorNodeName = androidCreateEmulatorNodeName;
+    this.logger = createComponentLogger(routerName);
   }
 
   execute = (state: State): string => {

@@ -8,9 +8,9 @@
 import {
   BaseNode,
   createComponentLogger,
-  Logger,
-  CommandRunner,
-  WorkflowRunnableConfig,
+  type Logger,
+  type CommandRunner,
+  type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { fetchAndroidEmulators, selectBestEmulator } from './androidEmulatorUtils.js';
@@ -49,35 +49,48 @@ export class AndroidSelectEmulatorNode extends BaseNode<State> {
       return {};
     }
 
-    this.logger.debug('Selecting Android emulator device');
+    try {
+      this.logger.debug('Selecting Android emulator device');
 
-    const progressReporter = config?.configurable?.progressReporter;
+      const progressReporter = config?.configurable?.progressReporter;
 
-    // Fetch available emulators
-    const result = await fetchAndroidEmulators(this.commandRunner, this.logger, {
-      progressReporter,
-    });
+      // Fetch available emulators
+      const result = await fetchAndroidEmulators(this.commandRunner, this.logger, {
+        progressReporter,
+      });
 
-    if (!result.success) {
-      this.logger.error('Failed to list Android emulators', new Error(result.error));
+      if (!result.success) {
+        this.logger.error('Failed to list Android emulators', new Error(result.error));
+        return {
+          workflowFatalErrorMessages: [
+            `Failed to list Android emulators: ${result.error}. Please ensure Android SDK is properly installed.`,
+          ],
+        };
+      }
+
+      // Select best emulator using shared utility
+      const selectedEmulator = selectBestEmulator(result.emulators, this.logger);
+
+      if (!selectedEmulator) {
+        this.logger.warn('No emulators found, will create one');
+        return {};
+      }
+
+      this.logger.info('Selected Android emulator', {
+        androidEmulatorName: selectedEmulator.name,
+      });
+      return { androidEmulatorName: selectedEmulator.name };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `${error}`;
+      this.logger.error(
+        'Error selecting Android emulator',
+        error instanceof Error ? error : new Error(errorMessage)
+      );
       return {
         workflowFatalErrorMessages: [
-          `Failed to list Android emulators: ${result.error}. Please ensure Android SDK is properly installed.`,
+          `Failed to select Android emulator: ${errorMessage}. Please ensure Android SDK is properly installed.`,
         ],
       };
     }
-
-    // Select best emulator using shared utility
-    const selectedEmulator = selectBestEmulator(result.emulators, this.logger);
-
-    if (!selectedEmulator) {
-      this.logger.warn('No emulators found, will create one');
-      return {};
-    }
-
-    this.logger.info('Selected Android emulator', {
-      androidEmulatorName: selectedEmulator.name,
-    });
-    return { androidEmulatorName: selectedEmulator.name };
   };
 }
