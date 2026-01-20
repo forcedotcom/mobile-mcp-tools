@@ -31,7 +31,7 @@ const PLATFORM_CHECK_SCHEMA = z.object({
 
 type PlatformCheckResult = z.infer<typeof PLATFORM_CHECK_SCHEMA>;
 
-const PLATFORM_API_LEVELS = {
+export const PLATFORM_API_LEVELS = {
   iOS: '17.0',
   Android: '35',
 } as const;

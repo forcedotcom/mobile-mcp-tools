@@ -27,7 +27,6 @@ export {
   type AndroidEmulatorDeviceWithMetadata,
   type FetchAndroidEmulatorsResult,
   fetchAndroidEmulators,
-  extractApiLevelFromName,
   selectBestEmulator,
   findEmulatorByName,
   hasCompatibleEmulator,
@@ -40,8 +39,16 @@ export { iOSBootSimulatorNode } from './iOSBootSimulatorNode.js';
 export { iOSInstallAppNode } from './iOSInstallAppNode.js';
 export { iOSLaunchAppNode } from './iOSLaunchAppNode.js';
 
+// Android deployment nodes
+export { AndroidCreateEmulatorNode } from './androidCreateEmulatorNode.js';
 // Android deployment nodes (same pattern as iOS - no emulator creation)
 export { AndroidSelectEmulatorNode } from './androidSelectEmulatorNode.js';
 export { AndroidStartEmulatorNode } from './androidStartEmulatorNode.js';
 export { AndroidInstallAppNode } from './androidInstallAppNode.js';
 export { AndroidLaunchAppNode } from './androidLaunchAppNode.js';
+
+// Android deployment routers
+export { CheckEmulatorFoundRouter } from './checkEmulatorFoundRouter.js';
+export { CheckEmulatorCreatedRouter } from './checkEmulatorCreatedRouter.js';
+export { CheckEmulatorStartedRouter } from './checkEmulatorStartedRouter.js';
+export { CheckAppInstalledRouter } from './checkAppInstalledRouter.js';

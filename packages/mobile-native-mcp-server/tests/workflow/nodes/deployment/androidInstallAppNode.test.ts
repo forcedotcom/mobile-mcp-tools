@@ -90,6 +90,7 @@ describe('AndroidInstallAppNode', () => {
         platform: 'Android',
         projectPath: '/path/to/project',
         buildType: 'debug',
+        androidEmulatorName: 'Pixel_8_API_34',
       });
 
       const installResult: CommandResult = {
@@ -106,14 +107,21 @@ describe('AndroidInstallAppNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({});
-      const isWindows = process.platform === 'win32';
-      const expectedCommand = isWindows ? 'cmd' : 'sh';
-      const expectedArgs = isWindows
-        ? ['/c', 'gradlew.bat installDebug']
-        : ['-c', './gradlew installDebug'];
       expect(mockCommandRunner.execute).toHaveBeenCalledWith(
-        expectedCommand,
-        expectedArgs,
+        'sf',
+        [
+          'force',
+          'lightning',
+          'local',
+          'app',
+          'install',
+          '-p',
+          'android',
+          '-t',
+          'Pixel_8_API_34',
+          '-a',
+          '/path/to/project/app/build/outputs/apk/debug/app-debug.apk',
+        ],
         expect.objectContaining({
           timeout: 300000,
           cwd: '/path/to/project',
@@ -128,6 +136,7 @@ describe('AndroidInstallAppNode', () => {
         platform: 'Android',
         projectPath: '/path/to/project',
         buildType: 'release',
+        androidEmulatorName: 'Pixel_8_API_34',
       });
 
       const installResult: CommandResult = {
@@ -144,14 +153,21 @@ describe('AndroidInstallAppNode', () => {
       const result = await node.execute(state);
 
       expect(result).toEqual({});
-      const isWindows = process.platform === 'win32';
-      const expectedCommand = isWindows ? 'cmd' : 'sh';
-      const expectedArgs = isWindows
-        ? ['/c', 'gradlew.bat installRelease']
-        : ['-c', './gradlew installRelease'];
       expect(mockCommandRunner.execute).toHaveBeenCalledWith(
-        expectedCommand,
-        expectedArgs,
+        'sf',
+        [
+          'force',
+          'lightning',
+          'local',
+          'app',
+          'install',
+          '-p',
+          'android',
+          '-t',
+          'Pixel_8_API_34',
+          '-a',
+          '/path/to/project/app/build/outputs/apk/release/app-release.apk',
+        ],
         expect.objectContaining({
           timeout: 300000,
           cwd: '/path/to/project',
@@ -165,6 +181,7 @@ describe('AndroidInstallAppNode', () => {
         platform: 'Android',
         projectPath: '/path/to/project',
         buildType: 'debug',
+        androidEmulatorName: 'Pixel_8_API_34',
       });
 
       const installResult: CommandResult = {
@@ -190,6 +207,7 @@ describe('AndroidInstallAppNode', () => {
         platform: 'Android',
         projectPath: '/path/to/project',
         buildType: 'debug',
+        androidEmulatorName: 'Pixel_8_API_34',
       });
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));

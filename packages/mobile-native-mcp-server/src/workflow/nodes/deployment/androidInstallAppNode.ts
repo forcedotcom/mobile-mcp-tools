@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
+import path from 'node:path';
 import {
   BaseNode,
   createComponentLogger,
@@ -15,7 +16,7 @@ import {
 import { State } from '../../metadata.js';
 
 /**
- * Installs the Android app using Gradle.
+ * Installs the Android app using Salesforce CLI (sf force lightning local app install).
  */
 export class AndroidInstallAppNode extends BaseNode<State> {
   protected readonly logger: Logger;
@@ -40,31 +41,53 @@ export class AndroidInstallAppNode extends BaseNode<State> {
       };
     }
 
+    const targetDevice = state.targetDevice ?? state.androidEmulatorName;
+    if (!targetDevice) {
+      this.logger.warn('No target device specified for app installation');
+      return {
+        workflowFatalErrorMessages: [
+          'Target device or emulator must be specified for Android deployment',
+        ],
+      };
+    }
+
     const buildType = state.buildType ?? 'debug';
-    const gradleTask = `install${buildType === 'release' ? 'Release' : 'Debug'}`;
+    // Construct the APK path based on standard Gradle output location
+    const apkPath = path.join(
+      state.projectPath,
+      'app',
+      'build',
+      'outputs',
+      'apk',
+      buildType,
+      `app-${buildType}.apk`
+    );
 
     try {
-      this.logger.debug('Installing Android app', {
+      this.logger.debug('Installing Android app using sf CLI', {
         projectPath: state.projectPath,
         buildType,
-        gradleTask,
+        targetDevice,
+        apkPath,
       });
 
       const progressReporter = config?.configurable?.progressReporter;
-
-      // Determine gradle wrapper command (gradlew or gradlew.bat)
-      const isWindows = process.platform === 'win32';
-      const gradleCommand = isWindows ? 'gradlew.bat' : './gradlew';
-
-      // We use shell execution (sh -c / cmd /c) here because ./gradlew requires
-      // shell interpretation for the "./" prefix on Unix systems. Direct execution
-      // via commandRunner.execute('./gradlew', [...]) would fail without shell.
       const GRADLE_INSTALL_TIMEOUT_MS = 300000; // 5 minutes for installation
       const result = await this.commandRunner.execute(
-        isWindows ? 'cmd' : 'sh',
-        isWindows
-          ? ['/c', `${gradleCommand} ${gradleTask}`]
-          : ['-c', `${gradleCommand} ${gradleTask}`],
+        'sf',
+        [
+          'force',
+          'lightning',
+          'local',
+          'app',
+          'install',
+          '-p',
+          'android',
+          '-t',
+          targetDevice,
+          '-a',
+          apkPath,
+        ],
         {
           timeout: GRADLE_INSTALL_TIMEOUT_MS,
           cwd: state.projectPath,
@@ -90,7 +113,8 @@ export class AndroidInstallAppNode extends BaseNode<State> {
 
       this.logger.info('Android app installed successfully', {
         buildType,
-        gradleTask,
+        targetDevice,
+        apkPath,
       });
       return {};
     } catch (error) {

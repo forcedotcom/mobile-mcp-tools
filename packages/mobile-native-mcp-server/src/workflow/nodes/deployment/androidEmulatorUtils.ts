@@ -37,8 +37,51 @@ export type FetchAndroidEmulatorsResult =
   | { success: false; error: string };
 
 /**
+ * Zod schema for OS version from SF CLI output (can be string or object)
+ */
+const SFOsVersionSchema = z.union([
+  z.string(),
+  z.object({
+    major: z.number(),
+    minor: z.number(),
+    patch: z.number(),
+  }),
+]);
+
+/**
+ * Zod schema for a single Android device from SF CLI output.
+ * Based on the outputSchema from `sf force lightning local device list -p android --json`
+ */
+export const SFAndroidDeviceSchema = z.object({
+  /** The ID of the device */
+  id: z.string(),
+  /** The name of the device */
+  name: z.string(),
+  /** The type of the device */
+  deviceType: z.string(),
+  /** The type of the operating system */
+  osType: z.string(),
+  /** The version of the operating system */
+  osVersion: SFOsVersionSchema,
+  /** Whether the android device has google Play Store enabled */
+  isPlayStore: z.boolean().optional(),
+  /** The port number the android device is running on */
+  port: z.number().optional(),
+});
+
+export type SFAndroidDevice = z.infer<typeof SFAndroidDeviceSchema>;
+
+/**
+ * Zod schema for the SF CLI device list JSON output
+ */
+const SFDeviceListOutputSchema = z.object({
+  outputSchema: z.unknown().optional(),
+  outputContent: z.array(SFAndroidDeviceSchema),
+});
+
+/**
  * Fetches and parses the list of available Android emulators.
- * Uses `emulator -list-avds` for available emulators and `adb devices` for running state.
+ * Uses `sf force lightning local device list -p android --json` command.
  */
 export async function fetchAndroidEmulators(
   commandRunner: CommandRunner,
@@ -52,92 +95,54 @@ export async function fetchAndroidEmulators(
   const timeout = options?.timeout ?? 30000;
   const minSdk = options?.minSdk ?? 0;
 
-  // First, get the list of available AVDs using emulator command
-  const avdListResult = await commandRunner.execute('emulator', ['-list-avds'], {
-    timeout,
-    progressReporter: options?.progressReporter,
-    commandName: 'List Android Emulators',
-  });
-
-  if (!avdListResult.success) {
-    // Try fallback using avdmanager
-    const avdManagerResult = await commandRunner.execute('avdmanager', ['list', 'avd', '-c'], {
+  // Use SF CLI to list Android devices
+  const result = await commandRunner.execute(
+    'sf',
+    ['force', 'lightning', 'local', 'device', 'list', '-p', 'android', '--json', '-o', 'all'],
+    {
       timeout,
       progressReporter: options?.progressReporter,
-      commandName: 'List Android Emulators (AVD Manager)',
-    });
-
-    if (!avdManagerResult.success) {
-      const errorMessage =
-        avdListResult.stderr ||
-        avdManagerResult.stderr ||
-        `Failed to list emulators: exit code ${avdListResult.exitCode ?? 'unknown'}`;
-      return { success: false, error: errorMessage };
+      commandName: 'List Android Devices',
     }
+  );
 
-    return parseEmulatorListAndEnrich(
-      avdManagerResult.stdout,
-      commandRunner,
-      logger,
-      minSdk,
-      options
-    );
+  if (!result.success) {
+    const errorMessage =
+      result.stderr || `Failed to list Android devices: exit code ${result.exitCode ?? 'unknown'}`;
+    return { success: false, error: errorMessage };
   }
 
-  return parseEmulatorListAndEnrich(avdListResult.stdout, commandRunner, logger, minSdk, options);
-}
-
-/**
- * Parses the emulator list output and enriches with running state
- */
-async function parseEmulatorListAndEnrich(
-  stdout: string,
-  commandRunner: CommandRunner,
-  logger: Logger,
-  minSdk: number,
-  options?: {
-    progressReporter?: ProgressReporter;
-    timeout?: number;
+  // Parse and validate JSON output using Zod schema
+  let devices: SFAndroidDevice[];
+  try {
+    const jsonData = JSON.parse(result.stdout);
+    const parsed = SFDeviceListOutputSchema.parse(jsonData);
+    devices = parsed.outputContent;
+  } catch (parseError) {
+    const errorMsg = parseError instanceof Error ? parseError.message : String(parseError);
+    logger.error('Failed to parse SF CLI JSON output', new Error(errorMsg));
+    return { success: false, error: `Failed to parse device list JSON: ${errorMsg}` };
   }
-): Promise<FetchAndroidEmulatorsResult> {
-  const timeout = options?.timeout ?? 30000;
-
-  // Parse emulator names from output (one per line)
-  const emulatorNames = stdout
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0 && !line.startsWith('INFO'));
-
-  if (emulatorNames.length === 0) {
-    logger.debug('No emulators found');
+  if (!devices || devices.length === 0) {
+    logger.debug('No Android devices found');
     return { success: true, emulators: [] };
   }
 
-  // Get running emulator list from adb
-  const runningEmulators = await getRunningEmulators(
-    commandRunner,
-    logger,
-    timeout,
-    options?.progressReporter
-  );
-
-  // Build emulator device list with metadata
-  const emulators: AndroidEmulatorDeviceWithMetadata[] = emulatorNames.map(name => {
-    // Extract API level from emulator name (e.g., "pixel-28" -> 28)
-    const apiLevel = extractApiLevelFromName(name);
+  // Map SF CLI output to AndroidEmulatorDeviceWithMetadata
+  const emulators: AndroidEmulatorDeviceWithMetadata[] = devices.map(device => {
+    // Extract API level from osVersion (use major version if object, otherwise undefined)
+    const apiLevel = typeof device.osVersion === 'object' ? device.osVersion.major : undefined;
 
     return {
-      name,
+      name: device.id, // Use id as the device name for emulator commands
       apiLevel,
-      // Note: adb devices returns serial like "emulator-5554", not the AVD name.
-      // We check if any emulator is running since we can't reliably map serial to AVD name.
-      // The selectBestEmulator function will prefer running emulators regardless.
-      isRunning: runningEmulators.length > 0,
-      isCompatible: apiLevel !== undefined ? apiLevel >= minSdk : true,
+      // Note: We no longer check if the emulator is running since we are using the SF CLI to start the emulator. Once the emulator is selected, sf command can start it regardless of its state.
+      isRunning: false, // Cannot be inferred from SF CLI output
+      isCompatible: apiLevel === undefined ? true : apiLevel >= minSdk,
     };
   });
 
-  logger.debug('Parsed Android emulators', {
+  logger.debug('Parsed Android emulators from SF CLI', {
     count: emulators.length,
     emulators: emulators.map(e => ({
       name: e.name,
@@ -148,72 +153,6 @@ async function parseEmulatorListAndEnrich(
   });
 
   return { success: true, emulators };
-}
-
-/**
- * Gets the list of running emulators from adb devices
- */
-async function getRunningEmulators(
-  commandRunner: CommandRunner,
-  logger: Logger,
-  timeout: number,
-  progressReporter?: ProgressReporter
-): Promise<string[]> {
-  const result = await commandRunner.execute('adb', ['devices'], {
-    timeout,
-    progressReporter,
-    commandName: 'Check Running Android Devices',
-  });
-
-  if (!result.success) {
-    logger.debug('Failed to get running emulators from adb', {
-      stderr: result.stderr,
-    });
-    return [];
-  }
-
-  // Parse adb devices output:
-  // List of devices attached
-  // emulator-5554   device
-  const lines = result.stdout.split('\n');
-  const runningDevices: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('emulator-') && trimmed.includes('device')) {
-      // Get the emulator serial (e.g., "emulator-5554")
-      const parts = trimmed.split(/\s+/);
-      if (parts.length >= 2) {
-        runningDevices.push(parts[0]);
-      }
-    }
-  }
-
-  logger.debug('Found running emulators', { runningDevices });
-  return runningDevices;
-}
-
-/**
- * Extracts API level from emulator name.
- * Handles patterns like:
- * - "pixel-28" -> 28
- * - "Pixel_3a_API_30" -> 30
- * - "Nexus_5X_API_28_x86" -> 28
- */
-export function extractApiLevelFromName(name: string): number | undefined {
-  // Try pattern: "pixel-28" or similar with hyphen
-  const hyphenMatch = name.match(/-(\d+)$/);
-  if (hyphenMatch) {
-    return parseInt(hyphenMatch[1], 10);
-  }
-
-  // Try pattern: "API_28" or "API28"
-  const apiMatch = name.match(/API[_]?(\d+)/i);
-  if (apiMatch) {
-    return parseInt(apiMatch[1], 10);
-  }
-
-  return undefined;
 }
 
 /**

@@ -83,66 +83,65 @@ describe('AndroidSelectEmulatorNode', () => {
       expect(mockLogger.hasLoggedMessage('Android emulator already set', 'debug')).toBe(true);
     });
 
-    it('should select running emulator when available', async () => {
+    it('should select emulator with highest API level', async () => {
       const state = createTestState({
         platform: 'Android',
         androidEmulatorName: undefined,
       });
 
-      const listEmulatorsResult: CommandResult = {
+      const sfDeviceListResult: CommandResult = {
         exitCode: 0,
         signal: null,
-        stdout: 'Pixel_8_API_34\nPixel_7_API_33',
+        stdout: JSON.stringify({
+          outputContent: [
+            {
+              id: 'Pixel_8_API_34',
+              name: 'Pixel 8 API 34',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: { major: 34, minor: 0, patch: 0 },
+              isPlayStore: false,
+              port: -1,
+            },
+            {
+              id: 'Pixel_7_API_33',
+              name: 'Pixel 7 API 33',
+              deviceType: 'mobile',
+              osType: 'google apis',
+              osVersion: { major: 33, minor: 0, patch: 0 },
+              isPlayStore: false,
+              port: -1,
+            },
+          ],
+        }),
         stderr: '',
         success: true,
         duration: 500,
       };
 
-      const adbDevicesResult: CommandResult = {
-        exitCode: 0,
-        signal: null,
-        stdout: 'List of devices attached\nemulator-5554\tdevice\n',
-        stderr: '',
-        success: true,
-        duration: 100,
-      };
-
-      vi.mocked(mockCommandRunner.execute)
-        .mockResolvedValueOnce(listEmulatorsResult)
-        .mockResolvedValueOnce(adbDevicesResult);
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
 
       const result = await node.execute(state);
 
-      expect(result).toEqual({ androidEmulatorName: expect.any(String) });
+      expect(result).toEqual({ androidEmulatorName: 'Pixel_8_API_34' });
     });
 
-    it('should return error when listing emulators fails', async () => {
+    it('should return error when sf command fails', async () => {
       const state = createTestState({
         platform: 'Android',
         androidEmulatorName: undefined,
       });
 
-      const listEmulatorsResult: CommandResult = {
+      const sfDeviceListResult: CommandResult = {
         exitCode: 1,
         signal: null,
         stdout: '',
-        stderr: 'emulator: command not found',
+        stderr: 'sf: command not found',
         success: false,
         duration: 100,
       };
 
-      const avdManagerResult: CommandResult = {
-        exitCode: 1,
-        signal: null,
-        stdout: '',
-        stderr: 'avdmanager: command not found',
-        success: false,
-        duration: 100,
-      };
-
-      vi.mocked(mockCommandRunner.execute)
-        .mockResolvedValueOnce(listEmulatorsResult)
-        .mockResolvedValueOnce(avdManagerResult);
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
 
       const result = await node.execute(state);
 
@@ -151,30 +150,30 @@ describe('AndroidSelectEmulatorNode', () => {
       });
     });
 
-    it('should return error when no emulators found', async () => {
+    it('should return empty state when no emulators found (router handles creation)', async () => {
       const state = createTestState({
         platform: 'Android',
         androidEmulatorName: undefined,
       });
 
-      const listEmulatorsResult: CommandResult = {
+      const sfDeviceListResult: CommandResult = {
         exitCode: 0,
         signal: null,
-        stdout: '',
+        stdout: JSON.stringify({
+          outputContent: [],
+        }),
         stderr: '',
         success: true,
         duration: 500,
       };
 
-      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(listEmulatorsResult);
+      vi.mocked(mockCommandRunner.execute).mockResolvedValueOnce(sfDeviceListResult);
 
       const result = await node.execute(state);
 
-      expect(result).toEqual({
-        workflowFatalErrorMessages: [
-          'No Android emulators found. Please create an emulator via Android Studio > Device Manager.',
-        ],
-      });
+      // When no emulators found, returns empty state - router will route to create emulator
+      expect(result).toEqual({});
+      expect(mockLogger.hasLoggedMessage('No emulators found, will create one', 'warn')).toBe(true);
     });
 
     it('should handle exception during selection', async () => {

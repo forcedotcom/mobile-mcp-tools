@@ -72,12 +72,8 @@ export class AndroidSelectEmulatorNode extends BaseNode<State> {
       const selectedEmulator = selectBestEmulator(result.emulators, this.logger);
 
       if (!selectedEmulator) {
-        this.logger.warn('No emulators found');
-        return {
-          workflowFatalErrorMessages: [
-            'No Android emulators found. Please create an emulator via Android Studio > Device Manager.',
-          ],
-        };
+        this.logger.warn('No emulators found, will create one');
+        return {};
       }
 
       this.logger.info('Selected Android emulator', {
