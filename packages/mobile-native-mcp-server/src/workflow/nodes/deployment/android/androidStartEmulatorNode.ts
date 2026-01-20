@@ -13,7 +13,7 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-import { waitForEmulatorReady } from './androidEmulatorUtils.js';
+import { waitForEmulatorReady, startAndroidEmulator } from './androidEmulatorUtils.js';
 
 /**
  * Starts the Android emulator if it's not already running.
@@ -49,46 +49,16 @@ export class AndroidStartEmulatorNode extends BaseNode<State> {
     const emulatorName = state.androidEmulatorName;
     const progressReporter = config?.configurable?.progressReporter;
 
-    this.logger.debug('Starting Android emulator', { emulatorName });
+    const result = await startAndroidEmulator(this.commandRunner, this.logger, {
+      emulatorName,
+      projectPath: state.projectPath,
+      progressReporter,
+    });
 
-    const result = await this.commandRunner.execute(
-      'sf',
-      ['force', 'lightning', 'local', 'device', 'start', '-p', 'android', '-t', emulatorName],
-      {
-        timeout: 120000,
-        cwd: state.projectPath,
-        progressReporter,
-        commandName: 'Start Android Emulator',
-      }
-    );
-
-    // Check if it's already running - this is SUCCESS, not failure
-    const isAlreadyRunning =
-      result.stderr?.includes('already running') ||
-      result.stdout?.includes('already running') ||
-      result.stderr?.includes('already booted');
-
-    if (!result.success && !isAlreadyRunning) {
-      const errorMessage =
-        result.stderr || `Failed to start emulator: exit code ${result.exitCode ?? 'unknown'}`;
-      this.logger.error('Failed to start Android emulator', new Error(errorMessage));
-      this.logger.debug('Start emulator command details', {
-        exitCode: result.exitCode ?? null,
-        signal: result.signal ?? null,
-        stderr: result.stderr,
-        stdout: result.stdout,
-      });
+    if (!result.success) {
       return {
-        workflowFatalErrorMessages: [
-          `Failed to start Android emulator "${emulatorName}": ${errorMessage}`,
-        ],
+        workflowFatalErrorMessages: [result.error],
       };
-    }
-
-    if (isAlreadyRunning) {
-      this.logger.info('Emulator already running, verifying responsiveness', { emulatorName });
-    } else {
-      this.logger.info('Android emulator start command completed', { emulatorName });
     }
 
     // Wait for emulator to be fully ready

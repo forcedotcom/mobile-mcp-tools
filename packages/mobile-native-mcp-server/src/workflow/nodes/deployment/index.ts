@@ -5,51 +5,8 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-// iOS simulator utilities
-export {
-  SimulatorDeviceSchema,
-  SimctlDevicesOutputSchema,
-  type SimulatorDevice,
-  type SimulatorDeviceWithRuntime,
-  type FetchSimulatorDevicesResult,
-  fetchSimulatorDevices,
-  parseSimctlDevicesJson,
-  parseIOSVersionToNumber,
-  extractIOSVersion,
-  findSimulatorByName,
-  selectBestSimulator,
-} from './simulatorUtils.js';
+// Re-export all Android deployment exports
+export * from './android/index.js';
 
-// Android emulator utilities
-export {
-  AndroidEmulatorDeviceSchema,
-  type AndroidEmulatorDevice,
-  type AndroidEmulatorDeviceWithMetadata,
-  type FetchAndroidEmulatorsResult,
-  fetchAndroidEmulators,
-  selectBestEmulator,
-  findEmulatorByName,
-  hasCompatibleEmulator,
-  waitForEmulatorReady,
-} from './androidEmulatorUtils.js';
-
-// iOS deployment nodes
-export { iOSSelectSimulatorNode } from './iOSSelectSimulatorNode.js';
-export { iOSBootSimulatorNode } from './iOSBootSimulatorNode.js';
-export { iOSInstallAppNode } from './iOSInstallAppNode.js';
-export { iOSLaunchAppNode } from './iOSLaunchAppNode.js';
-
-// Android deployment nodes
-export { AndroidCreateEmulatorNode } from './androidCreateEmulatorNode.js';
-// Android deployment nodes (same pattern as iOS - no emulator creation)
-export { AndroidSelectEmulatorNode } from './androidSelectEmulatorNode.js';
-export { AndroidStartEmulatorNode } from './androidStartEmulatorNode.js';
-export { AndroidInstallAppNode } from './androidInstallAppNode.js';
-export { AndroidLaunchAppNode } from './androidLaunchAppNode.js';
-
-// Android deployment routers
-export { CheckEmulatorFoundRouter } from './checkEmulatorFoundRouter.js';
-export { CheckEmulatorCreatedRouter } from './checkEmulatorCreatedRouter.js';
-
-// Generic fatal error router (replaces CheckEmulatorStartedRouter and CheckAppInstalledRouter)
-export { CheckFatalErrorsRouter } from './checkFatalErrorsRouter.js';
+// Re-export all iOS deployment exports
+export * from './ios/index.js';

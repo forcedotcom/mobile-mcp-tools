@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { iOSLaunchAppNode } from '../../../../src/workflow/nodes/deployment/iOSLaunchAppNode.js';
+import { iOSLaunchAppNode } from '../../../../src/workflow/nodes/deployment/ios/iOSLaunchAppNode.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';

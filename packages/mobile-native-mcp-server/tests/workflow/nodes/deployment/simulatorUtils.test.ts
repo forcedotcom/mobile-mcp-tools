@@ -16,7 +16,7 @@ import {
   waitForSimulatorReady,
   openSimulatorApp,
   readBundleIdFromProject,
-} from '../../../../src/workflow/nodes/deployment/simulatorUtils.js';
+} from '../../../../src/workflow/nodes/deployment/ios/simulatorUtils.js';
 import { readdir, readFile } from 'fs/promises';
 
 vi.mock('fs/promises', async importOriginal => {

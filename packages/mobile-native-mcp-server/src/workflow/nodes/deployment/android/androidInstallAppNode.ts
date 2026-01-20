@@ -14,11 +14,7 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-
-/**
- * Timeout for Android app installation (5 minutes).
- */
-const INSTALL_TIMEOUT_MS = 300000;
+import { installAndroidApp } from './androidEmulatorUtils.js';
 
 /**
  * Installs the Android app using Salesforce CLI (sf force lightning local app install).
@@ -77,49 +73,19 @@ export class AndroidInstallAppNode extends BaseNode<State> {
 
     const progressReporter = config?.configurable?.progressReporter;
 
-    const result = await this.commandRunner.execute(
-      'sf',
-      [
-        'force',
-        'lightning',
-        'local',
-        'app',
-        'install',
-        '-p',
-        'android',
-        '-t',
-        targetDevice,
-        '-a',
-        apkPath,
-      ],
-      {
-        timeout: INSTALL_TIMEOUT_MS,
-        cwd: state.projectPath,
-        progressReporter,
-        commandName: 'Android App Installation',
-      }
-    );
+    const result = await installAndroidApp(this.commandRunner, this.logger, {
+      apkPath,
+      targetDevice,
+      projectPath: state.projectPath,
+      progressReporter,
+    });
 
     if (!result.success) {
-      const errorMessage =
-        result.stderr || `Failed to install app: exit code ${result.exitCode ?? 'unknown'}`;
-      this.logger.error('Failed to install Android app', new Error(errorMessage));
-      this.logger.debug('Install command details', {
-        exitCode: result.exitCode ?? null,
-        signal: result.signal ?? null,
-        stderr: result.stderr,
-        stdout: result.stdout,
-      });
       return {
-        workflowFatalErrorMessages: [`Failed to install Android app: ${errorMessage}`],
+        workflowFatalErrorMessages: [result.error],
       };
     }
 
-    this.logger.info('Android app installed successfully', {
-      buildType,
-      targetDevice,
-      apkPath,
-    });
     return {};
   };
 }

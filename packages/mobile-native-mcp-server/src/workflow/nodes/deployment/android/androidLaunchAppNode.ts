@@ -13,10 +13,8 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-import {
-  readApplicationIdFromGradle,
-  readLaunchActivityFromManifest,
-} from './androidEmulatorUtils.js';
+import { readApplicationIdFromGradle, readLaunchActivityFromManifest } from './androidUtils.js';
+import { launchAndroidApp } from './androidEmulatorUtils.js';
 
 /**
  * Launches the Android app on the emulator.
@@ -87,50 +85,21 @@ export class AndroidLaunchAppNode extends BaseNode<State> {
     // Construct the launch intent in format: packageId/activityClass
     const launchIntent = `${applicationId}/${activityClass}`;
 
-    this.logger.debug('Launching Android app', { applicationId, targetDevice, launchIntent });
-
     const progressReporter = config?.configurable?.progressReporter;
 
-    const result = await this.commandRunner.execute(
-      'sf',
-      [
-        'force',
-        'lightning',
-        'local',
-        'app',
-        'launch',
-        '-p',
-        'android',
-        '-t',
-        targetDevice,
-        '-i',
-        launchIntent,
-      ],
-      {
-        timeout: 30000,
-        progressReporter,
-        commandName: 'Android App Launch',
-      }
-    );
+    const result = await launchAndroidApp(this.commandRunner, this.logger, {
+      launchIntent,
+      targetDevice,
+      applicationId,
+      progressReporter,
+    });
 
     if (!result.success) {
-      const errorMessage =
-        result.stderr || `Failed to launch app: exit code ${result.exitCode ?? 'unknown'}`;
-      this.logger.error('Failed to launch Android app', new Error(errorMessage));
-      this.logger.debug('Launch command details', {
-        exitCode: result.exitCode ?? null,
-        signal: result.signal ?? null,
-        stderr: result.stderr,
-        stdout: result.stdout,
-      });
       return {
-        workflowFatalErrorMessages: [
-          `Failed to launch Android app "${applicationId}": ${errorMessage}`,
-        ],
+        workflowFatalErrorMessages: [result.error],
       };
     }
 
-    this.logger.info('Android app launched successfully', { applicationId, targetDevice });
     return {
       deploymentStatus: 'success',
     };

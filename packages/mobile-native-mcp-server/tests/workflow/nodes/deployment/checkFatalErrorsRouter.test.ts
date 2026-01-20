@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CheckFatalErrorsRouter } from '../../../../src/workflow/nodes/deployment/checkFatalErrorsRouter.js';
+import { CheckFatalErrorsRouter } from '../../../../src/workflow/nodes/deployment/android/checkFatalErrorsRouter.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 
 describe('CheckFatalErrorsRouter', () => {

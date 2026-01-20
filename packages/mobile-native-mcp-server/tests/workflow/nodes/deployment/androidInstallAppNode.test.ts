@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import path from 'node:path';
-import { AndroidInstallAppNode } from '../../../../src/workflow/nodes/deployment/androidInstallAppNode.js';
+import { AndroidInstallAppNode } from '../../../../src/workflow/nodes/deployment/android/androidInstallAppNode.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { createTestState } from '../../../utils/stateBuilders.js';
 import { CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';

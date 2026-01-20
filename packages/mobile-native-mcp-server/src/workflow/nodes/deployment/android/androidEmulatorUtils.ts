@@ -7,8 +7,6 @@
 
 import { z } from 'zod';
 import { CommandRunner, Logger, ProgressReporter } from '@salesforce/magen-mcp-workflow';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 /**
  * Zod schema for an Android emulator device
@@ -297,85 +295,294 @@ export async function waitForEmulatorReady(
 }
 
 /**
- * Reads applicationId from build.gradle or build.gradle.kts file.
- * Returns undefined if not found (caller should handle fallback).
+ * Result type for createAndroidEmulator
  */
-export function readApplicationIdFromGradle(
-  projectPath: string,
-  logger: Logger
-): string | undefined {
-  const gradleFiles = [
-    join(projectPath, 'app', 'build.gradle'),
-    join(projectPath, 'app', 'build.gradle.kts'),
-  ];
+export type CreateAndroidEmulatorResult =
+  | { success: true; emulatorName: string }
+  | { success: false; error: string };
 
-  for (const gradleFile of gradleFiles) {
-    try {
-      const content = readFileSync(gradleFile, 'utf-8');
-      // Match applicationId patterns: applicationId = "com.example.app" or applicationId "com.example.app"
-      const applicationIdPattern = /applicationId\s*[=:]\s*["']([^"']+)["']/;
-      const match = applicationIdPattern.exec(content);
-      if (match?.[1]) {
-        logger.debug('Found applicationId in build.gradle', {
-          file: gradleFile,
-          applicationId: match[1],
-        });
-        return match[1];
-      }
-    } catch {
-      // File doesn't exist or can't be read, try next file
-      continue;
+/**
+ * Creates an Android emulator using the SF CLI.
+ * Uses `sf force lightning local device create` command.
+ */
+export async function createAndroidEmulator(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    emulatorName: string;
+    apiLevel: string;
+    projectPath?: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+  }
+): Promise<CreateAndroidEmulatorResult> {
+  const timeout = options.timeout ?? 300000; // 5 minutes default
+
+  logger.info('Creating Android emulator', {
+    emulatorName: options.emulatorName,
+    apiLevel: options.apiLevel,
+  });
+
+  const result = await commandRunner.execute(
+    'sf',
+    [
+      'force',
+      'lightning',
+      'local',
+      'device',
+      'create',
+      '-n',
+      options.emulatorName,
+      '-d',
+      'pixel',
+      '-p',
+      'android',
+      '-l',
+      options.apiLevel,
+    ],
+    {
+      timeout,
+      cwd: options.projectPath,
+      progressReporter: options.progressReporter,
+      commandName: 'Create Android Emulator',
     }
+  );
+
+  if (!result.success) {
+    const errorMessage =
+      result.stderr || `Failed to create emulator: exit code ${result.exitCode ?? 'unknown'}`;
+    logger.error('Failed to create Android emulator', new Error(errorMessage));
+    logger.debug('Create emulator command details', {
+      exitCode: result.exitCode ?? null,
+      signal: result.signal ?? null,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to create Android emulator "${options.emulatorName}": ${errorMessage}`,
+    };
   }
 
-  return undefined;
+  logger.info('Android emulator created successfully', { emulatorName: options.emulatorName });
+  return { success: true, emulatorName: options.emulatorName };
 }
 
 /**
- * Reads the launcher activity class name from AndroidManifest.xml.
- * Looks for an activity with android.intent.category.LAUNCHER intent-filter.
- * Returns undefined if not found.
+ * Result type for installAndroidApp
  */
-export function readLaunchActivityFromManifest(
-  projectPath: string,
-  logger: Logger
-): string | undefined {
-  try {
-    const manifestPath = join(projectPath, 'app', 'src', 'main', 'AndroidManifest.xml');
-    const content = readFileSync(manifestPath, 'utf-8');
+export type InstallAndroidAppResult = { success: true } | { success: false; error: string };
 
-    // Find activity blocks that contain the LAUNCHER category
-    // Pattern matches: <activity android:name=".MainActivity" ...> ... <category android:name="android.intent.category.LAUNCHER" /> ... </activity>
-    const activityPattern =
-      /<activity[^>]*android:name\s*=\s*["']([^"']+)["'][^>]*>[\s\S]*?<category\s+android:name\s*=\s*["']android\.intent\.category\.LAUNCHER["']\s*\/>[\s\S]*?<\/activity>/g;
+/**
+ * Installs an Android app using the SF CLI.
+ * Uses `sf force lightning local app install` command.
+ */
+export async function installAndroidApp(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    apkPath: string;
+    targetDevice: string;
+    projectPath?: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+  }
+): Promise<InstallAndroidAppResult> {
+  const timeout = options.timeout ?? 300000; // 5 minutes default
 
-    const match = activityPattern.exec(content);
-    if (match?.[1]) {
-      logger.debug('Found launcher activity in AndroidManifest.xml', {
-        activityName: match[1],
-      });
-      return match[1];
+  logger.debug('Installing Android app using sf CLI', {
+    projectPath: options.projectPath,
+    targetDevice: options.targetDevice,
+    apkPath: options.apkPath,
+  });
+
+  const result = await commandRunner.execute(
+    'sf',
+    [
+      'force',
+      'lightning',
+      'local',
+      'app',
+      'install',
+      '-p',
+      'android',
+      '-t',
+      options.targetDevice,
+      '-a',
+      options.apkPath,
+    ],
+    {
+      timeout,
+      cwd: options.projectPath,
+      progressReporter: options.progressReporter,
+      commandName: 'Android App Installation',
     }
+  );
 
-    // Alternative pattern: activity name might come after other attributes
-    const altPattern =
-      /<activity[^>]*>[\s\S]*?<category\s+android:name\s*=\s*["']android\.intent\.category\.LAUNCHER["']\s*\/>[\s\S]*?<\/activity>/g;
-    let activityBlock: RegExpExecArray | null;
-    while ((activityBlock = altPattern.exec(content)) !== null) {
-      const namePattern = /android:name\s*=\s*["']([^"']+)["']/;
-      const nameMatch = namePattern.exec(activityBlock[0]);
-      if (nameMatch?.[1]) {
-        logger.debug('Found launcher activity in AndroidManifest.xml (alt pattern)', {
-          activityName: nameMatch[1],
-        });
-        return nameMatch[1];
-      }
-    }
-
-    logger.debug('No launcher activity found in AndroidManifest.xml');
-  } catch (error) {
-    logger.debug('Error reading AndroidManifest.xml', { error });
+  if (!result.success) {
+    const errorMessage =
+      result.stderr || `Failed to install app: exit code ${result.exitCode ?? 'unknown'}`;
+    logger.error('Failed to install Android app', new Error(errorMessage));
+    logger.debug('Install command details', {
+      exitCode: result.exitCode ?? null,
+      signal: result.signal ?? null,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to install Android app: ${errorMessage}`,
+    };
   }
 
-  return undefined;
+  logger.info('Android app installed successfully', {
+    targetDevice: options.targetDevice,
+    apkPath: options.apkPath,
+  });
+  return { success: true };
+}
+
+/**
+ * Result type for launchAndroidApp
+ */
+export type LaunchAndroidAppResult = { success: true } | { success: false; error: string };
+
+/**
+ * Launches an Android app using the SF CLI.
+ * Uses `sf force lightning local app launch` command.
+ */
+export async function launchAndroidApp(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    launchIntent: string;
+    targetDevice: string;
+    applicationId: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+  }
+): Promise<LaunchAndroidAppResult> {
+  const timeout = options.timeout ?? 30000; // 30 seconds default
+
+  logger.debug('Launching Android app', {
+    applicationId: options.applicationId,
+    targetDevice: options.targetDevice,
+    launchIntent: options.launchIntent,
+  });
+
+  const result = await commandRunner.execute(
+    'sf',
+    [
+      'force',
+      'lightning',
+      'local',
+      'app',
+      'launch',
+      '-p',
+      'android',
+      '-t',
+      options.targetDevice,
+      '-i',
+      options.launchIntent,
+    ],
+    {
+      timeout,
+      progressReporter: options.progressReporter,
+      commandName: 'Android App Launch',
+    }
+  );
+
+  if (!result.success) {
+    const errorMessage =
+      result.stderr || `Failed to launch app: exit code ${result.exitCode ?? 'unknown'}`;
+    logger.error('Failed to launch Android app', new Error(errorMessage));
+    logger.debug('Launch command details', {
+      exitCode: result.exitCode ?? null,
+      signal: result.signal ?? null,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to launch Android app "${options.applicationId}": ${errorMessage}`,
+    };
+  }
+
+  logger.info('Android app launched successfully', {
+    applicationId: options.applicationId,
+    targetDevice: options.targetDevice,
+  });
+  return { success: true };
+}
+
+/**
+ * Result type for startAndroidEmulator
+ */
+export type StartAndroidEmulatorResult =
+  | { success: true; wasAlreadyRunning: boolean }
+  | { success: false; error: string };
+
+/**
+ * Starts an Android emulator using the SF CLI.
+ * Uses `sf force lightning local device start` command.
+ * This function is idempotent - it treats "already running" as success.
+ */
+export async function startAndroidEmulator(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    emulatorName: string;
+    projectPath?: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+  }
+): Promise<StartAndroidEmulatorResult> {
+  const timeout = options.timeout ?? 120000; // 2 minutes default
+
+  logger.debug('Starting Android emulator', { emulatorName: options.emulatorName });
+
+  const result = await commandRunner.execute(
+    'sf',
+    ['force', 'lightning', 'local', 'device', 'start', '-p', 'android', '-t', options.emulatorName],
+    {
+      timeout,
+      cwd: options.projectPath,
+      progressReporter: options.progressReporter,
+      commandName: 'Start Android Emulator',
+    }
+  );
+
+  // Check if it's already running - this is SUCCESS, not failure
+  const isAlreadyRunning =
+    result.stderr?.includes('already running') ||
+    result.stdout?.includes('already running') ||
+    result.stderr?.includes('already booted');
+
+  if (!result.success && !isAlreadyRunning) {
+    const errorMessage =
+      result.stderr || `Failed to start emulator: exit code ${result.exitCode ?? 'unknown'}`;
+    logger.error('Failed to start Android emulator', new Error(errorMessage));
+    logger.debug('Start emulator command details', {
+      exitCode: result.exitCode ?? null,
+      signal: result.signal ?? null,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to start Android emulator "${options.emulatorName}": ${errorMessage}`,
+    };
+  }
+
+  if (isAlreadyRunning) {
+    logger.info('Emulator already running, verifying responsiveness', {
+      emulatorName: options.emulatorName,
+    });
+  } else {
+    logger.info('Android emulator start command completed', {
+      emulatorName: options.emulatorName,
+    });
+  }
+
+  return { success: true, wasAlreadyRunning: isAlreadyRunning };
 }

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { iOSInstallAppNode } from '../../../../src/workflow/nodes/deployment/iOSInstallAppNode.js';
+import { iOSInstallAppNode } from '../../../../src/workflow/nodes/deployment/ios/iOSInstallAppNode.js';
 import { MockLogger } from '../../../utils/MockLogger.js';
 import { MockTempDirectoryManager } from '../../../utils/MockTempDirectoryManager.js';
 import { createTestState } from '../../../utils/stateBuilders.js';

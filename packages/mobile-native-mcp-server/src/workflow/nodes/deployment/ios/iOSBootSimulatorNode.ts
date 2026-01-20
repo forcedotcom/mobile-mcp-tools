@@ -13,7 +13,7 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-import { waitForSimulatorReady, openSimulatorApp } from './simulatorUtils.js';
+import { waitForSimulatorReady, openSimulatorApp, bootIOSSimulator } from './simulatorUtils.js';
 
 /**
  * Boots the target iOS simulator if it's not already running.
@@ -45,41 +45,15 @@ export class iOSBootSimulatorNode extends BaseNode<State> {
     const progressReporter = config?.configurable?.progressReporter;
     const deviceName = state.targetDevice;
 
-    this.logger.debug('Attempting to boot iOS simulator', { targetDevice: deviceName });
-
-    const bootResult = await this.commandRunner.execute('xcrun', ['simctl', 'boot', deviceName], {
-      timeout: 60000,
+    const bootResult = await bootIOSSimulator(this.commandRunner, this.logger, {
+      deviceName,
       progressReporter,
-      commandName: 'Boot iOS Simulator',
     });
 
-    // "Already booted" is success, not failure
-    const isAlreadyBooted = bootResult.stderr?.includes(
-      'Unable to boot device in current state: Booted'
-    );
-
-    if (!bootResult.success && !isAlreadyBooted) {
-      const errorMessage = bootResult.stderr || `exit code ${bootResult.exitCode ?? 'unknown'}`;
-      this.logger.error('Failed to boot simulator', new Error(errorMessage));
-      this.logger.debug('Boot command details', {
-        exitCode: bootResult.exitCode ?? null,
-        signal: bootResult.signal ?? null,
-        stderr: bootResult.stderr,
-        stdout: bootResult.stdout,
-      });
+    if (!bootResult.success) {
       return {
-        workflowFatalErrorMessages: [
-          `Failed to boot iOS simulator "${deviceName}": ${errorMessage}`,
-        ],
+        workflowFatalErrorMessages: [bootResult.error],
       };
-    }
-
-    if (isAlreadyBooted) {
-      this.logger.info('Simulator already booted, verifying responsiveness', {
-        targetDevice: deviceName,
-      });
-    } else {
-      this.logger.info('iOS simulator boot command completed', { targetDevice: deviceName });
     }
 
     // Wait for simulator to be fully ready

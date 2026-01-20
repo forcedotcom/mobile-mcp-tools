@@ -383,3 +383,188 @@ export async function readBundleIdFromProject(
   });
   return bundleId;
 }
+
+/**
+ * Result type for bootIOSSimulator
+ */
+export type BootIOSSimulatorResult =
+  | { success: true; wasAlreadyBooted: boolean }
+  | { success: false; error: string };
+
+/**
+ * Boots an iOS simulator using simctl.
+ * Uses `xcrun simctl boot` command.
+ * This function is idempotent - it treats "already booted" as success.
+ */
+export async function bootIOSSimulator(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    deviceName: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+  }
+): Promise<BootIOSSimulatorResult> {
+  const timeout = options.timeout ?? 60000; // 1 minute default
+
+  logger.debug('Attempting to boot iOS simulator', { targetDevice: options.deviceName });
+
+  const bootResult = await commandRunner.execute('xcrun', ['simctl', 'boot', options.deviceName], {
+    timeout,
+    progressReporter: options.progressReporter,
+    commandName: 'Boot iOS Simulator',
+  });
+
+  // "Already booted" is success, not failure
+  const isAlreadyBooted = bootResult.stderr?.includes(
+    'Unable to boot device in current state: Booted'
+  );
+
+  if (!bootResult.success && !isAlreadyBooted) {
+    const errorMessage = bootResult.stderr || `exit code ${bootResult.exitCode ?? 'unknown'}`;
+    logger.error('Failed to boot simulator', new Error(errorMessage));
+    logger.debug('Boot command details', {
+      exitCode: bootResult.exitCode ?? null,
+      signal: bootResult.signal ?? null,
+      stderr: bootResult.stderr,
+      stdout: bootResult.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to boot iOS simulator "${options.deviceName}": ${errorMessage}`,
+    };
+  }
+
+  if (isAlreadyBooted) {
+    logger.info('Simulator already booted, verifying responsiveness', {
+      targetDevice: options.deviceName,
+    });
+  } else {
+    logger.info('iOS simulator boot command completed', { targetDevice: options.deviceName });
+  }
+
+  return { success: true, wasAlreadyBooted: isAlreadyBooted };
+}
+
+/**
+ * Result type for installIOSApp
+ */
+export type InstallIOSAppResult = { success: true } | { success: false; error: string };
+
+/**
+ * Installs an iOS app to a simulator using simctl.
+ * Uses `xcrun simctl install` command.
+ */
+export async function installIOSApp(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    deviceName: string;
+    appArtifactPath: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+  }
+): Promise<InstallIOSAppResult> {
+  const timeout = options.timeout ?? 120000; // 2 minutes default
+
+  logger.debug('Installing iOS app to simulator', {
+    targetDevice: options.deviceName,
+    appArtifactPath: options.appArtifactPath,
+  });
+
+  const result = await commandRunner.execute(
+    'xcrun',
+    ['simctl', 'install', options.deviceName, options.appArtifactPath],
+    {
+      timeout,
+      progressReporter: options.progressReporter,
+      commandName: 'iOS App Installation',
+    }
+  );
+
+  if (!result.success) {
+    const errorMessage =
+      result.stderr || `Failed to install app: exit code ${result.exitCode ?? 'unknown'}`;
+    logger.error('Failed to install iOS app', new Error(errorMessage));
+    logger.debug('Install command details', {
+      exitCode: result.exitCode ?? null,
+      signal: result.signal ?? null,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to install iOS app to simulator "${options.deviceName}": ${errorMessage}`,
+    };
+  }
+
+  logger.info('iOS app installed successfully', {
+    targetDevice: options.deviceName,
+    appArtifactPath: options.appArtifactPath,
+  });
+  return { success: true };
+}
+
+/**
+ * Result type for launchIOSApp
+ */
+export type LaunchIOSAppResult = { success: true } | { success: false; error: string };
+
+/**
+ * Launches an iOS app on a simulator using simctl.
+ * Uses `xcrun simctl launch` command.
+ */
+export async function launchIOSApp(
+  commandRunner: CommandRunner,
+  logger: Logger,
+  options: {
+    deviceName: string;
+    bundleId: string;
+    progressReporter?: ProgressReporter;
+    timeout?: number;
+    postInstallDelayMs?: number;
+  }
+): Promise<LaunchIOSAppResult> {
+  const timeout = options.timeout ?? 30000; // 30 seconds default
+  const postInstallDelayMs = options.postInstallDelayMs ?? 2000; // 2 seconds default
+
+  logger.debug('Launching iOS app on simulator', {
+    targetDevice: options.deviceName,
+    bundleId: options.bundleId,
+  });
+
+  // Brief delay after install to ensure the app is ready to launch
+  await new Promise(resolve => setTimeout(resolve, postInstallDelayMs));
+
+  const result = await commandRunner.execute(
+    'xcrun',
+    ['simctl', 'launch', options.deviceName, options.bundleId],
+    {
+      timeout,
+      progressReporter: options.progressReporter,
+      commandName: 'iOS App Launch',
+    }
+  );
+
+  if (!result.success) {
+    const errorMessage =
+      result.stderr || `Failed to launch app: exit code ${result.exitCode ?? 'unknown'}`;
+    logger.error('Failed to launch iOS app', new Error(errorMessage));
+    logger.debug('Launch command details', {
+      exitCode: result.exitCode ?? null,
+      signal: result.signal ?? null,
+      stderr: result.stderr,
+      stdout: result.stdout,
+    });
+    return {
+      success: false,
+      error: `Failed to launch iOS app on simulator "${options.deviceName}": ${errorMessage}`,
+    };
+  }
+
+  logger.info('iOS app launched successfully', {
+    targetDevice: options.deviceName,
+    bundleId: options.bundleId,
+  });
+  return { success: true };
+}

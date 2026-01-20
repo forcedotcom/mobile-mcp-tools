@@ -14,6 +14,7 @@ import {
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { PLATFORM_API_LEVELS } from '../checkPlatformSetup.js';
+import { createAndroidEmulator } from './androidEmulatorUtils.js';
 
 /**
  * Creates an Android emulator when none exists.
@@ -47,51 +48,19 @@ export class AndroidCreateEmulatorNode extends BaseNode<State> {
 
     const progressReporter = config?.configurable?.progressReporter;
 
-    this.logger.info('Creating Android emulator', { emulatorName, apiLevel });
-
-    const result = await this.commandRunner.execute(
-      'sf',
-      [
-        'force',
-        'lightning',
-        'local',
-        'device',
-        'create',
-        '-n',
-        emulatorName,
-        '-d',
-        'pixel',
-        '-p',
-        'android',
-        '-l',
-        apiLevel,
-      ],
-      {
-        timeout: 300000, // 5 minutes for emulator creation
-        cwd: state.projectPath,
-        progressReporter,
-        commandName: 'Create Android Emulator',
-      }
-    );
+    const result = await createAndroidEmulator(this.commandRunner, this.logger, {
+      emulatorName,
+      apiLevel,
+      projectPath: state.projectPath,
+      progressReporter,
+    });
 
     if (!result.success) {
-      const errorMessage =
-        result.stderr || `Failed to create emulator: exit code ${result.exitCode ?? 'unknown'}`;
-      this.logger.error('Failed to create Android emulator', new Error(errorMessage));
-      this.logger.debug('Create emulator command details', {
-        exitCode: result.exitCode ?? null,
-        signal: result.signal ?? null,
-        stderr: result.stderr,
-        stdout: result.stdout,
-      });
       return {
-        workflowFatalErrorMessages: [
-          `Failed to create Android emulator "${emulatorName}": ${errorMessage}`,
-        ],
+        workflowFatalErrorMessages: [result.error],
       };
     }
 
-    this.logger.info('Android emulator created successfully', { emulatorName });
-    return { androidEmulatorName: emulatorName };
+    return { androidEmulatorName: result.emulatorName };
   };
 }

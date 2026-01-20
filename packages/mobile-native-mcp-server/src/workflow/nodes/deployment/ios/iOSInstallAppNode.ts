@@ -14,6 +14,7 @@ import {
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
 import { TempDirectoryManager } from '../../../common.js';
+import { installIOSApp } from './simulatorUtils.js';
 
 /**
  * Installs the iOS app to the target simulator.
@@ -52,44 +53,20 @@ export class iOSInstallAppNode extends BaseNode<State> {
 
     try {
       const appArtifactPath = this.tempDirManager.getAppArtifactPath(state.projectName, 'iOS');
-      this.logger.debug('Installing iOS app to simulator', {
-        targetDevice: state.targetDevice,
-        appArtifactPath,
-      });
-
       const progressReporter = config?.configurable?.progressReporter;
 
-      const result = await this.commandRunner.execute(
-        'xcrun',
-        ['simctl', 'install', state.targetDevice, appArtifactPath],
-        {
-          timeout: 120000,
-          progressReporter,
-          commandName: 'iOS App Installation',
-        }
-      );
+      const result = await installIOSApp(this.commandRunner, this.logger, {
+        deviceName: state.targetDevice,
+        appArtifactPath,
+        progressReporter,
+      });
 
       if (!result.success) {
-        const errorMessage =
-          result.stderr || `Failed to install app: exit code ${result.exitCode ?? 'unknown'}`;
-        this.logger.error('Failed to install iOS app', new Error(errorMessage));
-        this.logger.debug('Install command details', {
-          exitCode: result.exitCode ?? null,
-          signal: result.signal ?? null,
-          stderr: result.stderr,
-          stdout: result.stdout,
-        });
         return {
-          workflowFatalErrorMessages: [
-            `Failed to install iOS app to simulator "${state.targetDevice}": ${errorMessage}`,
-          ],
+          workflowFatalErrorMessages: [result.error],
         };
       }
 
-      this.logger.info('iOS app installed successfully', {
-        targetDevice: state.targetDevice,
-        appArtifactPath,
-      });
       return {};
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;

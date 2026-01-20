@@ -13,13 +13,7 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../../metadata.js';
-import { readBundleIdFromProject } from './simulatorUtils.js';
-
-/**
- * Delay after install to ensure the app is registered with SpringBoard
- * and ready to launch. Without this, simctl launch can fail with "app not found".
- */
-const POST_INSTALL_DELAY_MS = 2000;
+import { readBundleIdFromProject, launchIOSApp } from './simulatorUtils.js';
 
 /**
  * Launches the iOS app on the target simulator.
@@ -69,45 +63,18 @@ export class iOSLaunchAppNode extends BaseNode<State> {
     // Get bundle ID from project file
     const bundleId = await readBundleIdFromProject(state.projectPath, this.logger);
 
-    this.logger.debug('Launching iOS app on simulator', {
-      targetDevice: deviceName,
+    const result = await launchIOSApp(this.commandRunner, this.logger, {
+      deviceName,
       bundleId,
+      progressReporter,
     });
 
-    // Brief delay after install to ensure the app is ready to launch
-    await new Promise(resolve => setTimeout(resolve, POST_INSTALL_DELAY_MS));
-
-    const result = await this.commandRunner.execute(
-      'xcrun',
-      ['simctl', 'launch', deviceName, bundleId],
-      {
-        timeout: 30000,
-        progressReporter,
-        commandName: 'iOS App Launch',
-      }
-    );
-
     if (!result.success) {
-      const errorMessage =
-        result.stderr || `Failed to launch app: exit code ${result.exitCode ?? 'unknown'}`;
-      this.logger.error('Failed to launch iOS app', new Error(errorMessage));
-      this.logger.debug('Launch command details', {
-        exitCode: result.exitCode ?? null,
-        signal: result.signal ?? null,
-        stderr: result.stderr,
-        stdout: result.stdout,
-      });
       return {
-        workflowFatalErrorMessages: [
-          `Failed to launch iOS app on simulator "${deviceName}": ${errorMessage}`,
-        ],
+        workflowFatalErrorMessages: [result.error],
       };
     }
 
-    this.logger.info('iOS app launched successfully', {
-      targetDevice: deviceName,
-      bundleId,
-    });
     return {
       deploymentStatus: 'success',
     };
