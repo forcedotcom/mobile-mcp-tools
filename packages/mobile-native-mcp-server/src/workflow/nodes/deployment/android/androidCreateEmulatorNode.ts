@@ -12,8 +12,8 @@ import {
   type CommandRunner,
   type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
-import { State } from '../../metadata.js';
-import { PLATFORM_API_LEVELS } from '../checkPlatformSetup.js';
+import { State } from '../../../metadata.js';
+import { PLATFORM_API_LEVELS } from '../../checkPlatformSetup.js';
 import { createAndroidEmulator } from './androidEmulatorUtils.js';
 
 /**

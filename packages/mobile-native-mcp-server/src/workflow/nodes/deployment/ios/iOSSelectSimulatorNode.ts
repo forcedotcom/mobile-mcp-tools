@@ -12,7 +12,7 @@ import {
   CommandRunner,
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
-import { State } from '../../metadata.js';
+import { State } from '../../../metadata.js';
 import { fetchSimulatorDevices, selectBestSimulator } from './simulatorUtils.js';
 
 /**

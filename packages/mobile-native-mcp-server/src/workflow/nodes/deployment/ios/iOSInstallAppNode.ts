@@ -12,8 +12,8 @@ import {
   CommandRunner,
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
-import { State } from '../../metadata.js';
-import { TempDirectoryManager } from '../../../common.js';
+import { State } from '../../../metadata.js';
+import { TempDirectoryManager } from '../../../../common.js';
 import { installIOSApp } from './simulatorUtils.js';
 
 /**

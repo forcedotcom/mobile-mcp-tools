@@ -5,7 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { State } from '../../metadata.js';
+import { State } from '../../../metadata.js';
 import { createComponentLogger, type Logger } from '@salesforce/magen-mcp-workflow';
 
 /**

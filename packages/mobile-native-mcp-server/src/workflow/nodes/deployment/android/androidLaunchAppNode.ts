@@ -12,7 +12,7 @@ import {
   type CommandRunner,
   type WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
-import { State } from '../../metadata.js';
+import { State } from '../../../metadata.js';
 import { readApplicationIdFromGradle, readLaunchActivityFromManifest } from './androidUtils.js';
 import { launchAndroidApp } from './androidEmulatorUtils.js';
 
