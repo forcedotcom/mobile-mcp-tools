@@ -67,6 +67,7 @@ export class iOSLaunchAppNode extends BaseNode<State> {
       deviceName,
       bundleId,
       progressReporter,
+      postInstallDelayMs: 2000, // Delay after install to ensure app is ready to launch
     });
 
     if (!result.success) {

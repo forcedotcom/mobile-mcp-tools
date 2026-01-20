@@ -526,7 +526,6 @@ export async function launchIOSApp(
   }
 ): Promise<LaunchIOSAppResult> {
   const timeout = options.timeout ?? 30000; // 30 seconds default
-  const postInstallDelayMs = options.postInstallDelayMs ?? 2000; // 2 seconds default
 
   logger.debug('Launching iOS app on simulator', {
     targetDevice: options.deviceName,
@@ -534,7 +533,10 @@ export async function launchIOSApp(
   });
 
   // Brief delay after install to ensure the app is ready to launch
-  await new Promise(resolve => setTimeout(resolve, postInstallDelayMs));
+  // Only apply delay if explicitly provided (e.g., when launching immediately after install)
+  if (options.postInstallDelayMs !== undefined && options.postInstallDelayMs > 0) {
+    await new Promise(resolve => setTimeout(resolve, options.postInstallDelayMs));
+  }
 
   const result = await commandRunner.execute(
     'xcrun',
