@@ -102,12 +102,14 @@ describe('PluginCheckNode', () => {
       expect(mockExecSync).toHaveBeenCalledWith('sf plugins inspect sfdx-mobilesdk-plugin --json', {
         encoding: 'utf-8',
         timeout: 10000,
+        maxBuffer: 2 * 1024 * 1024,
       });
       expect(mockExecSync).toHaveBeenCalledWith(
         'sf plugins inspect @salesforce/lwc-dev-mobile --json',
         {
           encoding: 'utf-8',
           timeout: 10000,
+          maxBuffer: 2 * 1024 * 1024,
         }
       );
     });
@@ -1020,6 +1022,7 @@ describe('PluginCheckNode', () => {
       expect(mockExecSync).toHaveBeenCalledWith(expect.any(String), {
         encoding: 'utf-8',
         timeout: 10000,
+        maxBuffer: 2 * 1024 * 1024,
       });
     });
 

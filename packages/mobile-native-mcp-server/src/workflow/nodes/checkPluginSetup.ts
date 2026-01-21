@@ -106,6 +106,17 @@ export class PluginCheckNode extends BaseNode<State> {
     }
   }
 
+  private inspectPlugin(config: PluginConfig): PluginInfo {
+    const inspectCommand = `sf plugins inspect ${config.name} --json`;
+    // TODO: Follow up on buffer size
+    const output = execSync(inspectCommand, {
+      encoding: 'utf-8',
+      timeout: 10000,
+      maxBuffer: 2 * 1024 * 1024,
+    });
+    return this.parsePluginOutput(output);
+  }
+
   private installPlugin(config: PluginConfig): Partial<State> {
     try {
       const installCommand = `sf plugins install ${config.name}${config.installTag ?? ''}`;
@@ -114,9 +125,7 @@ export class PluginCheckNode extends BaseNode<State> {
       execSync(installCommand, { encoding: 'utf-8', timeout: 60000 });
 
       // Verify installation
-      const inspectCommand = `sf plugins inspect ${config.name} --json`;
-      const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
-      const pluginInfo = this.parsePluginOutput(output);
+      const pluginInfo = this.inspectPlugin(config);
 
       if (!this.isVersionSufficient(pluginInfo.version, config.minimumVersion)) {
         return {
@@ -152,9 +161,7 @@ export class PluginCheckNode extends BaseNode<State> {
       execSync(updateCommand, { encoding: 'utf-8', timeout: 60000 });
 
       // Verify upgrade
-      const inspectCommand = `sf plugins inspect ${config.name} --json`;
-      const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
-      const pluginInfo = this.parsePluginOutput(output);
+      const pluginInfo = this.inspectPlugin(config);
 
       if (!this.isVersionSufficient(pluginInfo.version, config.minimumVersion)) {
         return {
@@ -192,8 +199,7 @@ export class PluginCheckNode extends BaseNode<State> {
       let pluginInfo: PluginInfo;
 
       try {
-        const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
-        pluginInfo = this.parsePluginOutput(output);
+        pluginInfo = this.inspectPlugin(config);
       } catch (_error) {
         // Plugin not installed, attempt to install it
         this.logger.info(`Plugin not installed, attempting installation`, { plugin: config.name });
