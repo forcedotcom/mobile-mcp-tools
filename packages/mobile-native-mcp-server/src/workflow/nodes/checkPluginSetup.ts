@@ -108,7 +108,7 @@ export class PluginCheckNode extends BaseNode<State> {
 
   private installPlugin(config: PluginConfig): Partial<State> {
     try {
-      const installCommand = `sf plugins install ${config.name}${config.installTag}`;
+      const installCommand = `sf plugins install ${config.name}${config.installTag ?? ''}`;
       this.logger.debug(`Installing plugin`, { command: installCommand, plugin: config.name });
 
       execSync(installCommand, { encoding: 'utf-8', timeout: 60000 });
@@ -146,7 +146,7 @@ export class PluginCheckNode extends BaseNode<State> {
   private upgradePlugin(config: PluginConfig): Partial<State> {
     try {
       // Use install with tag to ensure we get the correct version
-      const updateCommand = `sf plugins install ${config.name}${config.installTag}`;
+      const updateCommand = `sf plugins install ${config.name}${config.installTag ?? ''}`;
       this.logger.debug(`Upgrading plugin`, { command: updateCommand, plugin: config.name });
 
       execSync(updateCommand, { encoding: 'utf-8', timeout: 60000 });

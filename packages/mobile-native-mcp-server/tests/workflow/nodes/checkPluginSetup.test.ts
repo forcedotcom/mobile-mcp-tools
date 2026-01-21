@@ -253,13 +253,10 @@ describe('PluginCheckNode', () => {
         encoding: 'utf-8',
         timeout: 60000,
       });
-      expect(mockExecSync).toHaveBeenCalledWith(
-        'sf plugins install @salesforce/lwc-dev-mobile@alpha',
-        {
-          encoding: 'utf-8',
-          timeout: 60000,
-        }
-      );
+      expect(mockExecSync).toHaveBeenCalledWith('sf plugins install @salesforce/lwc-dev-mobile', {
+        encoding: 'utf-8',
+        timeout: 60000,
+      });
     });
 
     it('should log info when plugin not installed', () => {
