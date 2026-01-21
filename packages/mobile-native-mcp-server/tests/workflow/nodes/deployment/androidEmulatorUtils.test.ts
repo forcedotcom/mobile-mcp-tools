@@ -235,7 +235,9 @@ describe('androidEmulatorUtils', () => {
       const selected = selectBestEmulator(emulators, mockLogger);
 
       expect(selected).toBeDefined();
-      expect(selected?.name).toBe('Pixel_7_API_33');
+      // Note: Running state detection is not currently available via SF CLI,
+      // so selection is based on compatibility and API level only
+      expect(selected?.name).toBe('Pixel_8_API_34');
     });
 
     it('should select highest API level compatible emulator when none running', () => {

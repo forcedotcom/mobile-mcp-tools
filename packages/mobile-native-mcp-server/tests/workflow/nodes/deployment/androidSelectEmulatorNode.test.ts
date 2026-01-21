@@ -176,7 +176,7 @@ describe('AndroidSelectEmulatorNode', () => {
       expect(mockLogger.hasLoggedMessage('No emulators found, will create one', 'warn')).toBe(true);
     });
 
-    it('should propagate exception during selection', async () => {
+    it('should handle exception during selection', async () => {
       const state = createTestState({
         platform: 'Android',
         androidEmulatorName: undefined,
@@ -184,8 +184,13 @@ describe('AndroidSelectEmulatorNode', () => {
 
       vi.mocked(mockCommandRunner.execute).mockRejectedValueOnce(new Error('Network error'));
 
-      // Exceptions now propagate (consistent with refactored pattern)
-      await expect(node.execute(state)).rejects.toThrow('Network error');
+      // Exceptions are caught and returned as error messages in state
+      const result = await node.execute(state);
+      expect(result).toEqual({
+        workflowFatalErrorMessages: [
+          'Failed to select Android emulator: Network error. Please ensure Android SDK is properly installed.',
+        ],
+      });
     });
   });
 });
