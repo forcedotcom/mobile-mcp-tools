@@ -58,7 +58,7 @@ describe('GetInputService', () => {
       expect(result).toBe(userResponse);
     });
 
-    it('should call tool executor with correct metadata', () => {
+    it('should call tool executor with NodeGuidanceData', () => {
       const userResponse = 'MyProject';
       mockToolExecutor.setResult(toolId, {
         userUtterance: userResponse,
@@ -77,11 +77,60 @@ describe('GetInputService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      expect(call.llmMetadata.name).toBe(toolId);
+      // Now uses NodeGuidanceData structure
+      expect(call.nodeId).toBe(toolId);
       expect(call.input).toHaveProperty('propertiesRequiringInput');
       expect(
         (call.input as { propertiesRequiringInput: unknown[] }).propertiesRequiringInput
       ).toEqual(unfulfilledProperties);
+    });
+
+    it('should include taskGuidance in NodeGuidanceData', () => {
+      const userResponse = 'test response';
+      mockToolExecutor.setResult(toolId, {
+        userUtterance: userResponse,
+      });
+
+      const unfulfilledProperties = [
+        {
+          propertyName: 'platform',
+          friendlyName: 'platform',
+          description: 'Target platform',
+        },
+      ];
+
+      service.getInput(unfulfilledProperties);
+
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory.length).toBe(1);
+      const call = callHistory[0];
+      // NodeGuidanceData should have taskGuidance
+      expect(call.taskGuidance).toBeDefined();
+      expect(typeof call.taskGuidance).toBe('string');
+      expect(call.taskGuidance).toContain('input gathering');
+    });
+
+    it('should include resultSchema in NodeGuidanceData', () => {
+      const userResponse = 'test response';
+      mockToolExecutor.setResult(toolId, {
+        userUtterance: userResponse,
+      });
+
+      const unfulfilledProperties = [
+        {
+          propertyName: 'platform',
+          friendlyName: 'platform',
+          description: 'Target platform',
+        },
+      ];
+
+      service.getInput(unfulfilledProperties);
+
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory.length).toBe(1);
+      const call = callHistory[0];
+      // NodeGuidanceData should have resultSchema
+      expect(call.resultSchema).toBeDefined();
     });
 
     it('should log debug message with properties', () => {

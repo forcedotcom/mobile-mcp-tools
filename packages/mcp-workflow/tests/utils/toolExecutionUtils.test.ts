@@ -85,11 +85,11 @@ describe('executeToolWithLogging', () => {
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const preExecutionLog = debugLogs.find(log =>
-        log.message.includes('Tool invocation data (pre-execution)')
+        log.message.includes('Interrupt data (pre-execution)')
       );
 
       expect(preExecutionLog).toBeDefined();
-      expect(preExecutionLog?.data).toHaveProperty('toolInvocationData');
+      expect(preExecutionLog?.data).toHaveProperty('interruptData');
     });
 
     it('should log tool execution result post-execution', () => {

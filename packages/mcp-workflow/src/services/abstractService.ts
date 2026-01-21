@@ -6,7 +6,7 @@
  */
 
 import z from 'zod';
-import { MCPToolInvocationData } from '../common/metadata.js';
+import { InterruptData } from '../common/metadata.js';
 import { Logger, createComponentLogger } from '../logging/logger.js';
 import { ToolExecutor, LangGraphToolExecutor } from '../nodes/toolExecutor.js';
 import { executeToolWithLogging } from '../utils/toolExecutionUtils.js';
@@ -38,9 +38,9 @@ import { executeToolWithLogging } from '../utils/toolExecutionUtils.js';
  *   }
  *
  *   doSomething(input: string): ResultType {
- *     const toolInvocationData = { ... };
+ *     const interruptData = { ... };
  *     return this.executeToolWithLogging(
- *       toolInvocationData,
+ *       interruptData,
  *       MyToolResultSchema
  *     );
  *   }
@@ -74,7 +74,7 @@ export abstract class AbstractService {
    * This method uses the common toolExecutionUtils.executeToolWithLogging function
    * to ensure consistent behavior across all tool invocations in the codebase.
    *
-   * @param toolInvocationData - The tool invocation data to pass to the tool executor
+   * @param interruptData - The interrupt data (MCPToolInvocationData or NodeGuidanceData)
    * @param resultSchema - The schema to validate the result against
    * @param validator - Optional custom validator function
    * @returns The validated result from the tool execution
@@ -83,14 +83,14 @@ export abstract class AbstractService {
    * @throws {Error} If tool execution fails or custom validator throws
    */
   protected executeToolWithLogging<TResultSchema extends z.ZodObject<z.ZodRawShape>>(
-    toolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
+    interruptData: InterruptData<z.ZodObject<z.ZodRawShape>>,
     resultSchema: TResultSchema,
     validator?: (result: unknown, schema: TResultSchema) => z.infer<TResultSchema>
   ): z.infer<TResultSchema> {
     return executeToolWithLogging(
       this.toolExecutor,
       this.logger,
-      toolInvocationData,
+      interruptData,
       resultSchema,
       validator
     );

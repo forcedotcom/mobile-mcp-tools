@@ -756,6 +756,33 @@ describe('MobileNativeOrchestrator', () => {
   });
 
   describe('Workflow State Management', () => {
+    let originalConsumerKey: string | undefined;
+    let originalCallbackUrl: string | undefined;
+
+    beforeEach(() => {
+      // Store and set env vars for tests that need valid environment
+      // The workflow requires these to proceed to the input extraction node
+      // which uses direct guidance mode (contains "REQUIRED NEXT STEP")
+      originalConsumerKey = process.env.CONNECTED_APP_CONSUMER_KEY;
+      originalCallbackUrl = process.env.CONNECTED_APP_CALLBACK_URL;
+      process.env.CONNECTED_APP_CONSUMER_KEY = 'test-consumer-key';
+      process.env.CONNECTED_APP_CALLBACK_URL = 'test://callback';
+    });
+
+    afterEach(() => {
+      // Restore original env vars
+      if (originalConsumerKey !== undefined) {
+        process.env.CONNECTED_APP_CONSUMER_KEY = originalConsumerKey;
+      } else {
+        delete process.env.CONNECTED_APP_CONSUMER_KEY;
+      }
+      if (originalCallbackUrl !== undefined) {
+        process.env.CONNECTED_APP_CALLBACK_URL = originalCallbackUrl;
+      } else {
+        delete process.env.CONNECTED_APP_CALLBACK_URL;
+      }
+    });
+
     it('should include workflow state data in orchestration prompt', async () => {
       const workflowStateData = { thread_id: 'prompt-test-123' };
       const input = {
@@ -772,7 +799,8 @@ describe('MobileNativeOrchestrator', () => {
       // Prompt should include workflow state data
       expect(prompt).toContain('workflowStateData');
       expect(prompt).toContain(JSON.stringify(workflowStateData));
-      expect(prompt).toContain('round-tripped back');
+      // Direct guidance mode uses different text than delegate mode
+      expect(prompt).toContain('REQUIRED NEXT STEP');
     });
 
     it('should handle workflow completion', async () => {

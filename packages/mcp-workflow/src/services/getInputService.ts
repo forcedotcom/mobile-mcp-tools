@@ -13,7 +13,7 @@ import {
   GET_INPUT_WORKFLOW_RESULT_SCHEMA,
 } from '../tools/utilities/index.js';
 import { Logger } from '../logging/logger.js';
-import { MCPToolInvocationData } from '../common/metadata.js';
+import { NodeGuidanceData } from '../common/metadata.js';
 
 export interface GetInputProperty {
   /** Property name to be collected */
@@ -46,8 +46,9 @@ export interface GetInputServiceProvider {
 /**
  * Service for getting user input for a given question.
  *
- * This service extends AbstractService to leverage common tool execution
- * patterns including standardized logging and result validation.
+ * This service uses direct guidance mode (NodeGuidanceData) to have the orchestrator
+ * generate user input collection prompts directly, eliminating the need for an
+ * intermediate tool call.
  */
 export class GetInputService extends AbstractService implements GetInputServiceProvider {
   /**
@@ -70,24 +71,72 @@ export class GetInputService extends AbstractService implements GetInputServiceP
     });
 
     const metadata = createGetInputMetadata(this.toolId);
-    // Create tool invocation data
-    const toolInvocationData: MCPToolInvocationData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> = {
-      llmMetadata: {
-        name: metadata.toolId,
-        description: metadata.description,
-        inputSchema: metadata.inputSchema,
+    const input = { propertiesRequiringInput: unfulfilledProperties };
+
+    // Build a concrete example based on the actual properties being requested
+    const exampleProperties = unfulfilledProperties.reduce(
+      (acc, prop) => {
+        acc[prop.propertyName] = `<user's ${prop.friendlyName} value>`;
+        return acc;
       },
-      input: {
-        propertiesRequiringInput: unfulfilledProperties,
-      },
+      {} as Record<string, string>
+    );
+
+    // Create NodeGuidanceData for direct guidance mode
+    const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> = {
+      nodeId: metadata.toolId,
+      inputSchema: metadata.inputSchema,
+      input,
+      taskGuidance: this.generateTaskGuidance(unfulfilledProperties),
+      resultSchema: metadata.resultSchema,
+      // Provide example to help LLM understand the expected userUtterance wrapper
+      exampleOutput: JSON.stringify({ userUtterance: exampleProperties }),
     };
 
     // Execute tool with logging and validation
     const validatedResult = this.executeToolWithLogging(
-      toolInvocationData,
+      nodeGuidanceData,
       GET_INPUT_WORKFLOW_RESULT_SCHEMA
     );
 
     return validatedResult.userUtterance;
+  }
+
+  /**
+   * Generates the task guidance for user input collection.
+   *
+   * @param properties - Array of properties requiring user input
+   * @returns The guidance prompt string
+   */
+  private generateTaskGuidance(properties: GetInputProperty[]): string {
+    const propertiesDescription = properties
+      .map(
+        property =>
+          `- Property Name: ${property.propertyName}\n- Friendly Name: ${property.friendlyName}\n- Description: ${property.description}`
+      )
+      .join('\n\n');
+
+    return `
+# ROLE
+You are an input gathering tool, responsible for explicitly requesting and gathering the
+user's input for a set of unfulfilled properties.
+
+# TASK
+Your job is to provide a prompt to the user that outlines the details for a set of properties
+that require the user's input. The prompt should be polite and conversational.
+
+# CONTEXT
+Here is the list of properties that require the user's input, along with their describing
+metadata:
+
+${propertiesDescription}
+
+# INSTRUCTIONS
+1. Based on the properties listed in "CONTEXT", generate a prompt that outlines the details
+   for each property.
+2. Present the prompt to the user and instruct the user to provide their input.
+3. **IMPORTANT:** YOU MUST NOW WAIT for the user to provide a follow-up response to your prompt.
+    1. You CANNOT PROCEED FROM THIS STEP until the user has provided THEIR OWN INPUT VALUE.
+`;
   }
 }

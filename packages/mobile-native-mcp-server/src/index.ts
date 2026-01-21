@@ -22,8 +22,6 @@ import packageJson from '../package.json' with { type: 'json' };
 const version = packageJson.version;
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { MobileAppProjectPrompt } from './prompts/index.js';
-import { createSFMobileNativeGetInputTool } from './tools/utils/sfmobile-native-get-input/factory.js';
-import { createSFMobileNativeInputExtractionTool } from './tools/utils/sfmobile-native-input-extraction/factory.js';
 
 const server = new McpServer(
   {
@@ -50,8 +48,6 @@ const orchestratorAnnotations: ToolAnnotations = {
 
 // Initialize tools
 const orchestrator = new MobileNativeOrchestrator(server);
-const getInputTool = createSFMobileNativeGetInputTool(server);
-const inputExtractionTool = createSFMobileNativeInputExtractionTool(server);
 const templateSelectionTool = new SFMobileNativeTemplateSelectionTool(server);
 const buildRecoveryTool = new SFMobileNativeBuildRecoveryTool(server);
 const deploymentTool = new SFMobileNativeDeploymentTool(server);
@@ -66,8 +62,6 @@ const mobileAppProjectPrompt = new MobileAppProjectPrompt(server);
 orchestrator.register(orchestratorAnnotations);
 
 // Register all other tools with read-only annotations
-getInputTool.register(readOnlyAnnotations);
-inputExtractionTool.register(readOnlyAnnotations);
 templateSelectionTool.register(readOnlyAnnotations);
 buildRecoveryTool.register(readOnlyAnnotations);
 deploymentTool.register(readOnlyAnnotations);

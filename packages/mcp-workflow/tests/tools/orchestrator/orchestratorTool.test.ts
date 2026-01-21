@@ -15,7 +15,11 @@ import { OrchestratorTool, OrchestratorConfig } from '../../../src/tools/orchest
 import { WorkflowStateManager } from '../../../src/checkpointing/workflowStateManager.js';
 import { MockLogger } from '../../utils/MockLogger.js';
 import { MockFileSystem } from '../../utils/MockFileSystem.js';
-import { MCPToolInvocationData } from '../../../src/common/metadata.js';
+import { MCPToolInvocationData, NodeGuidanceData } from '../../../src/common/metadata.js';
+import {
+  GET_INPUT_WORKFLOW_INPUT_SCHEMA,
+  GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+} from '../../../src/tools/utilities/getInput/metadata.js';
 
 /**
  * Creates a mock RequestHandlerExtra object for testing.
@@ -408,7 +412,7 @@ describe('OrchestratorTool', () => {
       // Create a workflow that interrupts to invoke an MCP tool
       const workflow = new StateGraph(TestState)
         .addNode('interruptNode', (_state: State) => {
-          // Simulate an interrupt for MCP tool invocation
+          // Simulate an interrupt for MCP tool invocation (delegate mode)
           const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
             llmMetadata: {
               name: 'test-mcp-tool',
@@ -499,6 +503,155 @@ describe('OrchestratorTool', () => {
       expect(output.orchestrationInstructionsPrompt).toContain(customToolId);
     });
 
+    it('should generate direct guidance prompt when NodeGuidanceData is used', async () => {
+      const orchestratorToolId = 'test-direct-guidance-orchestrator';
+
+      const workflow = new StateGraph(TestState)
+        .addNode('getUserInput', (_state: State) => {
+          // Create NodeGuidanceData for direct guidance mode
+          const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_INPUT_SCHEMA> = {
+            nodeId: 'test-get-input',
+            inputSchema: GET_INPUT_WORKFLOW_INPUT_SCHEMA,
+            input: {
+              propertiesRequiringInput: [
+                {
+                  propertyName: 'platform',
+                  friendlyName: 'Platform',
+                  description: 'The target mobile platform (iOS or Android)',
+                },
+                {
+                  propertyName: 'projectName',
+                  friendlyName: 'Project Name',
+                  description: 'The name of the mobile project',
+                },
+              ],
+            },
+            taskGuidance: `
+# ROLE
+You are an input gathering tool.
+
+# TASK
+Gather user input for platform and projectName.
+
+# INSTRUCTIONS
+1. Ask the user for platform
+2. Ask the user for projectName
+3. **IMPORTANT:** YOU MUST NOW WAIT for the user to provide input.
+`,
+            resultSchema: GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+          };
+          return interrupt(nodeGuidanceData);
+        })
+        .addEdge(START, 'getUserInput')
+        .addEdge('getUserInput', END);
+
+      const config: OrchestratorConfig = {
+        toolId: orchestratorToolId,
+        title: 'Direct Guidance Test',
+        description: 'Tests direct guidance mode with NodeGuidanceData',
+        workflow,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new OrchestratorTool(server, config);
+
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result.structuredContent).toBeDefined();
+      const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
+      const prompt = output.orchestrationInstructionsPrompt;
+
+      // Should contain direct guidance prompt structure
+      expect(prompt).toContain('# ROLE');
+      expect(prompt).toContain('# TASK GUIDANCE');
+
+      // Should contain the taskGuidance content
+      expect(prompt).toContain('input gathering tool');
+      expect(prompt).toContain('YOU MUST NOW WAIT for the user');
+
+      // Input data is embedded directly in taskGuidance (no separate INPUT SCHEMA/DATA sections)
+      // The taskGuidance already contains all necessary context
+
+      // Should contain critical next step instructions
+      expect(prompt).toContain('# CRITICAL: REQUIRED NEXT STEP');
+      expect(prompt).toContain(orchestratorToolId);
+      expect(prompt).toContain('workflowStateData');
+
+      // Should contain output format section
+      expect(prompt).toContain('# OUTPUT FORMAT');
+      expect(prompt).toContain('MUST be a JSON object conforming to this schema');
+      expect(prompt).toContain('userUtterance');
+
+      // Should contain example tool call section
+      expect(prompt).toContain('# EXAMPLE TOOL CALL');
+
+      // Should NOT contain delegate mode content
+      expect(prompt).not.toContain('Invoke the following MCP server tool');
+    });
+
+    it('should use delegate mode (orchestration prompt) when MCPToolInvocationData is used', async () => {
+      const workflow = new StateGraph(TestState)
+        .addNode('regularInterrupt', (_state: State) => {
+          // Create MCPToolInvocationData for delegate mode
+          const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
+            llmMetadata: {
+              name: 'regular-tool',
+              description: 'A regular MCP tool',
+              inputSchema: z.object({
+                someParam: z.string(),
+                workflowStateData: z.object({ thread_id: z.string() }),
+              }),
+            },
+            input: {
+              someParam: 'value',
+            },
+          };
+          return interrupt(mcpToolData);
+        })
+        .addEdge(START, 'regularInterrupt')
+        .addEdge('regularInterrupt', END);
+
+      const config: OrchestratorConfig = {
+        toolId: 'test-regular-orchestrator',
+        title: 'Regular Orchestrator',
+        description: 'Tests delegate mode orchestration prompt',
+        workflow,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new OrchestratorTool(server, config);
+
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result.structuredContent).toBeDefined();
+      const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
+      const prompt = output.orchestrationInstructionsPrompt;
+
+      // Should contain delegate mode (orchestration) prompt content
+      expect(prompt).toContain('# Your Role');
+      expect(prompt).toContain('# Your Task');
+      expect(prompt).toContain('Invoke the following MCP server tool');
+      expect(prompt).toContain('regular-tool');
+
+      // Should NOT contain direct guidance mode content
+      expect(prompt).not.toContain('# TASK GUIDANCE');
+      expect(prompt).not.toContain('# POST-TASK INSTRUCTIONS');
+    });
+
     it('should resume interrupted workflow with user input (full interrupt->resume cycle)', async () => {
       // Use MockFileSystem for state persistence across calls
       const mockFs = new MockFileSystem();
@@ -507,7 +660,7 @@ describe('OrchestratorTool', () => {
       // Create a workflow that always interrupts on first run, then processes resume input
       const workflow = new StateGraph(TestState)
         .addNode('requestData', (_state: State) => {
-          // Always interrupt to request MCP tool invocation
+          // Always interrupt to request MCP tool invocation (delegate mode)
           const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
             llmMetadata: {
               name: 'get-user-data',

@@ -14,7 +14,10 @@ import { Command } from '@langchain/langgraph';
 import { createWorkflowLogger } from '../../logging/logger.js';
 import { AbstractTool } from '../base/abstractTool.js';
 import {
+  InterruptData,
   MCPToolInvocationData,
+  NodeGuidanceData,
+  isNodeGuidanceData,
   WORKFLOW_PROPERTY_NAMES,
   WorkflowStateData,
 } from '../../common/metadata.js';
@@ -179,29 +182,33 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
     graphState = await compiledWorkflow.getState(threadConfig);
     if (graphState.next.length > 0) {
       // There are more nodes to execute.
-      const mcpToolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> | undefined =
+      const interruptData: InterruptData<z.ZodObject<z.ZodRawShape>> | undefined =
         '__interrupt__' in result
           ? (
               result.__interrupt__ as Array<{
-                value: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>;
+                value: InterruptData<z.ZodObject<z.ZodRawShape>>;
               }>
             )[0].value
           : undefined;
 
-      if (!mcpToolInvocationData) {
-        this.logger.error('Workflow completed without expected MCP tool invocation.');
+      if (!interruptData) {
+        this.logger.error('Workflow completed without expected interrupt data.');
         throw new Error('FATAL: Unexpected workflow state without an interrupt');
       }
 
-      this.logger.info('Invoking next MCP tool', {
-        toolName: mcpToolInvocationData.llmMetadata?.name,
-      });
-
-      // Create orchestration prompt
-      const orchestrationPrompt = this.createOrchestrationPrompt(
-        mcpToolInvocationData,
-        workflowStateData
-      );
+      // Determine mode and create appropriate prompt
+      let orchestrationPrompt: string;
+      if (isNodeGuidanceData(interruptData)) {
+        this.logger.info('Using direct guidance mode', {
+          nodeId: interruptData.nodeId,
+        });
+        orchestrationPrompt = this.createDirectGuidancePrompt(interruptData, workflowStateData);
+      } else {
+        this.logger.info('Using delegate mode', {
+          toolName: interruptData.llmMetadata?.name,
+        });
+        orchestrationPrompt = this.createOrchestrationPrompt(interruptData, workflowStateData);
+      }
 
       // Save the workflow state.
       await this.stateManager.saveCheckpointerState(checkpointer);
@@ -220,6 +227,9 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
 
   /**
    * Create the thread configuration for LangGraph workflow invocation.
+   *
+   * Subclasses can override this method to add additional properties to
+   * `configurable`, such as progressReporter for long-running operations.
    *
    * @param threadId - The thread ID for checkpointing
    * @param progressReporter - Optional progress reporter for long-running operations
@@ -248,6 +258,7 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
 
   /**
    * Create orchestration prompt for LLM with embedded tool invocation data and workflow state
+   * Used in delegate mode - instructs LLM to call a separate MCP tool.
    */
   private createOrchestrationPrompt(
     mcpToolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
@@ -268,7 +279,7 @@ Invoke the following MCP server tool:
 **MCP Server Tool Name**: ${mcpToolInvocationData.llmMetadata?.name}
 **MCP Server Tool Input Schema**:
 \`\`\`json
-${JSON.stringify(zodToJsonSchema(mcpToolInvocationData.llmMetadata?.inputSchema))}
+${JSON.stringify(zodToJsonSchema(mcpToolInvocationData.llmMetadata.inputSchema))}
 \`\`\`
 **MCP Server Tool Input Values**:
 \`\`\`json
@@ -292,6 +303,84 @@ specified by the next MCP server tool invocation.
 
 The MCP server tool you invoke will respond with its output, along with further
 instructions for continuing the workflow.
+`;
+  }
+
+  /**
+   * Create a direct guidance prompt for the LLM.
+   * Used in direct guidance mode - provides guidance inline without an intermediate tool call.
+   *
+   * @param nodeGuidanceData - The node guidance data containing task guidance and schemas
+   * @param workflowStateData - The workflow state data to round-trip back to the orchestrator
+   * @returns A prompt with the task guidance and post-task instructions
+   */
+  private createDirectGuidancePrompt(
+    nodeGuidanceData: NodeGuidanceData<z.ZodObject<z.ZodRawShape>>,
+    workflowStateData: WorkflowStateData
+  ): string {
+    const resultSchemaJson = JSON.stringify(
+      zodToJsonSchema(nodeGuidanceData.resultSchema),
+      null,
+      2
+    );
+
+    // Build example section if provided
+    const exampleSection = nodeGuidanceData.exampleOutput
+      ? `
+For example, a properly formatted result should look like:
+
+\`\`\`json
+${nodeGuidanceData.exampleOutput}
+\`\`\`
+`
+      : '';
+
+    return `
+# ROLE
+
+You are participating in a workflow orchestration process. The orchestrator is providing
+you with direct guidance for the current task.
+
+# TASK GUIDANCE
+
+${nodeGuidanceData.taskGuidance}
+
+# CRITICAL: REQUIRED NEXT STEP
+
+After completing the task above, you **MUST** invoke the \`${this.toolMetadata.toolId}\` tool 
+to continue the workflow. The workflow CANNOT proceed without this tool call.
+
+**DO NOT:**
+- Simply respond with text
+- Skip the tool call
+- Forget to include the required parameters
+
+**YOU MUST** call the \`${this.toolMetadata.toolId}\` tool with EXACTLY these parameters:
+
+| Parameter | Value |
+|-----------|-------|
+| \`${WORKFLOW_PROPERTY_NAMES.userInput}\` | Your formatted result (see OUTPUT FORMAT below) |
+| \`${WORKFLOW_PROPERTY_NAMES.workflowStateData}\` | \`${JSON.stringify(workflowStateData)}\` |
+
+# OUTPUT FORMAT
+
+The \`${WORKFLOW_PROPERTY_NAMES.userInput}\` parameter MUST be a JSON object conforming to this schema:
+
+\`\`\`json
+${resultSchemaJson}
+\`\`\`
+${exampleSection}
+
+# EXAMPLE TOOL CALL
+
+Here is an example of the EXACT format your tool call should follow:
+
+\`\`\`
+Tool: ${this.toolMetadata.toolId}
+Parameters:
+  ${WORKFLOW_PROPERTY_NAMES.userInput}: ${nodeGuidanceData.exampleOutput ? nodeGuidanceData.exampleOutput.replaceAll('\n', '\n    ') : '{ /* your result object here */ }'}
+  ${WORKFLOW_PROPERTY_NAMES.workflowStateData}: ${JSON.stringify(workflowStateData)}
+\`\`\`
 `;
   }
 }

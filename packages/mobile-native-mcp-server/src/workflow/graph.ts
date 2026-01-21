@@ -56,9 +56,11 @@ import {
   CheckEmulatorCreatedRouter,
   CheckFatalErrorsRouter,
 } from './nodes/deployment/index.js';
-import { SFMOBILE_NATIVE_GET_INPUT_TOOL_ID } from '../tools/utils/sfmobile-native-get-input/metadata.js';
-import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../tools/utils/sfmobile-native-input-extraction/metadata.js';
-import { defaultTempDirectoryManager } from '../common.js';
+import {
+  defaultTempDirectoryManager,
+  SFMOBILE_NATIVE_GET_INPUT_TOOL_ID,
+  SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID,
+} from '../common.js';
 
 const initialUserInputExtractionNode = createUserInputExtractionNode<State>({
   requiredProperties: WORKFLOW_USER_INPUT_PROPERTIES,

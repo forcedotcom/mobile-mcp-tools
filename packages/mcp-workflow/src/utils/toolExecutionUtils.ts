@@ -6,7 +6,7 @@
  */
 
 import z from 'zod';
-import { MCPToolInvocationData } from '../common/metadata.js';
+import { InterruptData } from '../common/metadata.js';
 import { Logger } from '../logging/logger.js';
 import { ToolExecutor } from '../nodes/toolExecutor.js';
 
@@ -14,7 +14,7 @@ import { ToolExecutor } from '../nodes/toolExecutor.js';
  * Executes a tool with logging and validation.
  *
  * This utility provides a standardized pattern for tool execution that includes:
- * - Pre-execution logging of tool invocation data
+ * - Pre-execution logging of interrupt data
  * - Tool execution via the provided executor
  * - Post-execution logging of results
  * - Result validation using Zod schemas
@@ -26,7 +26,7 @@ import { ToolExecutor } from '../nodes/toolExecutor.js';
  *
  * @param toolExecutor - The executor to use for running the tool
  * @param logger - Logger instance for recording execution details
- * @param toolInvocationData - The tool invocation data including metadata and input
+ * @param interruptData - The interrupt data (MCPToolInvocationData or NodeGuidanceData)
  * @param resultSchema - Zod schema to validate the result against
  * @param validator - Optional custom validator function for additional validation logic
  * @returns The validated result from the tool execution
@@ -39,7 +39,7 @@ import { ToolExecutor } from '../nodes/toolExecutor.js';
  * const result = executeToolWithLogging(
  *   toolExecutor,
  *   logger,
- *   toolInvocationData,
+ *   interruptData,
  *   MyToolResultSchema
  * );
  *
@@ -48,7 +48,7 @@ import { ToolExecutor } from '../nodes/toolExecutor.js';
  * const result = executeToolWithLogging(
  *   toolExecutor,
  *   logger,
- *   toolInvocationData,
+ *   interruptData,
  *   MyToolResultSchema,
  *   (result, schema) => {
  *     const validated = schema.parse(result);
@@ -63,13 +63,13 @@ import { ToolExecutor } from '../nodes/toolExecutor.js';
 export function executeToolWithLogging<TResultSchema extends z.ZodObject<z.ZodRawShape>>(
   toolExecutor: ToolExecutor,
   logger: Logger,
-  toolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
+  interruptData: InterruptData<z.ZodObject<z.ZodRawShape>>,
   resultSchema: TResultSchema,
   validator?: (result: unknown, schema: TResultSchema) => z.infer<TResultSchema>
 ): z.infer<TResultSchema> {
-  logger.debug('Tool invocation data (pre-execution)', { toolInvocationData });
+  logger.debug('Interrupt data (pre-execution)', { interruptData });
 
-  const result = toolExecutor.execute(toolInvocationData);
+  const result = toolExecutor.execute(interruptData);
 
   logger.debug('Tool execution result (post-execution)', { result });
 

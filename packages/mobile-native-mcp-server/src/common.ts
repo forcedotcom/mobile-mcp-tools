@@ -17,6 +17,10 @@ export const MOBILE_SDK_TEMPLATES_PATH = resolve(
   'templates'
 );
 
+// Tool IDs for workflow nodes (services use these IDs for guidance generation)
+export const SFMOBILE_NATIVE_GET_INPUT_TOOL_ID = 'sfmobile-native-get-input';
+export const SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID = 'sfmobile-native-input-extraction';
+
 /**
  * Manages temporary directory creation and cleanup for workflow artifacts and logs.
  * Uses dependency injection for file system operations to support testing.
