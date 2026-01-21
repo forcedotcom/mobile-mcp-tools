@@ -30,6 +30,16 @@ class CustomThemeManager: AgentforceThemeManager {
     var shapes: AgentforceTheme.Shapes {
         return AgentforceDefaultThemeManager().shapes // Use default implementation
     }
+    
+    // MARK: - AgentforceAgentNameCustomizable
+    var customAgentNames: [AgentNameType : String?] {
+        return [:]
+    }
+    
+    // MARK: - AgentforceAvatarCustomizable
+    var avatarConfiguration: [AvatarType : String?] {
+        return [:]
+    }
 }
 
 class CustomLightColors: AgentforceTheme.Colors {
@@ -50,6 +60,8 @@ class CustomLightColors: AgentforceTheme.Colors {
     var accent3: Color
     var accent4: Color
     var accent5: Color
+    var accent6: Color
+    var accent7: Color
     var accentContainer1: Color
     var onAccent1: Color
     var error1: Color
@@ -121,6 +133,8 @@ class CustomLightColors: AgentforceTheme.Colors {
         self.accent3 = michelangeloOrange // Michelangelo - Party dude
         self.accent4 = donatelloPurple // Donatello - Tech genius
         self.accent5 = turtleGreen // Turtle power!
+        self.accent6 = turtleGreenLight // Additional accent
+        self.accent7 = shellBrown // Shell accent
         self.accentContainer1 = turtleGreenLight
         self.onAccent1 = .white
         

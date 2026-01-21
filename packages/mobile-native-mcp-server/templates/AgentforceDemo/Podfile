@@ -7,7 +7,7 @@ target 'AgentforceDemo' do
   source 'https://cdn.cocoapods.org/'
   use_frameworks!
 
-  pod 'AgentforceSDK'
+  pod 'AgentforceSDK', '14.7.6'
   pod 'Messaging-InApp-Core', '1.9.3-Experimental'
   pod 'LiveKitClient', '2.8.1'
 end
