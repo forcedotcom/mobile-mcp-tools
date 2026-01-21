@@ -19,9 +19,25 @@ const PLUGIN_INFO_SCHEMA = z.object({
 
 type PluginInfo = z.infer<typeof PLUGIN_INFO_SCHEMA>;
 
-const MINIMUM_PLUGIN_VERSION = '13.2.0-alpha.1';
-const PLUGIN_NAME = 'sfdx-mobilesdk-plugin';
-const PLUGIN_INSTALL_TAG = '@alpha';
+// Configuration to define the required plugin.
+interface PluginConfig {
+  name: string;
+  minimumVersion: string;
+  installTag: string;
+}
+
+const REQUIRED_PLUGINS: readonly PluginConfig[] = [
+  {
+    name: 'sfdx-mobilesdk-plugin',
+    minimumVersion: '13.2.0-alpha.1',
+    installTag: '@alpha',
+  },
+  {
+    name: '@salesforce/lwc-dev-mobile',
+    minimumVersion: '3.0.0-alpha.3',
+    installTag: '@alpha',
+  },
+] as const;
 
 export class PluginCheckNode extends BaseNode<State> {
   protected readonly logger: Logger;
@@ -32,43 +48,28 @@ export class PluginCheckNode extends BaseNode<State> {
   }
 
   execute = (_state: State): Partial<State> => {
-    try {
-      // First, check if plugin is installed
-      const inspectCommand = `sf plugins inspect ${PLUGIN_NAME} --json`;
+    const errorMessages: string[] = [];
+    let allPluginsValid = true;
 
-      this.logger.debug(`Checking plugin installation`, { command: inspectCommand });
-
-      let pluginInfo: PluginInfo;
-
-      try {
-        const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
-        pluginInfo = this.parsePluginOutput(output);
-      } catch (_error) {
-        // Plugin not installed, attempt to install it
-        this.logger.info(`Plugin not installed, attempting installation`);
-        return this.installPlugin();
+    // Check all required plugins
+    for (const pluginConfig of REQUIRED_PLUGINS) {
+      const result = this.checkPlugin(pluginConfig);
+      if (!result.success) {
+        allPluginsValid = false;
+        errorMessages.push(...result.errorMessages);
       }
+    }
 
-      // Check version
-      if (!this.isVersionSufficient(pluginInfo.version)) {
-        this.logger.info(
-          `Plugin version ${pluginInfo.version} is below minimum ${MINIMUM_PLUGIN_VERSION}, attempting upgrade`
-        );
-        return this.upgradePlugin();
-      }
-
-      // Plugin is installed and version is sufficient
-      this.logger.debug(`Plugin check passed`, { version: pluginInfo.version });
+    if (allPluginsValid) {
       return {
         validPluginSetup: true,
       };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : `${error}`;
-      return {
-        validPluginSetup: false,
-        workflowFatalErrorMessages: [`Error during plugin check: ${errorMessage}`],
-      };
     }
+
+    return {
+      validPluginSetup: false,
+      workflowFatalErrorMessages: errorMessages,
+    };
   };
 
   private parsePluginOutput(output: string): PluginInfo {
@@ -96,9 +97,9 @@ export class PluginCheckNode extends BaseNode<State> {
     }
   }
 
-  private isVersionSufficient(version: string): boolean {
+  private isVersionSufficient(version: string, minimumVersion: string): boolean {
     try {
-      return gte(version, MINIMUM_PLUGIN_VERSION);
+      return gte(version, minimumVersion);
     } catch (error) {
       // If version parsing fails, log and return false to be safe
       this.logger.warn(`Failed to parse version for comparison: ${version}`, { error });
@@ -106,28 +107,31 @@ export class PluginCheckNode extends BaseNode<State> {
     }
   }
 
-  private installPlugin(): Partial<State> {
+  private installPlugin(config: PluginConfig): Partial<State> {
     try {
-      const installCommand = `sf plugins install ${PLUGIN_NAME}${PLUGIN_INSTALL_TAG}`;
-      this.logger.debug(`Installing plugin`, { command: installCommand });
+      const installCommand = `sf plugins install ${config.name}${config.installTag}`;
+      this.logger.debug(`Installing plugin`, { command: installCommand, plugin: config.name });
 
       execSync(installCommand, { encoding: 'utf-8', timeout: 60000 });
 
       // Verify installation
-      const inspectCommand = `sf plugins inspect ${PLUGIN_NAME} --json`;
+      const inspectCommand = `sf plugins inspect ${config.name} --json`;
       const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
       const pluginInfo = this.parsePluginOutput(output);
 
-      if (!this.isVersionSufficient(pluginInfo.version)) {
+      if (!this.isVersionSufficient(pluginInfo.version, config.minimumVersion)) {
         return {
           validPluginSetup: false,
           workflowFatalErrorMessages: [
-            `Plugin installed but version ${pluginInfo.version} is below minimum ${MINIMUM_PLUGIN_VERSION}`,
+            `${config.name}: Plugin installed but version ${pluginInfo.version} is below minimum ${config.minimumVersion}`,
           ],
         };
       }
 
-      this.logger.info(`Plugin successfully installed`, { version: pluginInfo.version });
+      this.logger.info(`Plugin successfully installed`, {
+        plugin: config.name,
+        version: pluginInfo.version,
+      });
       return {
         validPluginSetup: true,
       };
@@ -135,34 +139,37 @@ export class PluginCheckNode extends BaseNode<State> {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       return {
         validPluginSetup: false,
-        workflowFatalErrorMessages: [`Failed to install plugin: ${errorMessage}`],
+        workflowFatalErrorMessages: [`${config.name}: Failed to install plugin: ${errorMessage}`],
       };
     }
   }
 
-  private upgradePlugin(): Partial<State> {
+  private upgradePlugin(config: PluginConfig): Partial<State> {
     try {
-      // Use install with @alpha tag to ensure we get the alpha version
-      const updateCommand = `sf plugins install ${PLUGIN_NAME}${PLUGIN_INSTALL_TAG}`;
-      this.logger.debug(`Upgrading plugin`, { command: updateCommand });
+      // Use install with tag to ensure we get the correct version
+      const updateCommand = `sf plugins install ${config.name}${config.installTag}`;
+      this.logger.debug(`Upgrading plugin`, { command: updateCommand, plugin: config.name });
 
       execSync(updateCommand, { encoding: 'utf-8', timeout: 60000 });
 
       // Verify upgrade
-      const inspectCommand = `sf plugins inspect ${PLUGIN_NAME} --json`;
+      const inspectCommand = `sf plugins inspect ${config.name} --json`;
       const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
       const pluginInfo = this.parsePluginOutput(output);
 
-      if (!this.isVersionSufficient(pluginInfo.version)) {
+      if (!this.isVersionSufficient(pluginInfo.version, config.minimumVersion)) {
         return {
           validPluginSetup: false,
           workflowFatalErrorMessages: [
-            `Plugin upgraded but version ${pluginInfo.version} is still below minimum ${MINIMUM_PLUGIN_VERSION}`,
+            `${config.name}: Plugin upgraded but version ${pluginInfo.version} is still below minimum ${config.minimumVersion}`,
           ],
         };
       }
 
-      this.logger.info(`Plugin successfully upgraded`, { version: pluginInfo.version });
+      this.logger.info(`Plugin successfully upgraded`, {
+        plugin: config.name,
+        version: pluginInfo.version,
+      });
       return {
         validPluginSetup: true,
       };
@@ -170,7 +177,61 @@ export class PluginCheckNode extends BaseNode<State> {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       return {
         validPluginSetup: false,
-        workflowFatalErrorMessages: [`Failed to upgrade plugin: ${errorMessage}`],
+        workflowFatalErrorMessages: [`${config.name}: Failed to upgrade plugin: ${errorMessage}`],
+      };
+    }
+  }
+
+  private checkPlugin(config: PluginConfig): { success: boolean; errorMessages: string[] } {
+    try {
+      const inspectCommand = `sf plugins inspect ${config.name} --json`;
+      this.logger.debug(`Checking plugin installation`, {
+        command: inspectCommand,
+        plugin: config.name,
+      });
+
+      let pluginInfo: PluginInfo;
+
+      try {
+        const output = execSync(inspectCommand, { encoding: 'utf-8', timeout: 10000 });
+        pluginInfo = this.parsePluginOutput(output);
+      } catch (_error) {
+        // Plugin not installed, attempt to install it
+        this.logger.info(`Plugin not installed, attempting installation`, { plugin: config.name });
+        const installResult = this.installPlugin(config);
+        return {
+          success: installResult.validPluginSetup === true,
+          errorMessages: installResult.workflowFatalErrorMessages || [],
+        };
+      }
+
+      // Check version
+      if (!this.isVersionSufficient(pluginInfo.version, config.minimumVersion)) {
+        this.logger.info(
+          `Plugin version ${pluginInfo.version} is below minimum ${config.minimumVersion}, attempting upgrade`,
+          { plugin: config.name }
+        );
+        const upgradeResult = this.upgradePlugin(config);
+        return {
+          success: upgradeResult.validPluginSetup === true,
+          errorMessages: upgradeResult.workflowFatalErrorMessages || [],
+        };
+      }
+
+      // Plugin is installed and version is sufficient
+      this.logger.debug(`Plugin check passed`, {
+        plugin: config.name,
+        version: pluginInfo.version,
+      });
+      return {
+        success: true,
+        errorMessages: [],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : `${error}`;
+      return {
+        success: false,
+        errorMessages: [`${config.name}: Error during plugin check: ${errorMessage}`],
       };
     }
   }
