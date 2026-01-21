@@ -23,7 +23,7 @@ type PluginInfo = z.infer<typeof PLUGIN_INFO_SCHEMA>;
 interface PluginConfig {
   name: string;
   minimumVersion: string;
-  installTag: string;
+  installTag?: string;
 }
 
 const REQUIRED_PLUGINS: readonly PluginConfig[] = [
@@ -35,7 +35,6 @@ const REQUIRED_PLUGINS: readonly PluginConfig[] = [
   {
     name: '@salesforce/lwc-dev-mobile',
     minimumVersion: '3.0.0-alpha.3',
-    installTag: '@alpha',
   },
 ] as const;
 
