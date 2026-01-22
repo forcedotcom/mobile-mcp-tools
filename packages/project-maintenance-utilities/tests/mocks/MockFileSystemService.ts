@@ -4,7 +4,13 @@ import { sep, join } from 'path';
 interface ErrorConfig {
   error: Error;
   path?: string; // If undefined, applies to all paths
-  operation?: 'existsSync' | 'mkdirSync' | 'readFileSync' | 'writeFileSync' | 'rmSync' | 'readdirSync';
+  operation?:
+    | 'existsSync'
+    | 'mkdirSync'
+    | 'readFileSync'
+    | 'writeFileSync'
+    | 'rmSync'
+    | 'readdirSync';
 }
 
 /**

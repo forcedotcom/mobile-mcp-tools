@@ -202,13 +202,6 @@ export class PackageService implements PackageServiceProvider {
       };
     }
 
-    // Log resolved dependencies for debugging
-    const resolvedDepsList = Object.entries(resolvedVersions)
-      .map(([name, version]) => `${name}: * -> ^${version}`)
-      .join(', ');
-    // Note: We can't use console.log here since this is called from ReleaseOrchestrator
-    // The caller should log this information
-
     // Create modified package.json with resolved versions
     const modifiedPackageJson = JSON.parse(originalContent);
 

@@ -93,10 +93,12 @@ export class ReleaseOrchestrator {
       this.reporter.step('Creating package tarball');
       // Resolve wildcard dependencies before packing
       const workspaceRoot = this.packageService.findWorkspaceRoot(packagePath);
-      let resolveWildcards: ((pkgPath: string) => {
-        originalContent: string;
-        modifiedContent: string;
-      }) | undefined;
+      let resolveWildcards:
+        | ((pkgPath: string) => {
+            originalContent: string;
+            modifiedContent: string;
+          })
+        | undefined;
 
       if (workspaceRoot) {
         this.reporter.info(`Found workspace root: ${workspaceRoot}`);
@@ -107,7 +109,7 @@ export class ReleaseOrchestrator {
             const originalJson = JSON.parse(result.originalContent);
             const modifiedJson = JSON.parse(result.modifiedContent);
             const resolved: string[] = [];
-            
+
             if (originalJson.dependencies && modifiedJson.dependencies) {
               for (const [depName, depVersion] of Object.entries(originalJson.dependencies)) {
                 if (depVersion === '*' && modifiedJson.dependencies[depName] !== '*') {
@@ -115,7 +117,7 @@ export class ReleaseOrchestrator {
                 }
               }
             }
-            
+
             if (resolved.length > 0) {
               this.reporter.info(`Resolved wildcard dependencies: ${resolved.join(', ')}`);
             }

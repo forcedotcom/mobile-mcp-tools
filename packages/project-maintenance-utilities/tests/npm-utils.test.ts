@@ -163,7 +163,7 @@ describe('NpmUtils', () => {
       // Verify package.json was restored after packing (it should be back to original)
       const restoredContent = mockFs.getFileContent(path.join(packagePath, 'package.json'));
       expect(restoredContent).toBe(originalPackageJson);
-      
+
       // Verify the resolver was called (implicitly verified by the fact that restoration happened)
       // The modification happens internally and is restored, so we can't directly verify it
       // but we can verify the final state is correct

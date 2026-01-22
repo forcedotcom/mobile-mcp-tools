@@ -926,10 +926,7 @@ describe('PackageService', () => {
         2
       );
 
-      mockFileSystemService.setFileContent(
-        join('test', 'package.json'),
-        'modified content'
-      );
+      mockFileSystemService.setFileContent(join('test', 'package.json'), 'modified content');
 
       packageService.restorePackageJson(join('test'), originalContent);
 
