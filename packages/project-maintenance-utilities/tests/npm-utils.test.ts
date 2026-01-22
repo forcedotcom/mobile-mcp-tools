@@ -121,6 +121,144 @@ describe('NpmUtils', () => {
       expect(() => npmUtils.createTarball(packagePath)).toThrow('Pack failed');
       expect(mockProcess.getCurrentWorkingDirectory()).toBe(originalCwd);
     });
+
+    it('should resolve wildcard dependencies before packing', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const originalPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '*',
+          },
+        },
+        null,
+        2
+      );
+      const modifiedPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '^0.0.1',
+          },
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), originalPackageJson);
+      mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball-content');
+
+      const resolveWildcards = (pkgPath: string) => {
+        expect(pkgPath).toBe(packagePath);
+        return {
+          originalContent: originalPackageJson,
+          modifiedContent: modifiedPackageJson,
+        };
+      };
+
+      npmUtils.createTarball(packagePath, resolveWildcards);
+
+      // Verify package.json was restored after packing (it should be back to original)
+      const restoredContent = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(restoredContent).toBe(originalPackageJson);
+      
+      // Verify the resolver was called (implicitly verified by the fact that restoration happened)
+      // The modification happens internally and is restored, so we can't directly verify it
+      // but we can verify the final state is correct
+    });
+
+    it('should not modify package.json if resolver returns same content', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const packageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            'some-package': '^1.0.0',
+          },
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), packageJson);
+      mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball-content');
+
+      const resolveWildcards = () => ({
+        originalContent: packageJson,
+        modifiedContent: packageJson, // Same content
+      });
+
+      npmUtils.createTarball(packagePath, resolveWildcards);
+
+      // Verify package.json was not modified
+      const content = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(content).toBe(packageJson);
+    });
+
+    it('should restore package.json even if packing fails', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const originalPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '*',
+          },
+        },
+        null,
+        2
+      );
+      const modifiedPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '^0.0.1',
+          },
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), originalPackageJson);
+      mockProcess.setCommandToThrow('npm pack', 'Pack failed');
+
+      const resolveWildcards = () => ({
+        originalContent: originalPackageJson,
+        modifiedContent: modifiedPackageJson,
+      });
+
+      expect(() => npmUtils.createTarball(packagePath, resolveWildcards)).toThrow('Pack failed');
+
+      // Verify package.json was restored even after error
+      const restoredContent = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(restoredContent).toBe(originalPackageJson);
+    });
+
+    it('should work without resolver function', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const packageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), packageJson);
+      mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball-content');
+
+      const result = npmUtils.createTarball(packagePath);
+
+      expect(result.tarballName).toBe('test-package-1.0.0.tgz');
+      // Verify package.json was not modified
+      const content = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(content).toBe(packageJson);
+    });
   });
 
   describe('isVersionPublished', () => {

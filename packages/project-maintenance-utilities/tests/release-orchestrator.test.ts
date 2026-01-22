@@ -51,6 +51,9 @@ describe('ReleaseOrchestrator', () => {
         tagPrefix: 'test-package',
       });
 
+      // Setup workspace root (return null to skip wildcard resolution)
+      mockPackage.setWorkspaceRoot(join('.', 'test-package'), null);
+
       // Setup GitHub service
       mockGitHub.clear();
 
@@ -609,6 +612,9 @@ describe('ReleaseOrchestrator', () => {
           tagName: 'test-package_v1.0.0',
           tagPrefix: 'test-package',
         });
+
+        // Setup workspace root (return null to skip wildcard resolution)
+        mockPackage.setWorkspaceRoot(`.${sep}test-package`, null);
 
         // Setup GitHub service
         mockGitHub.clear();

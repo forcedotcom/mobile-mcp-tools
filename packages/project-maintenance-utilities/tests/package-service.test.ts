@@ -607,4 +607,334 @@ describe('PackageService', () => {
       });
     });
   });
+
+  describe('findWorkspaceRoot', () => {
+    it('should find workspace root with workspaces field', () => {
+      const rootPackageJson = {
+        name: 'workspace-root',
+        version: '1.0.0',
+        workspaces: ['packages/*'],
+      };
+
+      // Use absolute paths since resolve() converts to absolute
+      const workspacePath = join(process.cwd(), 'workspace');
+      const packagePath = join(workspacePath, 'packages', 'some-package');
+
+      mockFileSystemService.setFileContent(
+        join(workspacePath, 'package.json'),
+        JSON.stringify(rootPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(workspacePath);
+
+      const result = packageService.findWorkspaceRoot(packagePath);
+
+      expect(result).toBe(workspacePath);
+    });
+
+    it('should find workspace root with workspace field', () => {
+      const rootPackageJson = {
+        name: 'workspace-root',
+        version: '1.0.0',
+        workspace: ['packages/*'],
+      };
+
+      // Use absolute paths since resolve() converts to absolute
+      const workspacePath = join(process.cwd(), 'workspace');
+      const packagePath = join(workspacePath, 'packages', 'some-package');
+
+      mockFileSystemService.setFileContent(
+        join(workspacePath, 'package.json'),
+        JSON.stringify(rootPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(workspacePath);
+
+      const result = packageService.findWorkspaceRoot(packagePath);
+
+      expect(result).toBe(workspacePath);
+    });
+
+    it('should return null if no workspace root found', () => {
+      const packageJson = {
+        name: 'not-workspace',
+        version: '1.0.0',
+      };
+
+      mockFileSystemService.setFileContent(
+        join('some', 'path', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('some', 'path'));
+
+      const result = packageService.findWorkspaceRoot(join('some', 'path'));
+
+      expect(result).toBeNull();
+    });
+
+    it('should walk up directory tree to find workspace root', () => {
+      const rootPackageJson = {
+        name: 'workspace-root',
+        version: '1.0.0',
+        workspaces: ['packages/*'],
+      };
+
+      // Use absolute paths since resolve() converts to absolute
+      const workspacePath = join(process.cwd(), 'workspace');
+      const packagesPath = join(workspacePath, 'packages');
+      const packagePath = join(packagesPath, 'some-package');
+
+      mockFileSystemService.setFileContent(
+        join(workspacePath, 'package.json'),
+        JSON.stringify(rootPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(workspacePath);
+
+      // Set up intermediate package.json without workspaces
+      const intermediatePackageJson = {
+        name: 'intermediate',
+        version: '1.0.0',
+      };
+      mockFileSystemService.setFileContent(
+        join(packagesPath, 'package.json'),
+        JSON.stringify(intermediatePackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(packagesPath);
+
+      const result = packageService.findWorkspaceRoot(packagePath);
+
+      expect(result).toBe(workspacePath);
+    });
+  });
+
+  describe('resolveWildcardDependencies', () => {
+    beforeEach(() => {
+      // Set up workspace root
+      const rootPackageJson = {
+        name: 'workspace-root',
+        version: '1.0.0',
+        workspaces: ['packages/*'],
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'package.json'),
+        JSON.stringify(rootPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('workspace'));
+      mockFileSystemService.setDirectoryExists(join('workspace', 'packages'));
+    });
+
+    it('should resolve wildcard dependencies to version ranges', () => {
+      // Set up dependency package
+      const dependencyPackageJson = {
+        name: '@salesforce/magen-mcp-workflow',
+        version: '0.0.1',
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'mcp-workflow', 'package.json'),
+        JSON.stringify(dependencyPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('workspace', 'packages', 'mcp-workflow'));
+
+      // Set up package with wildcard dependency
+      const packageJson = {
+        name: '@salesforce/mobile-native-mcp-server',
+        version: '0.0.1-alpha.2',
+        dependencies: {
+          '@salesforce/magen-mcp-workflow': '*',
+        },
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'mobile-native', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+
+      const result = packageService.resolveWildcardDependencies(
+        join('workspace', 'packages', 'mobile-native'),
+        join('workspace')
+      );
+
+      expect(result.originalContent).toContain('"@salesforce/magen-mcp-workflow": "*"');
+      expect(result.modifiedContent).toContain('"@salesforce/magen-mcp-workflow": "^0.0.1"');
+      expect(result.modifiedContent).not.toContain('"@salesforce/magen-mcp-workflow": "*"');
+    });
+
+    it('should resolve multiple wildcard dependencies', () => {
+      // Set up dependency packages
+      const workflowPackageJson = {
+        name: '@salesforce/magen-mcp-workflow',
+        version: '0.0.1',
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'mcp-workflow', 'package.json'),
+        JSON.stringify(workflowPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('workspace', 'packages', 'mcp-workflow'));
+
+      const magiPackageJson = {
+        name: '@salesforce/workflow-magi',
+        version: '0.1.0',
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'workflow-magi', 'package.json'),
+        JSON.stringify(magiPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('workspace', 'packages', 'workflow-magi'));
+
+      // Set up package with multiple wildcard dependencies
+      const packageJson = {
+        name: '@salesforce/mobile-native-mcp-server',
+        version: '0.0.1-alpha.2',
+        dependencies: {
+          '@salesforce/magen-mcp-workflow': '*',
+          '@salesforce/workflow-magi': '*',
+          'other-package': '^1.0.0', // Should not be modified
+        },
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'mobile-native', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+
+      const result = packageService.resolveWildcardDependencies(
+        join('workspace', 'packages', 'mobile-native'),
+        join('workspace')
+      );
+
+      expect(result.modifiedContent).toContain('"@salesforce/magen-mcp-workflow": "^0.0.1"');
+      expect(result.modifiedContent).toContain('"@salesforce/workflow-magi": "^0.1.0"');
+      expect(result.modifiedContent).toContain('"other-package": "^1.0.0"');
+      expect(result.modifiedContent).not.toContain('"*"');
+    });
+
+    it('should resolve wildcard dependencies in devDependencies', () => {
+      const devDependencyPackageJson = {
+        name: '@salesforce/test-utils',
+        version: '1.2.3',
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'test-utils', 'package.json'),
+        JSON.stringify(devDependencyPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('workspace', 'packages', 'test-utils'));
+
+      const packageJson = {
+        name: '@salesforce/my-package',
+        version: '1.0.0',
+        devDependencies: {
+          '@salesforce/test-utils': '*',
+        },
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'my-package', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+
+      const result = packageService.resolveWildcardDependencies(
+        join('workspace', 'packages', 'my-package'),
+        join('workspace')
+      );
+
+      expect(result.modifiedContent).toContain('"@salesforce/test-utils": "^1.2.3"');
+    });
+
+    it('should return original content if no wildcards found', () => {
+      const packageJson = {
+        name: '@salesforce/my-package',
+        version: '1.0.0',
+        dependencies: {
+          'some-package': '^1.0.0',
+        },
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'my-package', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+
+      const result = packageService.resolveWildcardDependencies(
+        join('workspace', 'packages', 'my-package'),
+        join('workspace')
+      );
+
+      expect(result.originalContent).toBe(result.modifiedContent);
+    });
+
+    it('should throw error if wildcard dependency not found in workspace', () => {
+      const packageJson = {
+        name: '@salesforce/my-package',
+        version: '1.0.0',
+        dependencies: {
+          '@salesforce/non-existent': '*',
+        },
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'my-package', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+
+      expect(() =>
+        packageService.resolveWildcardDependencies(
+          join('workspace', 'packages', 'my-package'),
+          join('workspace')
+        )
+      ).toThrow('Cannot resolve wildcard dependency');
+    });
+
+    it('should preserve other package.json fields', () => {
+      const dependencyPackageJson = {
+        name: '@salesforce/magen-mcp-workflow',
+        version: '0.0.1',
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'mcp-workflow', 'package.json'),
+        JSON.stringify(dependencyPackageJson, null, 2)
+      );
+      mockFileSystemService.setDirectoryExists(join('workspace', 'packages', 'mcp-workflow'));
+
+      const packageJson = {
+        name: '@salesforce/mobile-native-mcp-server',
+        version: '0.0.1-alpha.2',
+        description: 'Test package',
+        main: 'dist/index.js',
+        dependencies: {
+          '@salesforce/magen-mcp-workflow': '*',
+        },
+      };
+      mockFileSystemService.setFileContent(
+        join('workspace', 'packages', 'mobile-native', 'package.json'),
+        JSON.stringify(packageJson, null, 2)
+      );
+
+      const result = packageService.resolveWildcardDependencies(
+        join('workspace', 'packages', 'mobile-native'),
+        join('workspace')
+      );
+
+      const modifiedJson = JSON.parse(result.modifiedContent);
+      expect(modifiedJson.name).toBe('@salesforce/mobile-native-mcp-server');
+      expect(modifiedJson.version).toBe('0.0.1-alpha.2');
+      expect(modifiedJson.description).toBe('Test package');
+      expect(modifiedJson.main).toBe('dist/index.js');
+    });
+  });
+
+  describe('restorePackageJson', () => {
+    it('should restore original package.json content', () => {
+      const originalContent = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+        },
+        null,
+        2
+      );
+
+      mockFileSystemService.setFileContent(
+        join('test', 'package.json'),
+        'modified content'
+      );
+
+      packageService.restorePackageJson(join('test'), originalContent);
+
+      const restored = mockFileSystemService.getFileContent(join('test', 'package.json'));
+      expect(restored).toBe(originalContent);
+    });
+  });
 });

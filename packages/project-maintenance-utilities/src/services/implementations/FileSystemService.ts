@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'fs';
 import { FileSystemServiceProvider } from '../interfaces/FileSystemServiceProvider.js';
 
 /**
@@ -32,5 +32,9 @@ export class FileSystemService implements FileSystemServiceProvider {
 
   rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void {
     rmSync(path, options);
+  }
+
+  readdirSync(path: string): string[] {
+    return readdirSync(path);
   }
 }

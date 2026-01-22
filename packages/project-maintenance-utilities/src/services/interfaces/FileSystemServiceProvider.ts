@@ -14,4 +14,5 @@ export interface FileSystemServiceProvider {
 
   writeFileSync(path: string, data: string | Buffer, encoding?: BufferEncoding): void;
   rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+  readdirSync(path: string): string[];
 }

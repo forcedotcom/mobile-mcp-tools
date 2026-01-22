@@ -91,7 +91,44 @@ export class ReleaseOrchestrator {
       this.reporter.success(`Tag ${packageInfo.tagName} is available`);
 
       this.reporter.step('Creating package tarball');
-      const tarballInfo = this.npmUtils.createTarball(packagePath);
+      // Resolve wildcard dependencies before packing
+      const workspaceRoot = this.packageService.findWorkspaceRoot(packagePath);
+      let resolveWildcards: ((pkgPath: string) => {
+        originalContent: string;
+        modifiedContent: string;
+      }) | undefined;
+
+      if (workspaceRoot) {
+        this.reporter.info(`Found workspace root: ${workspaceRoot}`);
+        resolveWildcards = (pkgPath: string) => {
+          const result = this.packageService.resolveWildcardDependencies(pkgPath, workspaceRoot);
+          if (result.modifiedContent !== result.originalContent) {
+            // Parse to show what was resolved
+            const originalJson = JSON.parse(result.originalContent);
+            const modifiedJson = JSON.parse(result.modifiedContent);
+            const resolved: string[] = [];
+            
+            if (originalJson.dependencies && modifiedJson.dependencies) {
+              for (const [depName, depVersion] of Object.entries(originalJson.dependencies)) {
+                if (depVersion === '*' && modifiedJson.dependencies[depName] !== '*') {
+                  resolved.push(`${depName}: * -> ${modifiedJson.dependencies[depName]}`);
+                }
+              }
+            }
+            
+            if (resolved.length > 0) {
+              this.reporter.info(`Resolved wildcard dependencies: ${resolved.join(', ')}`);
+            }
+          }
+          return result;
+        };
+      } else {
+        this.reporter.warning(
+          'Could not detect workspace root. Wildcard dependencies will not be resolved.'
+        );
+      }
+
+      const tarballInfo = this.npmUtils.createTarball(packagePath, resolveWildcards);
       this.reporter.setOutput('tarball_name', tarballInfo.tarballName);
       this.reporter.setOutput('tarball_path', tarballInfo.tarballPath);
       this.reporter.success(`Created tarball: ${tarballInfo.tarballName}`);
