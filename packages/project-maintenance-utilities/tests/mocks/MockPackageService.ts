@@ -114,8 +114,4 @@ export class MockPackageService implements PackageServiceProvider {
     return resolution;
   }
 
-  restorePackageJson(_packagePath: string, _originalContent: string): void {
-    // Mock implementation - in real code this writes to file system
-    // For tests, we don't need to do anything since we're using mocks
-  }
 }

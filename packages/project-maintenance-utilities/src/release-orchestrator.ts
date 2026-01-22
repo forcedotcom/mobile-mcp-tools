@@ -30,6 +30,14 @@ interface PublishReleaseOptions {
 }
 
 /**
+ * Function type for resolving wildcard dependencies before packing
+ */
+type WildcardResolver = (packagePath: string) => {
+  originalContent: string;
+  modifiedContent: string;
+};
+
+/**
  * Release orchestrator that combines all utility modules with dependency injection
  */
 export class ReleaseOrchestrator {
@@ -93,12 +101,7 @@ export class ReleaseOrchestrator {
       this.reporter.step('Creating package tarball');
       // Resolve wildcard dependencies before packing
       const workspaceRoot = this.packageService.findWorkspaceRoot(packagePath);
-      let resolveWildcards:
-        | ((pkgPath: string) => {
-            originalContent: string;
-            modifiedContent: string;
-          })
-        | undefined;
+      let resolveWildcards: WildcardResolver | undefined;
 
       if (workspaceRoot) {
         this.reporter.info(`Found workspace root: ${workspaceRoot}`);

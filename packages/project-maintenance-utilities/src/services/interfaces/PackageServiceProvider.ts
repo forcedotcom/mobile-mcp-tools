@@ -20,5 +20,4 @@ export interface PackageServiceProvider {
     packagePath: string,
     workspaceRoot: string
   ): { originalContent: string; modifiedContent: string };
-  restorePackageJson(packagePath: string, originalContent: string): void;
 }

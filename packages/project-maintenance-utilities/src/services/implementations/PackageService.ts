@@ -8,7 +8,14 @@ import {
 } from '../interfaces/PackageServiceProvider.js';
 
 export class PackageService implements PackageServiceProvider {
-  constructor(private fsService: FileSystemServiceProvider) {}
+  private debugLog: (message: string) => void;
+
+  constructor(
+    private fsService: FileSystemServiceProvider,
+    debugLog?: (message: string) => void
+  ) {
+    this.debugLog = debugLog ?? (() => {});
+  }
 
   /**
    * Get package information from package.json
@@ -134,11 +141,11 @@ export class PackageService implements PackageServiceProvider {
           const packageJsonContent = this.fsService.readFileSync(packageJsonPath, 'utf8');
           const packageJson = JSON.parse(packageJsonContent);
           // Check if this is a workspace root (has workspaces field)
-          if (packageJson.workspaces || packageJson.workspace) {
+          if (packageJson.workspaces) {
             return currentPath;
           }
-        } catch {
-          // If we can't parse it, continue searching
+        } catch (error) {
+          this.debugLog(`Could not parse package.json at ${packageJsonPath}: ${error}`);
         }
       }
       currentPath = dirname(currentPath);
@@ -262,25 +269,15 @@ export class PackageService implements PackageServiceProvider {
                 version: packageJson.version,
               });
             }
-          } catch {
-            // Skip if we can't parse the package.json
+          } catch (error) {
+            this.debugLog(`Could not parse package.json at ${packageJsonPath}: ${error}`);
           }
         }
       }
-    } catch {
-      // If we can't read the directory, return empty array
+    } catch (error) {
+      this.debugLog(`Could not read packages directory at ${packagesDir}: ${error}`);
     }
 
     return packages;
-  }
-
-  /**
-   * Restore package.json to its original content
-   * @param packagePath - Path to package directory
-   * @param originalContent - Original package.json content
-   */
-  restorePackageJson(packagePath: string, originalContent: string): void {
-    const packageJsonPath = join(packagePath, 'package.json');
-    this.fsService.writeFileSync(packageJsonPath, originalContent, 'utf8');
   }
 }

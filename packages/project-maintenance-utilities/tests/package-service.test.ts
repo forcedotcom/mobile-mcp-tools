@@ -631,28 +631,6 @@ describe('PackageService', () => {
       expect(result).toBe(workspacePath);
     });
 
-    it('should find workspace root with workspace field', () => {
-      const rootPackageJson = {
-        name: 'workspace-root',
-        version: '1.0.0',
-        workspace: ['packages/*'],
-      };
-
-      // Use absolute paths since resolve() converts to absolute
-      const workspacePath = join(process.cwd(), 'workspace');
-      const packagePath = join(workspacePath, 'packages', 'some-package');
-
-      mockFileSystemService.setFileContent(
-        join(workspacePath, 'package.json'),
-        JSON.stringify(rootPackageJson, null, 2)
-      );
-      mockFileSystemService.setDirectoryExists(workspacePath);
-
-      const result = packageService.findWorkspaceRoot(packagePath);
-
-      expect(result).toBe(workspacePath);
-    });
-
     it('should return null if no workspace root found', () => {
       const packageJson = {
         name: 'not-workspace',
@@ -915,23 +893,4 @@ describe('PackageService', () => {
     });
   });
 
-  describe('restorePackageJson', () => {
-    it('should restore original package.json content', () => {
-      const originalContent = JSON.stringify(
-        {
-          name: 'test-package',
-          version: '1.0.0',
-        },
-        null,
-        2
-      );
-
-      mockFileSystemService.setFileContent(join('test', 'package.json'), 'modified content');
-
-      packageService.restorePackageJson(join('test'), originalContent);
-
-      const restored = mockFileSystemService.getFileContent(join('test', 'package.json'));
-      expect(restored).toBe(originalContent);
-    });
-  });
 });
