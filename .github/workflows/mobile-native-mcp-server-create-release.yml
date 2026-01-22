@@ -1,0 +1,15 @@
+name: Mobile Native MCP Server - Create Release
+run-name: Create release for Mobile Native MCP Server
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    uses: ./.github/workflows/base-create-release.yml
+    with:
+      package_display_name: 'Mobile Native MCP Server'
+      package_path: 'packages/mobile-native-mcp-server'
+    permissions:
+      contents: write
+      packages: write

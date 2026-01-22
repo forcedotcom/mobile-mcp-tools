@@ -1,0 +1,39 @@
+name: Mobile Native MCP Server - Publish Release
+run-name: Publish Mobile Native MCP Server release to NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to publish (e.g., salesforce-mobile-native-mcp-server_v1.0.0)'
+        required: true
+        type: string
+      npm_tag:
+        description: 'NPM tag to publish under'
+        required: false
+        type: choice
+        options:
+          - latest
+          - beta
+          - alpha
+          - next
+        default: 'latest'
+      dry_run:
+        description: 'Perform a dry run (do not actually publish)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish-release:
+    uses: ./.github/workflows/base-publish-release.yml
+    with:
+      package_display_name: 'Mobile Native MCP Server'
+      package_path: 'packages/mobile-native-mcp-server'
+      release_tag: ${{ inputs.release_tag }}
+      npm_tag: ${{ inputs.npm_tag }}
+      dry_run: ${{ inputs.dry_run }}
+    secrets: inherit
+    permissions:
+      contents: write
+      packages: write
