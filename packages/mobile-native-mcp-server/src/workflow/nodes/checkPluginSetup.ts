@@ -125,7 +125,8 @@ export class PluginCheckNode extends BaseNode<State> {
     operation: 'install' | 'upgrade'
   ): Partial<State> {
     try {
-      const installCommand = `sf plugins install ${config.name}${config.installTag ?? ''}`;
+      // Pipe "y" to automatically answer the trust prompt
+      const installCommand = `echo "y" | sf plugins install ${config.name}${config.installTag ?? ''}`;
       const operationVerb = operation === 'install' ? 'Installing' : 'Upgrading';
       this.logger.debug(`${operationVerb} plugin`, {
         command: installCommand,
