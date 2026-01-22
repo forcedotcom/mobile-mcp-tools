@@ -113,5 +113,4 @@ export class MockPackageService implements PackageServiceProvider {
     }
     return resolution;
   }
-
 }

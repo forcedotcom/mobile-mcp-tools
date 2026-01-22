@@ -892,5 +892,4 @@ describe('PackageService', () => {
       expect(modifiedJson.main).toBe('dist/index.js');
     });
   });
-
 });
