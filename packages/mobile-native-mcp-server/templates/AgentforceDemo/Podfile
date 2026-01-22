@@ -9,7 +9,8 @@ target 'AgentforceDemo' do
 
   pod 'AgentforceSDK', '14.7.6'
   pod 'Messaging-InApp-Core', '1.9.3-Experimental'
-  pod 'LiveKitClient', '2.8.1'
+  pod 'LiveKitClient', '2.9.0'
+  pod 'Logging', '~> 1.4'
 end
 
 post_install do |installer|
