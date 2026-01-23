@@ -1,10 +1,23 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { FileSystemServiceProvider } from '../interfaces/FileSystemServiceProvider.js';
 
 /**
  * Concrete implementation of FileSystemServiceProvider using Node.js fs module
  */
 export class FileSystemService implements FileSystemServiceProvider {
+  /**
+   * Workspace root resolved relative to the module location
+   * Assumes FileSystemService is at packages/project-maintenance-utilities/src/services/implementations/FileSystemService.ts
+   * and workspace root is 4 levels up
+   */
+  public get workspaceRoot(): string {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    return resolve(__dirname, '..', '..', '..', '..');
+  }
+
   existsSync(path: string): boolean {
     return existsSync(path);
   }

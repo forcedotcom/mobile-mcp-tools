@@ -616,9 +616,8 @@ describe('PackageService', () => {
         workspaces: ['packages/*'],
       };
 
-      // Use absolute paths since resolve() converts to absolute
-      const workspacePath = join(process.cwd(), 'workspace');
-      const packagePath = join(workspacePath, 'packages', 'some-package');
+      const workspacePath = '/workspace';
+      mockFileSystemService.setWorkspaceRoot(workspacePath);
 
       mockFileSystemService.setFileContent(
         join(workspacePath, 'package.json'),
@@ -626,39 +625,31 @@ describe('PackageService', () => {
       );
       mockFileSystemService.setDirectoryExists(workspacePath);
 
-      const result = packageService.findWorkspaceRoot(packagePath);
+      const result = packageService.findWorkspaceRoot(
+        join(workspacePath, 'packages', 'some-package')
+      );
 
       expect(result).toBe(workspacePath);
     });
 
-    it('should return null if no workspace root found', () => {
-      const packageJson = {
-        name: 'not-workspace',
-        version: '1.0.0',
-      };
-
-      mockFileSystemService.setFileContent(
-        join('some', 'path', 'package.json'),
-        JSON.stringify(packageJson, null, 2)
-      );
-      mockFileSystemService.setDirectoryExists(join('some', 'path'));
+    it('should return null if package.json does not exist at workspace root', () => {
+      const workspacePath = '/workspace';
+      mockFileSystemService.setWorkspaceRoot(workspacePath);
+      mockFileSystemService.setDirectoryExists(workspacePath);
 
       const result = packageService.findWorkspaceRoot(join('some', 'path'));
 
       expect(result).toBeNull();
     });
 
-    it('should walk up directory tree to find workspace root', () => {
+    it('should return null if package.json does not have workspaces field', () => {
       const rootPackageJson = {
-        name: 'workspace-root',
+        name: 'not-workspace',
         version: '1.0.0',
-        workspaces: ['packages/*'],
       };
 
-      // Use absolute paths since resolve() converts to absolute
-      const workspacePath = join(process.cwd(), 'workspace');
-      const packagesPath = join(workspacePath, 'packages');
-      const packagePath = join(packagesPath, 'some-package');
+      const workspacePath = '/workspace';
+      mockFileSystemService.setWorkspaceRoot(workspacePath);
 
       mockFileSystemService.setFileContent(
         join(workspacePath, 'package.json'),
@@ -666,20 +657,9 @@ describe('PackageService', () => {
       );
       mockFileSystemService.setDirectoryExists(workspacePath);
 
-      // Set up intermediate package.json without workspaces
-      const intermediatePackageJson = {
-        name: 'intermediate',
-        version: '1.0.0',
-      };
-      mockFileSystemService.setFileContent(
-        join(packagesPath, 'package.json'),
-        JSON.stringify(intermediatePackageJson, null, 2)
-      );
-      mockFileSystemService.setDirectoryExists(packagesPath);
+      const result = packageService.findWorkspaceRoot(join('some', 'path'));
 
-      const result = packageService.findWorkspaceRoot(packagePath);
-
-      expect(result).toBe(workspacePath);
+      expect(result).toBeNull();
     });
   });
 

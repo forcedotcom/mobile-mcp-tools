@@ -22,6 +22,22 @@ export class MockFileSystemService implements FileSystemServiceProvider {
   private files: Map<string, string | Buffer> = new Map();
   private directories: Set<string> = new Set();
   private errorConfigs: ErrorConfig[] = [];
+  private _workspaceRoot: string = '/workspace';
+
+  /**
+   * Get the workspace root directory path
+   * Can be configured for testing using setWorkspaceRoot()
+   */
+  public get workspaceRoot(): string {
+    return this._workspaceRoot;
+  }
+
+  /**
+   * Set the workspace root for testing
+   */
+  setWorkspaceRoot(path: string): void {
+    this._workspaceRoot = path;
+  }
 
   /**
    * Check if an error should be thrown for the given operation and path

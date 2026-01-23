@@ -1,4 +1,4 @@
-import { join, resolve, dirname } from 'path';
+import { join } from 'path';
 import { valid as semverValid } from 'semver';
 import { FileSystemServiceProvider } from '../interfaces/FileSystemServiceProvider.js';
 import {
@@ -126,29 +126,32 @@ export class PackageService implements PackageServiceProvider {
   }
 
   /**
-   * Find workspace root by looking for package.json with workspaces configuration
-   * @param startPath - Path to start searching from
+   * Find workspace root by checking the workspaceRoot from FileSystemServiceProvider
+   * @param startPath - Path to start searching from (unused, kept for interface compatibility)
    * @returns Path to workspace root or null if not found
    */
   findWorkspaceRoot(startPath: string): string | null {
-    let currentPath = resolve(startPath);
+    // Unused parameter kept for interface compatibility
+    void startPath;
 
-    // Walk up the directory tree looking for package.json with workspaces
-    while (currentPath !== dirname(currentPath)) {
-      const packageJsonPath = join(currentPath, 'package.json');
-      if (this.fsService.existsSync(packageJsonPath)) {
-        try {
-          const packageJsonContent = this.fsService.readFileSync(packageJsonPath, 'utf8');
-          const packageJson = JSON.parse(packageJsonContent);
-          // Check if this is a workspace root (has workspaces field)
-          if (packageJson.workspaces) {
-            return currentPath;
-          }
-        } catch (error) {
-          this.debugLog(`Could not parse package.json at ${packageJsonPath}: ${error}`);
-        }
+    const workspaceRoot = this.fsService.workspaceRoot;
+    const packageJsonPath = join(workspaceRoot, 'package.json');
+
+    if (!this.fsService.existsSync(packageJsonPath)) {
+      this.debugLog(`package.json not found at workspace root: ${packageJsonPath}`);
+      return null;
+    }
+
+    try {
+      const packageJsonContent = this.fsService.readFileSync(packageJsonPath, 'utf8');
+      const packageJson = JSON.parse(packageJsonContent);
+      // Check if this is a workspace root (has workspaces field)
+      if (packageJson.workspaces) {
+        return workspaceRoot;
       }
-      currentPath = dirname(currentPath);
+      this.debugLog(`package.json at ${packageJsonPath} does not have workspaces field`);
+    } catch (error) {
+      this.debugLog(`Could not parse package.json at ${packageJsonPath}: ${error}`);
     }
 
     return null;
