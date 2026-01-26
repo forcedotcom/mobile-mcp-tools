@@ -16,12 +16,38 @@ vi.mock('child_process', () => ({
   execSync: vi.fn(),
 }));
 
+// Mock the envConfig module to ensure Android env vars are set for tests
+const mockLoadAndSetEnvVars = vi.hoisted(() => vi.fn());
+vi.mock('../../../src/workflow/utils/envConfig.js', () => ({
+  loadAndSetEnvVars: mockLoadAndSetEnvVars,
+}));
+
 describe('PlatformCheckNode', () => {
   let node: PlatformCheckNode;
   let mockLogger: MockLogger;
   let mockExecSync: ReturnType<typeof vi.fn>;
+  let originalAndroidHome: string | undefined;
+  let originalJavaHome: string | undefined;
 
   beforeEach(() => {
+    // Save original env vars
+    originalAndroidHome = process.env.ANDROID_HOME;
+    originalJavaHome = process.env.JAVA_HOME;
+
+    // Clear env vars to simulate CI environment
+    delete process.env.ANDROID_HOME;
+    delete process.env.JAVA_HOME;
+
+    // Mock loadAndSetEnvVars to set env vars when called (simulating successful config load)
+    mockLoadAndSetEnvVars.mockImplementation(() => {
+      process.env.ANDROID_HOME = '/mock/android/home';
+      process.env.JAVA_HOME = '/mock/java/home';
+      return {
+        androidHomeLoaded: true,
+        javaHomeLoaded: true,
+      };
+    });
+
     mockLogger = new MockLogger();
     node = new PlatformCheckNode(mockLogger);
     mockExecSync = vi.mocked(childProcess.execSync);
@@ -30,6 +56,17 @@ describe('PlatformCheckNode', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Restore original env vars
+    if (originalAndroidHome !== undefined) {
+      process.env.ANDROID_HOME = originalAndroidHome;
+    } else {
+      delete process.env.ANDROID_HOME;
+    }
+    if (originalJavaHome !== undefined) {
+      process.env.JAVA_HOME = originalJavaHome;
+    } else {
+      delete process.env.JAVA_HOME;
+    }
   });
 
   describe('Constructor', () => {
