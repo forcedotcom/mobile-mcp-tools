@@ -21,7 +21,7 @@
     "evaluate:component": "op run --env-file=.env -- tsx src/scripts/run-evaluation.ts --component"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.0",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "globals": "^16.5.0",
     "zod": "^3.25.67"
   },
