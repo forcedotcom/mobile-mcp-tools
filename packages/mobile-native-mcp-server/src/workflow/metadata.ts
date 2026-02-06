@@ -26,6 +26,14 @@ export interface TemplatePropertyMetadata {
 export type TemplatePropertiesMetadata = Record<string, TemplatePropertyMetadata>;
 
 /**
+ * Information about a Connected App from Salesforce org metadata
+ */
+export interface ConnectedAppInfo {
+  fullName: string;
+  createdByName: string;
+}
+
+/**
  * Definition of all user input properties required by the mobile native workflow.
  * Each property includes metadata for extraction, validation, and user prompting.
  *
@@ -100,7 +108,6 @@ export const MobileNativeWorkflowState = Annotation.Root({
   platform: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.platform.zodType>>,
 
   // Plan phase state
-  validEnvironment: Annotation<boolean>,
   validPlatformSetup: Annotation<boolean>,
   validPluginSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
@@ -118,6 +125,10 @@ export const MobileNativeWorkflowState = Annotation.Root({
   projectPath: Annotation<string>,
   packageName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.packageName.zodType>>,
   organization: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.organization.zodType>>,
+
+  // Connected App state (for MSDK apps)
+  connectedAppList: Annotation<ConnectedAppInfo[]>,
+  selectedConnectedAppName: Annotation<string>,
   connectedAppClientId: Annotation<string>,
   connectedAppCallbackUri: Annotation<string>,
   loginHost: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.loginHost.zodType>>,
