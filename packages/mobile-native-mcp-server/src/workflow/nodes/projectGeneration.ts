@@ -55,14 +55,21 @@ export class ProjectGenerationNode extends BaseNode<State> {
         state.packageName,
         '--organization',
         state.organization,
-        '--consumerkey',
-        state.connectedAppClientId,
-        '--callbackurl',
-        state.connectedAppCallbackUri,
-        '--loginserver',
-        state.loginHost,
-        ...templatePropertiesArgs,
       ];
+
+      // Add connected app credentials only for MSDK apps (when they exist in state)
+      if (state.connectedAppClientId) {
+        args.push('--consumerkey', state.connectedAppClientId);
+      }
+      if (state.connectedAppCallbackUri) {
+        args.push('--callbackurl', state.connectedAppCallbackUri);
+      }
+      if (state.loginHost) {
+        args.push('--loginserver', state.loginHost);
+      }
+
+      // Add template properties for AgentSDK apps
+      args.push(...templatePropertiesArgs);
 
       this.logger.debug('Executing project generation command', {
         template: state.selectedTemplate,
@@ -71,9 +78,10 @@ export class ProjectGenerationNode extends BaseNode<State> {
         platform: state.platform,
         packageName: state.packageName,
         organization: state.organization,
-        connectedAppClientId: state.connectedAppClientId,
-        connectedAppCallbackUri: state.connectedAppCallbackUri,
-        loginHost: state.loginHost,
+        // Only log connected app credentials if present (MSDK apps)
+        ...(state.connectedAppClientId && { connectedAppClientId: state.connectedAppClientId }),
+        ...(state.connectedAppCallbackUri && { connectedAppCallbackUri: state.connectedAppCallbackUri }),
+        ...(state.loginHost && { loginHost: state.loginHost }),
         templateProperties: state.templateProperties,
       });
 

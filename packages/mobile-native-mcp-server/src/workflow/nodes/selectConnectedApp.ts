@@ -129,9 +129,16 @@ export class SelectConnectedAppNode extends AbstractToolNode<State> {
       # INSTRUCTIONS
       1. Present the list of available Connected Apps to the user.
       2. Ask the user to provide the **fullName** of the Connected App they want to use.
-      3. **IMPORTANT:** YOU MUST NOW WAIT for the user to provide their selection.
-         1. You CANNOT PROCEED FROM THIS STEP until the user has provided THEIR OWN selection.
-         2. Do NOT make assumptions or select a Connected App on behalf of the user.
+      3. **CRITICAL:** YOU MUST NOW WAIT for the user to provide their selection.
+         - You CANNOT PROCEED FROM THIS STEP until the user has provided THEIR OWN selection.
+         - Do NOT make assumptions or select a Connected App on behalf of the user.
+
+      # STRICT VALIDATION RULES
+      - The user MUST select exactly ONE Connected App from the list above.
+      - REJECT any input that does not EXACTLY match one of the fullName values listed above.
+      - REJECT empty or blank responses. An empty selection is NOT acceptable.
+      - If the user provides an invalid selection, inform them that they MUST choose from the available list and repeat the request.
+      - Do NOT proceed until a valid selection from the list has been provided.
     `;
   }
 }

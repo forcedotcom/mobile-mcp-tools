@@ -61,11 +61,6 @@ export const WORKFLOW_USER_INPUT_PROPERTIES = {
     description: 'The organization or company name',
     friendlyName: 'organization or company name',
   } satisfies PropertyMetadata<z.ZodString>,
-  loginHost: {
-    zodType: z.string(),
-    description: 'The Salesforce login host for the mobile app.',
-    friendlyName: 'Salesforce login host',
-  } satisfies PropertyMetadata<z.ZodString>,
 } as const satisfies PropertyMetadataCollection;
 
 export type WorkflowUserInputProperties = typeof WORKFLOW_USER_INPUT_PROPERTIES;
@@ -131,7 +126,7 @@ export const MobileNativeWorkflowState = Annotation.Root({
   selectedConnectedAppName: Annotation<string>,
   connectedAppClientId: Annotation<string>,
   connectedAppCallbackUri: Annotation<string>,
-  loginHost: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.loginHost.zodType>>,
+  loginHost: Annotation<string>,
 
   // Build and deployment state
   buildType: Annotation<'debug' | 'release'>,

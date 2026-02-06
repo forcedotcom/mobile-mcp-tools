@@ -43,6 +43,16 @@ interface SfProjectRetrieveResponse {
 }
 
 /**
+ * Response structure from `sf org display --json`
+ */
+interface SfOrgDisplayResponse {
+  status: number;
+  result: {
+    instanceUrl: string;
+  };
+}
+
+/**
  * Node that retrieves Connected App metadata from Salesforce and extracts
  * the consumerKey and callbackUrl from the downloaded XML file.
  *
@@ -160,16 +170,49 @@ export class RetrieveConnectedAppMetadataNode extends BaseNode<State> {
         };
       }
 
+      // Retrieve the login host (org instance URL) for MSDK apps
+      let loginHost: string | undefined;
+      try {
+        const orgDisplayResult = await this.commandRunner.execute(
+          'sf',
+          ['org', 'display', '--json'],
+          {
+            timeout: 60000,
+            cwd: process.cwd(),
+            progressReporter,
+            commandName: 'Retrieve Org Info',
+          }
+        );
+
+        if (orgDisplayResult.success) {
+          const orgResponse: SfOrgDisplayResponse = JSON.parse(orgDisplayResult.stdout);
+          loginHost = orgResponse.result.instanceUrl;
+          this.logger.info('Successfully retrieved org instance URL', { instanceUrl: loginHost });
+        } else {
+          this.logger.warn('Failed to retrieve org instance URL, using default', {
+            stderr: orgDisplayResult.stderr,
+          });
+          loginHost = 'https://login.salesforce.com';
+        }
+      } catch (orgError) {
+        this.logger.warn('Error retrieving org instance URL, using default', {
+          error: orgError instanceof Error ? orgError.message : `${orgError}`,
+        });
+        loginHost = 'https://login.salesforce.com';
+      }
+
       this.logger.info('Successfully retrieved Connected App credentials', {
         connectedAppName: state.selectedConnectedAppName,
         callbackUrl: credentials.callbackUrl,
         // Don't log the full consumer key for security
         consumerKeyPrefix: credentials.consumerKey.substring(0, 10) + '...',
+        loginHost,
       });
 
       return {
         connectedAppClientId: credentials.consumerKey,
         connectedAppCallbackUri: credentials.callbackUrl,
+        loginHost,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
