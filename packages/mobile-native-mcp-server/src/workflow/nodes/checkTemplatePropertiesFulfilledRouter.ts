@@ -11,23 +11,32 @@ import { State } from '../metadata.js';
 /**
  * Conditional router to check whether all required template properties have been collected.
  *
- * This router checks if:
- * 1. There are no template properties required (template has no custom properties)
- * 2. All required template properties have been collected from the user
+ * This router checks:
+ * 1. For MSDK apps (no template properties defined): routes to connected app fetch if credentials not yet retrieved
+ * 2. For templates with properties: checks if all required properties have been collected from the user
+ * 3. When all requirements are fulfilled: routes to project generation
  */
 export class CheckTemplatePropertiesFulfilledRouter {
   private readonly propertiesFulfilledNodeName: string;
   private readonly propertiesUnfulfilledNodeName: string;
+  private readonly msdkConnectedAppNodeName: string;
   private readonly logger = createComponentLogger('CheckTemplatePropertiesFulfilledRouter');
+
   /**
    * Creates a new CheckTemplatePropertiesFulfilledRouter.
    *
-   * @param propertiesFulfilledNodeName - The name of the node to route to if all properties are fulfilled
-   * @param propertiesUnfulfilledNodeName - The name of the node to route to if any property is unfulfilled
+   * @param propertiesFulfilledNodeName - The name of the node to route to if all properties are fulfilled (project generation)
+   * @param propertiesUnfulfilledNodeName - The name of the node to route to if any property is unfulfilled (template properties user input)
+   * @param msdkConnectedAppNodeName - The name of the node to route to for MSDK apps needing connected app fetch
    */
-  constructor(propertiesFulfilledNodeName: string, propertiesUnfulfilledNodeName: string) {
+  constructor(
+    propertiesFulfilledNodeName: string,
+    propertiesUnfulfilledNodeName: string,
+    msdkConnectedAppNodeName: string
+  ) {
     this.propertiesFulfilledNodeName = propertiesFulfilledNodeName;
     this.propertiesUnfulfilledNodeName = propertiesUnfulfilledNodeName;
+    this.msdkConnectedAppNodeName = msdkConnectedAppNodeName;
   }
 
   execute = (state: State): string => {
@@ -42,15 +51,24 @@ export class CheckTemplatePropertiesFulfilledRouter {
       return this.propertiesUnfulfilledNodeName;
     }
 
-    // If no template properties metadata exists, all properties are fulfilled (none required)
+    // If no template properties metadata exists, this is an MSDK app that needs connected app credentials
     if (
       !state.templatePropertiesMetadata ||
       Object.keys(state.templatePropertiesMetadata).length === 0
     ) {
+      // Check if we already have connected app credentials
+      if (state.connectedAppClientId && state.connectedAppCallbackUri) {
+        this.logger.info(
+          `MSDK app with connected app credentials already set, routing to ${this.propertiesFulfilledNodeName}`
+        );
+        return this.propertiesFulfilledNodeName;
+      }
+
+      // MSDK app needs to fetch connected app credentials
       this.logger.info(
-        `No template properties defined, routing to ${this.propertiesFulfilledNodeName}`
+        `MSDK app detected (no template properties), routing to ${this.msdkConnectedAppNodeName} for connected app fetch`
       );
-      return this.propertiesFulfilledNodeName;
+      return this.msdkConnectedAppNodeName;
     }
 
     // If templateProperties haven't been initialized, properties are unfulfilled

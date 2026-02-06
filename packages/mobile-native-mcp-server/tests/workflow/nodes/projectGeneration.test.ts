@@ -1286,4 +1286,104 @@ describe('ProjectGenerationNode', () => {
       expect(mockCommandRunner.execute).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('execute() - AgentSDK Apps (no connected app credentials)', () => {
+    it('should not include --consumerkey when connectedAppClientId is undefined', async () => {
+      const inputState = createTestState({
+        platform: 'iOS',
+        selectedTemplate: 'AgentforceDemo',
+        projectName: 'MyAgentApp',
+        packageName: 'com.example.myagentapp',
+        organization: 'ExampleOrg',
+        // No connected app credentials - AgentSDK app
+        templateProperties: {
+          agentID: 'some-agent-id',
+        },
+      });
+
+      await node.execute(inputState);
+
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).not.toContain('--consumerkey');
+      expect(args).not.toContain('--callbackurl');
+      expect(args).not.toContain('--loginserver');
+    });
+
+    it('should include template properties for AgentSDK apps without connected app credentials', async () => {
+      const inputState = createTestState({
+        platform: 'iOS',
+        selectedTemplate: 'AgentforceDemo',
+        projectName: 'MyAgentApp',
+        packageName: 'com.example.myagentapp',
+        organization: 'ExampleOrg',
+        templateProperties: {
+          agentID: 'agent-123',
+          developerName: 'MyAgent',
+        },
+      });
+
+      await node.execute(inputState);
+
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).toContain('--template-property-agentID');
+      expect(args).toContain('agent-123');
+      expect(args).toContain('--template-property-developerName');
+      expect(args).toContain('MyAgent');
+    });
+
+    it('should generate Android AgentSDK project without connected app credentials', async () => {
+      const inputState = createTestState({
+        platform: 'Android',
+        selectedTemplate: 'AndroidAgentforceKotlinTemplate',
+        projectName: 'MyAndroidAgentApp',
+        packageName: 'com.example.myandroidagentapp',
+        organization: 'ExampleOrg',
+        templateProperties: {
+          agentID: 'agent-456',
+          organizationId: 'org-789',
+        },
+      });
+
+      mockExistsSync.mockReturnValue(true);
+
+      const result = await node.execute(inputState);
+
+      expect(result.projectPath).toContain('MyAndroidAgentApp');
+      expect(result.workflowFatalErrorMessages).toBeUndefined();
+
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).not.toContain('--consumerkey');
+      expect(args).not.toContain('--callbackurl');
+      expect(args).not.toContain('--loginserver');
+      expect(args).toContain('--template-property-agentID');
+      expect(args).toContain('agent-456');
+    });
+
+    it('should include connected app credentials when they are provided', async () => {
+      const inputState = createTestState({
+        platform: 'iOS',
+        selectedTemplate: 'ContactsApp',
+        projectName: 'MyMSDKApp',
+        packageName: 'com.example.mymsdkapp',
+        organization: 'ExampleOrg',
+        connectedAppClientId: 'client123',
+        connectedAppCallbackUri: 'myapp://callback',
+        loginHost: 'https://login.salesforce.com',
+      });
+
+      await node.execute(inputState);
+
+      const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
+      const args = callArgs[1] as string[];
+      expect(args).toContain('--consumerkey');
+      expect(args).toContain('client123');
+      expect(args).toContain('--callbackurl');
+      expect(args).toContain('myapp://callback');
+      expect(args).toContain('--loginserver');
+      expect(args).toContain('https://login.salesforce.com');
+    });
+  });
 });
