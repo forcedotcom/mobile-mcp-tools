@@ -80,7 +80,9 @@ export class ProjectGenerationNode extends BaseNode<State> {
         organization: state.organization,
         // Only log connected app credentials if present (MSDK apps)
         ...(state.connectedAppClientId && { connectedAppClientId: state.connectedAppClientId }),
-        ...(state.connectedAppCallbackUri && { connectedAppCallbackUri: state.connectedAppCallbackUri }),
+        ...(state.connectedAppCallbackUri && {
+          connectedAppCallbackUri: state.connectedAppCallbackUri,
+        }),
         ...(state.loginHost && { loginHost: state.loginHost }),
         templateProperties: state.templateProperties,
       });
