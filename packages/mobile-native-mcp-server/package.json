@@ -30,6 +30,10 @@
     "format": "prettier --write \"{src,tests}/**/*.ts\"",
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forcedotcom/mobile-mcp-tools.git"
+  },
   "dependencies": {
     "@langchain/langgraph": "^0.4.9",
     "@modelcontextprotocol/sdk": "^1.26.0",

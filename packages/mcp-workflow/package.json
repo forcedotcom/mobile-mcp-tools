@@ -24,6 +24,10 @@
     "lint": "eslint --max-warnings 0 --config ../../eslint.config.mjs \"{src,tests}/**/*.ts\"",
     "format": "prettier --write \"{src,tests}/**/*.ts\""
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forcedotcom/mobile-mcp-tools.git"
+  },
   "dependencies": {
     "@langchain/langgraph": "^0.4.9",
     "@langchain/langgraph-checkpoint": "^0.0.11",
