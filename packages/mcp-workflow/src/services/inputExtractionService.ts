@@ -204,7 +204,7 @@ export class InputExtractionService
    * @param propertiesToExtract - Array of properties to extract
    * @returns The guidance prompt string
    */
-  private generateTaskGuidance(
+  protected generateTaskGuidance(
     userUtterance: unknown,
     propertiesToExtract: Array<{ propertyName: string; description: string }>
   ): string {

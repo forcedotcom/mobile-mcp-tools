@@ -75,30 +75,48 @@ export const ORCHESTRATOR_OUTPUT_SCHEMA = z.object({
 export type OrchestratorOutput = z.infer<typeof ORCHESTRATOR_OUTPUT_SCHEMA>;
 
 /**
- * Orchestrator tool metadata type
- * The metadata for the orchestrator tool (inputs/outputs)
+ * Type alias for the default orchestrator input schema type.
+ *
+ * Used as the default generic parameter for OrchestratorConfig, OrchestratorToolMetadata,
+ * and OrchestratorTool to avoid circular imports between config.ts and metadata.ts.
  */
-export type OrchestratorToolMetadata = ToolMetadata<
-  typeof ORCHESTRATOR_INPUT_SCHEMA,
-  typeof ORCHESTRATOR_OUTPUT_SCHEMA
->;
+export type DefaultOrchestratorInputSchema = typeof ORCHESTRATOR_INPUT_SCHEMA;
 
 /**
- * Factory function to create orchestrator tool metadata from configuration
- * Takes the consumer-provided config and creates the tool metadata with
- * standardized input/output schemas.
+ * Orchestrator tool metadata type
+ * The metadata for the orchestrator tool (inputs/outputs)
  *
- * @param config - The orchestrator configuration
- * @returns Tool metadata with the specified toolId, title, description
+ * @template TInputSchema - The Zod input schema type. Defaults to ORCHESTRATOR_INPUT_SCHEMA.
  */
-export function createOrchestratorToolMetadata(
-  config: OrchestratorConfig
-): OrchestratorToolMetadata {
+export type OrchestratorToolMetadata<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+> = ToolMetadata<TInputSchema, typeof ORCHESTRATOR_OUTPUT_SCHEMA>;
+
+/**
+ * Factory function to create orchestrator tool metadata from configuration.
+ * Takes the consumer-provided config and creates the tool metadata with
+ * the appropriate input/output schemas.
+ *
+ * When a custom inputSchema is provided in the config, it is used instead of
+ * the default ORCHESTRATOR_INPUT_SCHEMA.
+ *
+ * @template TInputSchema - The Zod input schema type. Defaults to ORCHESTRATOR_INPUT_SCHEMA.
+ * @param config - The orchestrator configuration
+ * @returns Tool metadata with the specified toolId, title, description, and schemas
+ */
+export function createOrchestratorToolMetadata<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+>(config: OrchestratorConfig<TInputSchema>): OrchestratorToolMetadata<TInputSchema> {
+  // The cast is necessary because TypeScript cannot prove that when config.inputSchema
+  // is undefined, TInputSchema must be DefaultOrchestratorInputSchema (i.e. the generic
+  // default and the runtime default independently track the same fallback). The cast is
+  // safe: when inputSchema is omitted, TInputSchema defaults to typeof ORCHESTRATOR_INPUT_SCHEMA.
+  const effectiveInputSchema = (config.inputSchema ?? ORCHESTRATOR_INPUT_SCHEMA) as TInputSchema;
   return {
     toolId: config.toolId,
     title: config.title,
     description: config.description,
-    inputSchema: ORCHESTRATOR_INPUT_SCHEMA,
+    inputSchema: effectiveInputSchema,
     outputSchema: ORCHESTRATOR_OUTPUT_SCHEMA,
   };
 }

@@ -7,6 +7,7 @@
 
 export { type OrchestratorConfig } from './config.js';
 export {
+  type DefaultOrchestratorInputSchema,
   type OrchestratorInput,
   type OrchestratorOutput,
   type OrchestratorToolMetadata,

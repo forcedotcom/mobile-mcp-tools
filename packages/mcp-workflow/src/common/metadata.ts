@@ -77,6 +77,22 @@ export interface NodeGuidanceData<TResultSchema extends z.ZodObject<z.ZodRawShap
    * LLM compliance with the expected structure.
    */
   exampleOutput?: string;
+  /**
+   * Optional custom guidance for the LLM to return results to the orchestrator.
+   *
+   * When provided, this replaces the orchestrator's default "return to orchestrator"
+   * prompt. The function receives only `workflowStateData` (the runtime session state
+   * that the producer doesn't have at construction time). The producer already owns
+   * `resultSchema` and `exampleOutput` as sibling properties on this same struct,
+   * so they can be captured in the closure if needed.
+   *
+   * Ensure this custom guidance properly instructs the LLM to return the workflow
+   * to the orchestrator, or the workflow will likely be broken.
+   *
+   * @param workflowStateData - The workflow state data to round-trip back to the orchestrator
+   * @returns The return guidance prompt string
+   */
+  returnGuidance?: (workflowStateData: WorkflowStateData) => string;
 }
 
 /**
@@ -147,8 +163,8 @@ export interface ToolMetadata<
 export interface WorkflowToolMetadata<
   TInputSchema extends typeof WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   TResultSchema extends z.ZodObject<z.ZodRawShape>,
-  TOutputSchema extends
-    typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA = typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
+  TOutputSchema extends typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA =
+    typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
 > extends ToolMetadata<TInputSchema, TOutputSchema> {
   /** Holds the shape of the expected result for guidance-based tools */
   readonly resultSchema: TResultSchema;
