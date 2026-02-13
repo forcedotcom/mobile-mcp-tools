@@ -13,7 +13,10 @@ import {
   WorkflowRunnableConfig,
 } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join, isAbsolute } from 'path';
+import { randomUUID } from 'crypto';
 
 /**
  * Response structure from `sf project retrieve start --json`
@@ -88,28 +91,65 @@ export class RetrieveConnectedAppMetadataNode extends BaseNode<State> {
 
     this.logger.info(`Retrieving metadata for Connected App: ${state.selectedConnectedAppName}`);
 
+    // Create a temporary SFDX project so that `sf project retrieve start` has
+    // access to a sfdx-project.json file, regardless of the user's working directory.
+    const tempDir = mkdtempSync(join(tmpdir(), 'magen-retrieve-'));
+    const projectName = `tmpproj_${randomUUID().replace(/-/g, '').substring(0, 8)}`;
+
     try {
       // Get progress reporter from config (passed by orchestrator)
       const progressReporter = config?.configurable?.progressReporter;
 
-      // Execute the sf project retrieve command; Do not specify an output directory since it does not reliably work in child process.
-      const result = await this.commandRunner.execute(
+      // Generate a temporary SFDX project
+      const genResult = await this.commandRunner.execute(
         'sf',
-        [
-          'project',
-          'retrieve',
-          'start',
-          '-m',
-          `ConnectedApp:${state.selectedConnectedAppName}`,
-          '--json',
-        ],
+        ['project', 'generate', '-n', projectName],
         {
-          timeout: 120000,
-          cwd: process.cwd(),
+          timeout: 60000,
+          cwd: tempDir,
           progressReporter,
-          commandName: 'Retrieve Connected App Metadata',
+          commandName: 'Generate Temp Project',
         }
       );
+
+      if (!genResult.success) {
+        const errorMessage =
+          genResult.stderr ||
+          `Command failed with exit code ${genResult.exitCode ?? 'unknown'}${
+            genResult.signal ? ` (signal: ${genResult.signal})` : ''
+          }`;
+        this.logger.error('Failed to generate temp SFDX project', new Error(errorMessage));
+        return {
+          workflowFatalErrorMessages: [
+            `Failed to generate temporary SFDX project: ${errorMessage}`,
+          ],
+        };
+      }
+
+      const projectDir = join(tempDir, projectName);
+      this.logger.debug('Created temp SFDX project', { projectDir });
+
+      // Execute the sf project retrieve command in the temp project directory
+      const retrieveArgs = [
+        'project',
+        'retrieve',
+        'start',
+        '-m',
+        `ConnectedApp:${state.selectedConnectedAppName}`,
+        '--json',
+      ];
+
+      // Add target org if selected (MSDK flow with org selection)
+      if (state.selectedOrgUsername) {
+        retrieveArgs.push('-o', state.selectedOrgUsername);
+      }
+
+      const result = await this.commandRunner.execute('sf', retrieveArgs, {
+        timeout: 120000,
+        cwd: projectDir,
+        progressReporter,
+        commandName: 'Retrieve Connected App Metadata',
+      });
       this.logger.info('Result', { result });
 
       if (!result.success) {
@@ -143,6 +183,11 @@ export class RetrieveConnectedAppMetadataNode extends BaseNode<State> {
         );
       }
 
+      // Resolve relative paths against the temp project directory
+      if (xmlFilePath && !isAbsolute(xmlFilePath)) {
+        xmlFilePath = join(projectDir, xmlFilePath);
+      }
+
       if (!xmlFilePath || !existsSync(xmlFilePath)) {
         this.logger.error(
           `Connected App XML file not found. Parsed filePath: ${xmlFilePath ?? 'undefined'}`
@@ -173,16 +218,17 @@ export class RetrieveConnectedAppMetadataNode extends BaseNode<State> {
       // Retrieve the login host (org instance URL) for MSDK apps
       let loginHost: string | undefined;
       try {
-        const orgDisplayResult = await this.commandRunner.execute(
-          'sf',
-          ['org', 'display', '--json'],
-          {
-            timeout: 60000,
-            cwd: process.cwd(),
-            progressReporter,
-            commandName: 'Retrieve Org Info',
-          }
-        );
+        const orgDisplayArgs = ['org', 'display', '--json'];
+        if (state.selectedOrgUsername) {
+          orgDisplayArgs.push('-o', state.selectedOrgUsername);
+        }
+
+        const orgDisplayResult = await this.commandRunner.execute('sf', orgDisplayArgs, {
+          timeout: 60000,
+          cwd: process.cwd(),
+          progressReporter,
+          commandName: 'Retrieve Org Info',
+        });
 
         if (orgDisplayResult.success) {
           const orgResponse: SfOrgDisplayResponse = JSON.parse(orgDisplayResult.stdout);
@@ -223,6 +269,17 @@ export class RetrieveConnectedAppMetadataNode extends BaseNode<State> {
       return {
         workflowFatalErrorMessages: [`Failed to retrieve Connected App metadata: ${errorMessage}`],
       };
+    } finally {
+      // Clean up temp directory
+      try {
+        rmSync(tempDir, { recursive: true, force: true });
+        this.logger.debug('Cleaned up temp project directory', { tempDir });
+      } catch (cleanupError) {
+        this.logger.warn('Failed to clean up temp directory', {
+          tempDir,
+          error: cleanupError instanceof Error ? cleanupError.message : `${cleanupError}`,
+        });
+      }
     }
   };
 

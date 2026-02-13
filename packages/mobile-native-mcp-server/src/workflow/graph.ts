@@ -38,6 +38,9 @@ import { SelectConnectedAppNode } from './nodes/selectConnectedApp.js';
 import { RetrieveConnectedAppMetadataNode } from './nodes/retrieveConnectedAppMetadata.js';
 import { CheckConnectedAppListRouter } from './nodes/checkConnectedAppListRouter.js';
 import { CheckConnectedAppRetrievedRouter } from './nodes/checkConnectedAppRetrievedRouter.js';
+import { FetchOrgsNode } from './nodes/fetchOrgs.js';
+import { SelectOrgNode } from './nodes/selectOrg.js';
+import { CheckOrgListRouter } from './nodes/checkOrgListRouter.js';
 import {
   createGetUserInputNode,
   createUserInputExtractionNode,
@@ -140,6 +143,10 @@ export function createMobileNativeWorkflow(logger?: Logger) {
   const androidInstallAppNode = new AndroidInstallAppNode(commandRunner, logger);
   const androidLaunchAppNode = new AndroidLaunchAppNode(commandRunner, logger);
 
+  // Create org selection nodes (for MSDK apps)
+  const fetchOrgsNode = new FetchOrgsNode(commandRunner, logger);
+  const selectOrgNode = new SelectOrgNode(undefined, logger);
+
   // Create connected app nodes (for MSDK apps)
   const fetchConnectedAppListNode = new FetchConnectedAppListNode(commandRunner, logger);
   const selectConnectedAppNode = new SelectConnectedAppNode(undefined, logger);
@@ -163,7 +170,13 @@ export function createMobileNativeWorkflow(logger?: Logger) {
   const checkTemplatePropertiesFulfilledRouter = new CheckTemplatePropertiesFulfilledRouter(
     projectGenerationNode.name,
     templatePropertiesUserInputNode.name,
-    fetchConnectedAppListNode.name
+    fetchOrgsNode.name
+  );
+
+  const checkOrgListRouter = new CheckOrgListRouter(
+    selectOrgNode.name,
+    completionNode.name,
+    failureNode.name
   );
 
   const checkConnectedAppListRouter = new CheckConnectedAppListRouter(
@@ -218,6 +231,9 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       .addNode(templateSelectionNode.name, templateSelectionNode.execute)
       .addNode(templatePropertiesExtractionNode.name, templatePropertiesExtractionNode.execute)
       .addNode(templatePropertiesUserInputNode.name, templatePropertiesUserInputNode.execute)
+      // Org selection nodes (for MSDK apps)
+      .addNode(fetchOrgsNode.name, fetchOrgsNode.execute)
+      .addNode(selectOrgNode.name, selectOrgNode.execute)
       // Connected app nodes (for MSDK apps)
       .addNode(fetchConnectedAppListNode.name, fetchConnectedAppListNode.execute)
       .addNode(selectConnectedAppNode.name, selectConnectedAppNode.execute)
@@ -259,6 +275,9 @@ export function createMobileNativeWorkflow(logger?: Logger) {
         checkTemplatePropertiesFulfilledRouter.execute
       )
       .addEdge(templatePropertiesUserInputNode.name, templatePropertiesExtractionNode.name)
+      // Org selection flow (for MSDK apps)
+      .addConditionalEdges(fetchOrgsNode.name, checkOrgListRouter.execute)
+      .addEdge(selectOrgNode.name, fetchConnectedAppListNode.name)
       // Connected app flow (for MSDK apps)
       .addConditionalEdges(fetchConnectedAppListNode.name, checkConnectedAppListRouter.execute)
       .addEdge(selectConnectedAppNode.name, retrieveConnectedAppMetadataNode.name)

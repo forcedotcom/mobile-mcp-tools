@@ -34,6 +34,14 @@ export interface ConnectedAppInfo {
 }
 
 /**
+ * Information about a Salesforce org from `sf org list`
+ */
+export interface OrgInfo {
+  username: string;
+  alias?: string;
+}
+
+/**
  * Definition of all user input properties required by the mobile native workflow.
  * Each property includes metadata for extraction, validation, and user prompting.
  *
@@ -120,6 +128,10 @@ export const MobileNativeWorkflowState = Annotation.Root({
   projectPath: Annotation<string>,
   packageName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.packageName.zodType>>,
   organization: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.organization.zodType>>,
+
+  // Org selection state (for MSDK apps)
+  orgList: Annotation<OrgInfo[]>,
+  selectedOrgUsername: Annotation<string>,
 
   // Connected App state (for MSDK apps)
   connectedAppList: Annotation<ConnectedAppInfo[]>,

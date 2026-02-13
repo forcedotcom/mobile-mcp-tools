@@ -63,16 +63,19 @@ export class FetchConnectedAppListNode extends BaseNode<State> {
       const progressReporter = config?.configurable?.progressReporter;
 
       // Execute the sf org list metadata command
-      const result = await this.commandRunner.execute(
-        'sf',
-        ['org', 'list', 'metadata', '-m', 'ConnectedApp', '--json'],
-        {
-          timeout: 60000,
-          cwd: process.cwd(),
-          progressReporter,
-          commandName: 'Fetch Connected App List',
-        }
-      );
+      const args = ['org', 'list', 'metadata', '-m', 'ConnectedApp', '--json'];
+
+      // Add target org if selected (MSDK flow with org selection)
+      if (state.selectedOrgUsername) {
+        args.push('-o', state.selectedOrgUsername);
+      }
+
+      const result = await this.commandRunner.execute('sf', args, {
+        timeout: 60000,
+        cwd: process.cwd(),
+        progressReporter,
+        commandName: 'Fetch Connected App List',
+      });
 
       if (!result.success) {
         const errorMessage =
