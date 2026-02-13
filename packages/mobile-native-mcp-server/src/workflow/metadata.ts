@@ -26,6 +26,22 @@ export interface TemplatePropertyMetadata {
 export type TemplatePropertiesMetadata = Record<string, TemplatePropertyMetadata>;
 
 /**
+ * Information about a Connected App from Salesforce org metadata
+ */
+export interface ConnectedAppInfo {
+  fullName: string;
+  createdByName: string;
+}
+
+/**
+ * Information about a Salesforce org from `sf org list`
+ */
+export interface OrgInfo {
+  username: string;
+  alias?: string;
+}
+
+/**
  * Definition of all user input properties required by the mobile native workflow.
  * Each property includes metadata for extraction, validation, and user prompting.
  *
@@ -52,11 +68,6 @@ export const WORKFLOW_USER_INPUT_PROPERTIES = {
     zodType: z.string(),
     description: 'The organization or company name',
     friendlyName: 'organization or company name',
-  } satisfies PropertyMetadata<z.ZodString>,
-  loginHost: {
-    zodType: z.string(),
-    description: 'The Salesforce login host for the mobile app.',
-    friendlyName: 'Salesforce login host',
   } satisfies PropertyMetadata<z.ZodString>,
 } as const satisfies PropertyMetadataCollection;
 
@@ -100,7 +111,6 @@ export const MobileNativeWorkflowState = Annotation.Root({
   platform: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.platform.zodType>>,
 
   // Plan phase state
-  validEnvironment: Annotation<boolean>,
   validPlatformSetup: Annotation<boolean>,
   validPluginSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
@@ -118,9 +128,17 @@ export const MobileNativeWorkflowState = Annotation.Root({
   projectPath: Annotation<string>,
   packageName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.packageName.zodType>>,
   organization: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.organization.zodType>>,
+
+  // Org selection state (for MSDK apps)
+  orgList: Annotation<OrgInfo[]>,
+  selectedOrgUsername: Annotation<string>,
+
+  // Connected App state (for MSDK apps)
+  connectedAppList: Annotation<ConnectedAppInfo[]>,
+  selectedConnectedAppName: Annotation<string>,
   connectedAppClientId: Annotation<string>,
   connectedAppCallbackUri: Annotation<string>,
-  loginHost: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.loginHost.zodType>>,
+  loginHost: Annotation<string>,
 
   // Build and deployment state
   buildType: Annotation<'debug' | 'release'>,

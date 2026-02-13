@@ -12,7 +12,6 @@ import {
   WORKFLOW_USER_INPUT_PROPERTIES,
   ANDROID_SETUP_PROPERTIES,
 } from './metadata.js';
-import { EnvironmentValidationNode } from './nodes/environment.js';
 import { TemplateOptionsFetchNode } from './nodes/templateOptionsFetch.js';
 import { TemplateSelectionNode } from './nodes/templateSelection.js';
 import { ProjectGenerationNode } from './nodes/projectGeneration.js';
@@ -23,7 +22,6 @@ import { CheckBuildSuccessfulRouter } from './nodes/checkBuildSuccessfulRouter.j
 import { DeploymentNode } from './nodes/deploymentNode.js';
 import { CompletionNode } from './nodes/completionNode.js';
 import { FailureNode } from './nodes/failureNode.js';
-import { CheckEnvironmentValidatedRouter } from './nodes/checkEnvironmentValidated.js';
 import { PlatformCheckNode } from './nodes/checkPlatformSetup.js';
 import { CheckSetupValidatedRouter } from './nodes/checkSetupValidatedRouter.js';
 import { TemplatePropertiesExtractionNode } from './nodes/templatePropertiesExtraction.js';
@@ -35,6 +33,14 @@ import { PluginCheckNode } from './nodes/checkPluginSetup.js';
 import { CheckPluginValidatedRouter } from './nodes/checkPluginValidatedRouter.js';
 import { CheckProjectGenerationRouter } from './nodes/checkProjectGenerationRouter.js';
 import { CheckDeploymentPlatformRouter } from './nodes/checkDeploymentPlatformRouter.js';
+import { FetchConnectedAppListNode } from './nodes/fetchConnectedAppList.js';
+import { SelectConnectedAppNode } from './nodes/selectConnectedApp.js';
+import { RetrieveConnectedAppMetadataNode } from './nodes/retrieveConnectedAppMetadata.js';
+import { CheckConnectedAppListRouter } from './nodes/checkConnectedAppListRouter.js';
+import { CheckConnectedAppRetrievedRouter } from './nodes/checkConnectedAppRetrievedRouter.js';
+import { FetchOrgsNode } from './nodes/fetchOrgs.js';
+import { SelectOrgNode } from './nodes/selectOrg.js';
+import { CheckOrgListRouter } from './nodes/checkOrgListRouter.js';
 import {
   createGetUserInputNode,
   createUserInputExtractionNode,
@@ -83,7 +89,6 @@ const getAndroidSetupNode = createGetUserInputNode<State>({
 
 const extractAndroidSetupNode = new ExtractAndroidSetupNode();
 
-const environmentValidationNode = new EnvironmentValidationNode();
 const platformCheckNode = new PlatformCheckNode();
 const pluginCheckNode = new PluginCheckNode();
 const templateOptionsFetchNode = new TemplateOptionsFetchNode();
@@ -98,10 +103,6 @@ const checkPropertiesFulFilledRouter = new CheckPropertiesFulfilledRouter<State>
   pluginCheckNode.name,
   userInputNode.name,
   WORKFLOW_USER_INPUT_PROPERTIES
-);
-const checkEnvironmentValidatedRouter = new CheckEnvironmentValidatedRouter(
-  initialUserInputExtractionNode.name,
-  failureNode.name
 );
 const checkSetupValidatedRouter = new CheckSetupValidatedRouter(
   templateOptionsFetchNode.name,
@@ -142,6 +143,18 @@ export function createMobileNativeWorkflow(logger?: Logger) {
   const androidInstallAppNode = new AndroidInstallAppNode(commandRunner, logger);
   const androidLaunchAppNode = new AndroidLaunchAppNode(commandRunner, logger);
 
+  // Create org selection nodes (for MSDK apps)
+  const fetchOrgsNode = new FetchOrgsNode(commandRunner, logger);
+  const selectOrgNode = new SelectOrgNode(undefined, logger);
+
+  // Create connected app nodes (for MSDK apps)
+  const fetchConnectedAppListNode = new FetchConnectedAppListNode(commandRunner, logger);
+  const selectConnectedAppNode = new SelectConnectedAppNode(undefined, logger);
+  const retrieveConnectedAppMetadataNode = new RetrieveConnectedAppMetadataNode(
+    commandRunner,
+    logger
+  );
+
   // Create routers
   const checkProjectGenerationRouterInstance = new CheckProjectGenerationRouter(
     buildValidationNodeInstance.name,
@@ -156,7 +169,20 @@ export function createMobileNativeWorkflow(logger?: Logger) {
 
   const checkTemplatePropertiesFulfilledRouter = new CheckTemplatePropertiesFulfilledRouter(
     projectGenerationNode.name,
-    templatePropertiesUserInputNode.name
+    templatePropertiesUserInputNode.name,
+    fetchOrgsNode.name
+  );
+
+  const checkOrgListRouter = new CheckOrgListRouter(selectOrgNode.name, failureNode.name);
+
+  const checkConnectedAppListRouter = new CheckConnectedAppListRouter(
+    selectConnectedAppNode.name,
+    failureNode.name
+  );
+
+  const checkConnectedAppRetrievedRouter = new CheckConnectedAppRetrievedRouter(
+    projectGenerationNode.name,
+    failureNode.name
   );
 
   const checkDeploymentPlatformRouterInstance = new CheckDeploymentPlatformRouter(
@@ -190,7 +216,6 @@ export function createMobileNativeWorkflow(logger?: Logger) {
   return (
     new StateGraph(MobileNativeWorkflowState)
       // Add all workflow nodes
-      .addNode(environmentValidationNode.name, environmentValidationNode.execute)
       .addNode(initialUserInputExtractionNode.name, initialUserInputExtractionNode.execute)
       .addNode(userInputNode.name, userInputNode.execute)
       .addNode(platformCheckNode.name, platformCheckNode.execute)
@@ -201,6 +226,13 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       .addNode(templateSelectionNode.name, templateSelectionNode.execute)
       .addNode(templatePropertiesExtractionNode.name, templatePropertiesExtractionNode.execute)
       .addNode(templatePropertiesUserInputNode.name, templatePropertiesUserInputNode.execute)
+      // Org selection nodes (for MSDK apps)
+      .addNode(fetchOrgsNode.name, fetchOrgsNode.execute)
+      .addNode(selectOrgNode.name, selectOrgNode.execute)
+      // Connected app nodes (for MSDK apps)
+      .addNode(fetchConnectedAppListNode.name, fetchConnectedAppListNode.execute)
+      .addNode(selectConnectedAppNode.name, selectConnectedAppNode.execute)
+      .addNode(retrieveConnectedAppMetadataNode.name, retrieveConnectedAppMetadataNode.execute)
       .addNode(projectGenerationNode.name, projectGenerationNode.execute)
       .addNode(buildValidationNodeInstance.name, buildValidationNodeInstance.execute)
       .addNode(buildRecoveryNode.name, buildRecoveryNode.execute)
@@ -219,9 +251,8 @@ export function createMobileNativeWorkflow(logger?: Logger) {
       .addNode(completionNode.name, completionNode.execute)
       .addNode(failureNode.name, failureNode.execute)
 
-      // Define workflow edges
-      .addEdge(START, environmentValidationNode.name)
-      .addConditionalEdges(environmentValidationNode.name, checkEnvironmentValidatedRouter.execute)
+      // Define workflow edges - start with user input extraction
+      .addEdge(START, initialUserInputExtractionNode.name)
       .addConditionalEdges(
         initialUserInputExtractionNode.name,
         checkPropertiesFulFilledRouter.execute
@@ -239,6 +270,16 @@ export function createMobileNativeWorkflow(logger?: Logger) {
         checkTemplatePropertiesFulfilledRouter.execute
       )
       .addEdge(templatePropertiesUserInputNode.name, templatePropertiesExtractionNode.name)
+      // Org selection flow (for MSDK apps)
+      .addConditionalEdges(fetchOrgsNode.name, checkOrgListRouter.execute)
+      .addEdge(selectOrgNode.name, fetchConnectedAppListNode.name)
+      // Connected app flow (for MSDK apps)
+      .addConditionalEdges(fetchConnectedAppListNode.name, checkConnectedAppListRouter.execute)
+      .addEdge(selectConnectedAppNode.name, retrieveConnectedAppMetadataNode.name)
+      .addConditionalEdges(
+        retrieveConnectedAppMetadataNode.name,
+        checkConnectedAppRetrievedRouter.execute
+      )
       .addConditionalEdges(projectGenerationNode.name, checkProjectGenerationRouterInstance.execute)
       // Build validation with recovery loop (similar to user input loop)
       .addConditionalEdges(
