@@ -10,11 +10,10 @@ import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
 
 /**
  * Conditional router edge to check if connected Salesforce orgs were found.
- * Routes to selection if orgs exist, otherwise routes to completion (graceful exit).
+ * Routes to selection if orgs exist, otherwise routes to failure with an error message.
  */
 export class CheckOrgListRouter {
   private readonly orgsFoundNodeName: string;
-  private readonly noOrgsFoundNodeName: string;
   private readonly failureNodeName: string;
   private readonly logger = createComponentLogger('CheckOrgListRouter');
 
@@ -22,12 +21,10 @@ export class CheckOrgListRouter {
    * Creates a new CheckOrgListRouter.
    *
    * @param orgsFoundNodeName - The name of the node to route to if connected orgs were found (selection)
-   * @param noOrgsFoundNodeName - The name of the node to route to if no connected orgs found (completion)
-   * @param failureNodeName - The name of the node to route to if there was an error
+   * @param failureNodeName - The name of the node to route to if there was an error or no orgs found
    */
-  constructor(orgsFoundNodeName: string, noOrgsFoundNodeName: string, failureNodeName: string) {
+  constructor(orgsFoundNodeName: string, failureNodeName: string) {
     this.orgsFoundNodeName = orgsFoundNodeName;
-    this.noOrgsFoundNodeName = noOrgsFoundNodeName;
     this.failureNodeName = failureNodeName;
   }
 
@@ -54,10 +51,11 @@ export class CheckOrgListRouter {
       return this.orgsFoundNodeName;
     }
 
-    // No connected orgs found - route to completion (graceful exit)
-    this.logger.info(
-      `No connected orgs found, routing to ${this.noOrgsFoundNodeName} for graceful completion`
-    );
-    return this.noOrgsFoundNodeName;
+    // No connected orgs found - route to failure with error message
+    this.logger.warn(`No connected orgs found, routing to ${this.failureNodeName}`);
+    state.workflowFatalErrorMessages = [
+      'No connected Salesforce orgs found. Please authenticate with a Salesforce org using `sf org login` and try again.',
+    ];
+    return this.failureNodeName;
   };
 }

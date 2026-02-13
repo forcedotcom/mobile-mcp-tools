@@ -10,11 +10,10 @@ import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
 
 /**
  * Conditional router edge to check if Connected Apps were found in the org.
- * Routes to selection if apps exist, otherwise routes to completion (graceful exit).
+ * Routes to selection if apps exist, otherwise routes to failure with an error message.
  */
 export class CheckConnectedAppListRouter {
   private readonly appsFoundNodeName: string;
-  private readonly noAppsFoundNodeName: string;
   private readonly failureNodeName: string;
   private readonly logger = createComponentLogger('CheckConnectedAppListRouter');
 
@@ -22,12 +21,10 @@ export class CheckConnectedAppListRouter {
    * Creates a new CheckConnectedAppListRouter.
    *
    * @param appsFoundNodeName - The name of the node to route to if Connected Apps were found (selection)
-   * @param noAppsFoundNodeName - The name of the node to route to if no Connected Apps found (completion)
-   * @param failureNodeName - The name of the node to route to if there was an error
+   * @param failureNodeName - The name of the node to route to if there was an error or no apps found
    */
-  constructor(appsFoundNodeName: string, noAppsFoundNodeName: string, failureNodeName: string) {
+  constructor(appsFoundNodeName: string, failureNodeName: string) {
     this.appsFoundNodeName = appsFoundNodeName;
-    this.noAppsFoundNodeName = noAppsFoundNodeName;
     this.failureNodeName = failureNodeName;
   }
 
@@ -54,10 +51,11 @@ export class CheckConnectedAppListRouter {
       return this.appsFoundNodeName;
     }
 
-    // No Connected Apps found - route to completion (graceful exit)
-    this.logger.info(
-      `No Connected Apps found in org, routing to ${this.noAppsFoundNodeName} for graceful completion`
-    );
-    return this.noAppsFoundNodeName;
+    // No Connected Apps found - route to failure with error message
+    this.logger.warn(`No Connected Apps found in org, routing to ${this.failureNodeName}`);
+    state.workflowFatalErrorMessages = [
+      'No Connected Apps found in the selected Salesforce org. Please create a Connected App in your org and try again.',
+    ];
+    return this.failureNodeName;
   };
 }

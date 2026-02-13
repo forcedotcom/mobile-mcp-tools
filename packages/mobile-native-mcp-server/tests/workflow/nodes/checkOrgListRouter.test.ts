@@ -11,12 +11,11 @@ import { createTestState } from '../../utils/stateBuilders.js';
 
 describe('CheckOrgListRouter', () => {
   const orgsFoundNodeName = 'selectOrg';
-  const noOrgsFoundNodeName = 'completion';
   const failureNodeName = 'failure';
   let router: CheckOrgListRouter;
 
   beforeEach(() => {
-    router = new CheckOrgListRouter(orgsFoundNodeName, noOrgsFoundNodeName, failureNodeName);
+    router = new CheckOrgListRouter(orgsFoundNodeName, failureNodeName);
   });
 
   describe('Constructor', () => {
@@ -75,29 +74,41 @@ describe('CheckOrgListRouter', () => {
   });
 
   describe('execute() - No orgs found', () => {
-    it('should route to noOrgsFound when orgList is empty', () => {
+    it('should route to failure when orgList is empty', () => {
       const state = createTestState({
         orgList: [],
       });
 
       const result = router.execute(state);
 
-      expect(result).toBe(noOrgsFoundNodeName);
+      expect(result).toBe(failureNodeName);
     });
 
-    it('should route to noOrgsFound when orgList is undefined', () => {
+    it('should set error message when orgList is empty', () => {
+      const state = createTestState({
+        orgList: [],
+      });
+
+      router.execute(state);
+
+      expect(state.workflowFatalErrorMessages).toEqual([
+        'No connected Salesforce orgs found. Please authenticate with a Salesforce org using `sf org login` and try again.',
+      ]);
+    });
+
+    it('should route to failure when orgList is undefined', () => {
       const state = createTestState({
         orgList: undefined,
       });
 
       const result = router.execute(state);
 
-      expect(result).toBe(noOrgsFoundNodeName);
+      expect(result).toBe(failureNodeName);
     });
   });
 
   describe('execute() - Edge cases', () => {
-    it('should not modify input state', () => {
+    it('should not modify orgList in state', () => {
       const state = createTestState({
         orgList: [{ username: 'user@example.com' }],
       });

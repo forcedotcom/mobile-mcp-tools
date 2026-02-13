@@ -173,15 +173,10 @@ export function createMobileNativeWorkflow(logger?: Logger) {
     fetchOrgsNode.name
   );
 
-  const checkOrgListRouter = new CheckOrgListRouter(
-    selectOrgNode.name,
-    completionNode.name,
-    failureNode.name
-  );
+  const checkOrgListRouter = new CheckOrgListRouter(selectOrgNode.name, failureNode.name);
 
   const checkConnectedAppListRouter = new CheckConnectedAppListRouter(
     selectConnectedAppNode.name,
-    completionNode.name,
     failureNode.name
   );
 
