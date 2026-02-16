@@ -63,8 +63,9 @@ describe('ExtractAndroidSetupNode', () => {
     mockExistsSync.mockReset();
 
     // Import after mocks are set up
-    const { ExtractAndroidSetupNode: Node } =
-      await import('../../../src/workflow/nodes/extractAndroidSetup.js');
+    const { ExtractAndroidSetupNode: Node } = await import(
+      '../../../src/workflow/nodes/extractAndroidSetup.js'
+    );
     node = new Node();
 
     // Mock the base extraction node's execute method

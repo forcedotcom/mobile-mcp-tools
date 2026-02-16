@@ -11,6 +11,7 @@ import { createTestState } from '../../utils/stateBuilders.js';
 import { type CommandRunner, type CommandResult } from '@salesforce/magen-mcp-workflow';
 import { MockLogger } from '../../utils/MockLogger.js';
 import * as fs from 'fs';
+import { join } from 'path';
 
 // Mock fs, os, and crypto modules
 vi.mock('fs', async () => {
@@ -141,9 +142,7 @@ describe('RetrieveConnectedAppMetadataNode', () => {
       const result = await node.execute(state);
 
       expect(result.workflowFatalErrorMessages).toBeDefined();
-      expect(result.workflowFatalErrorMessages![0]).toContain(
-        'No Connected App selected'
-      );
+      expect(result.workflowFatalErrorMessages![0]).toContain('No Connected App selected');
       expect(mockCommandRunner.execute).not.toHaveBeenCalled();
     });
   });
@@ -264,11 +263,13 @@ describe('RetrieveConnectedAppMetadataNode', () => {
 
       await node.execute(state);
 
-      // readFileSync should be called with the resolved path
-      expect(fs.readFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('connectedApps/MyApp.connectedApp-meta.xml'),
-        'utf-8'
+      // readFileSync should be called with the resolved path (relative filePath joined to project dir)
+      const expectedXmlPath = join(
+        '/tmp/magen-retrieve-abc',
+        'tmpproj_12345678',
+        'force-app/main/default/connectedApps/MyApp.connectedApp-meta.xml'
       );
+      expect(fs.readFileSync).toHaveBeenCalledWith(expectedXmlPath, 'utf-8');
     });
   });
 
