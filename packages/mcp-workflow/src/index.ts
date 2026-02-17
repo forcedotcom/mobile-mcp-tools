@@ -68,6 +68,7 @@ export { type BaseGraphConfig, type WorkflowRunnableConfig } from './common/grap
 export {
   BaseNode,
   AbstractToolNode,
+  UserInputExtractionNode,
   createGetUserInputNode,
   createUserInputExtractionNode,
   type GetUserInputNodeOptions,
@@ -78,7 +79,7 @@ export {
 export { CheckPropertiesFulfilledRouter } from './routers/index.js';
 
 // Base Service Classes
-export { AbstractService } from './services/index.js';
+export { AbstractService, InputExtractionService } from './services/index.js';
 
 // Checkpointing Infrastructure
 export {
@@ -93,6 +94,7 @@ export {
 export {
   OrchestratorTool,
   createOrchestratorToolMetadata,
+  type DefaultOrchestratorInputSchema,
   type OrchestratorConfig,
   type OrchestratorInput,
   type OrchestratorOutput,

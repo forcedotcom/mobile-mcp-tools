@@ -35,5 +35,6 @@ jobs:
       dry_run: ${{ inputs.dry_run }}
     secrets: inherit
     permissions:
+      id-token: write # Required for OIDC
       contents: write
       packages: write
