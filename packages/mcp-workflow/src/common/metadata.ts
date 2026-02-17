@@ -163,8 +163,8 @@ export interface ToolMetadata<
 export interface WorkflowToolMetadata<
   TInputSchema extends typeof WORKFLOW_TOOL_BASE_INPUT_SCHEMA,
   TResultSchema extends z.ZodObject<z.ZodRawShape>,
-  TOutputSchema extends
-    typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA = typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
+  TOutputSchema extends typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA =
+    typeof MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
 > extends ToolMetadata<TInputSchema, TOutputSchema> {
   /** Holds the shape of the expected result for guidance-based tools */
   readonly resultSchema: TResultSchema;
