@@ -12,14 +12,13 @@ import type { Logger } from '@salesforce/magen-mcp-workflow';
 type CoreLogger = Parameters<typeof AndroidUtils.fetchInstalledPackages>[0];
 
 /**
- * Requirement check titles from `sf force lightning local setup --json` that we skip
- * for Android and replace with a direct >= apiLevel check (platform + emulator image).
- * Values must match messages in @salesforce/lwc-dev-mobile-core (requirement-android.md).
+ * `sf force lightning local setup --json` is called to check android platform sdk setup.
+ * These titles are defined in in lwc-dev-mobile-core.
+ * Below two items with such defined title are skipped.
  */
-/** Titles of setup requirement checks we skip for Android (replaced by direct >= apiLevel check). */
 export const ANDROID_SETUP_REQUIREMENT_TITLES_TO_SKIP: readonly string[] = [
-  'Checking SDK Platform API',
-  'Checking SDK Platform Emulator Images',
+  'Checking SDK Platform API', // defined at https://github.com/forcedotcom/lwc-dev-mobile-core/blob/ac64e7b40782b75da0c28a086ca046e7558fa789/src/common/AndroidEnvironmentRequirements.ts#L154
+  'Checking SDK Platform Emulator Images', //https://github.com/forcedotcom/lwc-dev-mobile-core/blob/ac64e7b40782b75da0c28a086ca046e7558fa789/src/common/AndroidEnvironmentRequirements.ts#L195
 ];
 
 export type RequirementTestResult = {
@@ -84,10 +83,6 @@ export async function checkAndroidPlatformAndEmulatorImage(
   }
 
   const versionAtLeast = (pkg: { version: Version | string }) => {
-    if (typeof pkg.version === 'string') {
-      const v = Version.from(pkg.version);
-      return v !== null && Version.sameOrNewer(pkg.version, minVersion);
-    }
     return Version.sameOrNewer(pkg.version, minVersion);
   };
 
@@ -100,7 +95,7 @@ export async function checkAndroidPlatformAndEmulatorImage(
     if (!hasPlatformAtLeast) {
       return {
         success: false,
-        errorMessage: `Android platform API for level ${apiLevel} or higher are required. No installed platform package found with version >= ${apiLevel}.`,
+        errorMessage: `Android platform API for level ${apiLevel} or higher is required. No installed platform package found with version >= ${apiLevel}.`,
       };
     }
 
@@ -109,7 +104,7 @@ export async function checkAndroidPlatformAndEmulatorImage(
     if (!hasEmulatorImageAtLeast) {
       return {
         success: false,
-        errorMessage: `Android emulator image for level ${apiLevel} or higher are required. No installed emulator image found with version >= ${apiLevel}.`,
+        errorMessage: `Android emulator image for level ${apiLevel} or higher is required. No installed emulator image found with version >= ${apiLevel}.`,
       };
     }
     return { success: true };
@@ -117,7 +112,7 @@ export async function checkAndroidPlatformAndEmulatorImage(
     const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      errorMessage: `Android platform API and emulator image for level ${apiLevel} or higher are required. ${message}`,
+      errorMessage: `Android platform API and emulator image for level ${apiLevel} or higher is required. ${message}`,
     };
   }
 }
