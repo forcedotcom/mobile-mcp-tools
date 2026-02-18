@@ -275,13 +275,16 @@ By the end of each Design/Iterate phase, the user validates implemented features
 
 For MSDK apps (Mobile SDK templates without custom properties), the workflow automatically retrieves Connected App credentials from the user's Salesforce org:
 
-1. **Connected App Discovery**: The workflow executes `sf org list metadata -m ConnectedApp --json` to discover available Connected Apps in the authenticated org
-2. **User Selection**: Presents the list of Connected Apps to the user for selection
-3. **Metadata Retrieval**: Retrieves the selected Connected App's metadata using `sf project retrieve start -m ConnectedApp:<appName> --output-dir temp/`
-4. **Credential Extraction**: Parses the XML metadata to extract the `consumerKey` and `callbackUrl` for OAuth configuration
+1. **Org Discovery**: The workflow executes `sf org list --json` to discover all connected Salesforce orgs (DevHubs) available on the user's machine
+2. **Org Selection**: Presents the list of connected orgs to the user for selection
+3. **Connected App Discovery**: Executes `sf org list metadata -m ConnectedApp --json -o <selectedOrg>` to discover available Connected Apps in the selected org
+4. **Connected App Selection**: Presents the list of Connected Apps to the user for selection
+5. **Metadata Retrieval**: Retrieves the selected Connected App's metadata using `sf project retrieve start -m ConnectedApp:<appName> -o <selectedOrg>` in a temporary SFDX project
+6. **Credential Extraction**: Parses the XML metadata to extract the `consumerKey`, `callbackUrl`, and the org's `instanceUrl` (login host) for OAuth configuration
 
 This approach is more secure than environment variables as it:
-- Retrieves credentials directly from the authenticated org
+- Lets the user choose which org to retrieve credentials from
+- Retrieves credentials directly from the selected org
 - Ensures credentials match actual Connected App configuration
 - Eliminates manual environment variable setup
 
