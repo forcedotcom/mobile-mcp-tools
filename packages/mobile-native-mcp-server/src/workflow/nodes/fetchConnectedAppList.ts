@@ -96,9 +96,11 @@ export class FetchConnectedAppListNode extends BaseNode<State> {
 
       if (!response.result || response.result.length === 0) {
         this.logger.info('No Connected Apps found in the org');
-        // Return empty list - the router will handle routing to completion
         return {
           connectedAppList: [],
+          workflowFatalErrorMessages: [
+            'No Connected Apps found in the selected Salesforce org. Please create a Connected App in your org and try again.',
+          ],
         };
       }
 

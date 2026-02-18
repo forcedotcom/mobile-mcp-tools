@@ -84,16 +84,17 @@ describe('CheckOrgListRouter', () => {
       expect(result).toBe(failureNodeName);
     });
 
-    it('should set error message when orgList is empty', () => {
+    it('should not mutate state when orgList is empty (error message set by FetchOrgsNode)', () => {
       const state = createTestState({
         orgList: [],
       });
 
       router.execute(state);
 
-      expect(state.workflowFatalErrorMessages).toEqual([
-        'No connected Salesforce orgs found. Please authenticate with a Salesforce org using `sf org login` and try again.',
-      ]);
+      // The router should NOT set workflowFatalErrorMessages directly.
+      // The error message is set by FetchOrgsNode via its return value to ensure
+      // proper state persistence through LangGraph's channel mechanism.
+      expect(state.workflowFatalErrorMessages).toBeUndefined();
     });
 
     it('should route to failure when orgList is undefined', () => {

@@ -118,7 +118,7 @@ describe('FetchOrgsNode', () => {
       expect(result.orgList![0]).not.toHaveProperty('alias');
     });
 
-    it('should return empty orgList when no connected devHubs', async () => {
+    it('should return empty orgList and error message when no connected devHubs', async () => {
       const response = {
         status: 0,
         result: {
@@ -142,9 +142,11 @@ describe('FetchOrgsNode', () => {
       const result = await node.execute(state);
 
       expect(result.orgList).toEqual([]);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages![0]).toContain('No connected Salesforce orgs found');
     });
 
-    it('should return empty orgList when devHubs is empty', async () => {
+    it('should return empty orgList and error message when devHubs is empty', async () => {
       const response = {
         status: 0,
         result: {
@@ -162,6 +164,8 @@ describe('FetchOrgsNode', () => {
       const result = await node.execute(state);
 
       expect(result.orgList).toEqual([]);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages![0]).toContain('No connected Salesforce orgs found');
     });
 
     it('should execute the correct sf command', async () => {

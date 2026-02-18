@@ -51,11 +51,10 @@ export class CheckOrgListRouter {
       return this.orgsFoundNodeName;
     }
 
-    // No connected orgs found - route to failure with error message
+    // No connected orgs found - route to failure
+    // Note: The error message is set by FetchOrgsNode via its return value,
+    // which ensures proper state persistence through LangGraph's channel mechanism.
     this.logger.warn(`No connected orgs found, routing to ${this.failureNodeName}`);
-    state.workflowFatalErrorMessages = [
-      'No connected Salesforce orgs found. Please authenticate with a Salesforce org using `sf org login` and try again.',
-    ];
     return this.failureNodeName;
   };
 }

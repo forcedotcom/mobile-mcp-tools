@@ -51,11 +51,10 @@ export class CheckConnectedAppListRouter {
       return this.appsFoundNodeName;
     }
 
-    // No Connected Apps found - route to failure with error message
+    // No Connected Apps found - route to failure
+    // Note: The error message is set by FetchConnectedAppListNode via its return value,
+    // which ensures proper state persistence through LangGraph's channel mechanism.
     this.logger.warn(`No Connected Apps found in org, routing to ${this.failureNodeName}`);
-    state.workflowFatalErrorMessages = [
-      'No Connected Apps found in the selected Salesforce org. Please create a Connected App in your org and try again.',
-    ];
     return this.failureNodeName;
   };
 }

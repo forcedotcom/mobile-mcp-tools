@@ -101,7 +101,7 @@ describe('FetchConnectedAppListNode', () => {
       });
     });
 
-    it('should return empty list when no connected apps found', async () => {
+    it('should return empty list and error message when no connected apps found', async () => {
       const response = {
         status: 0,
         result: [],
@@ -117,6 +117,8 @@ describe('FetchConnectedAppListNode', () => {
       const result = await node.execute(state);
 
       expect(result.connectedAppList).toEqual([]);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages![0]).toContain('No Connected Apps found');
     });
 
     it('should execute the correct sf command', async () => {

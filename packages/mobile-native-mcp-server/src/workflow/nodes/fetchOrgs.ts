@@ -94,6 +94,9 @@ export class FetchOrgsNode extends BaseNode<State> {
         this.logger.info('No connected orgs found');
         return {
           orgList: [],
+          workflowFatalErrorMessages: [
+            'No connected Salesforce orgs found. Please authenticate with a Salesforce org using `sf org login` and try again.',
+          ],
         };
       }
 
