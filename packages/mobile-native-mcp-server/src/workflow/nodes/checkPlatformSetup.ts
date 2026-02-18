@@ -10,6 +10,10 @@ import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-w
 import z from 'zod';
 import { execSync } from 'child_process';
 import { loadAndSetEnvVars } from '../utils/envConfig.js';
+import {
+  filterAndroidSetupFailures,
+  checkAndroidPlatformAndEmulatorImage,
+} from '../utils/androidPlatformCheck.js';
 
 const REQUIREMENT_RESULT_SCHEMA = z.object({
   title: z.string().describe('The title of the requirement check'),
@@ -53,7 +57,7 @@ export class PlatformCheckNode extends BaseNode<State> {
     };
   }
 
-  execute = (state: State): Partial<State> => {
+  execute = async (state: State): Promise<Partial<State>> => {
     const platform = state.platform;
     const apiLevel = PLATFORM_API_LEVELS[platform];
     if (!apiLevel) {
@@ -90,6 +94,40 @@ export class PlatformCheckNode extends BaseNode<State> {
       const platformCheckResult = this.parsePlatformCheckOutput(output, command);
 
       this.logger.debug(`Executing command (post-execution)`, { output });
+
+      if (platform === 'Android') {
+        // Parse or schema error: no tests and CLI reported failure (e.g. invalid JSON).
+        if (platformCheckResult.tests.length === 0 && !platformCheckResult.allRequirementsMet) {
+          return {
+            validPlatformSetup: false,
+            workflowFatalErrorMessages:
+              platformCheckResult.errorMessages.length > 0
+                ? platformCheckResult.errorMessages
+                : undefined,
+            ...this.getAndroidEnvProperties(),
+          };
+        }
+        const { filteredErrorMessages, allOtherRequirementsMet } = filterAndroidSetupFailures(
+          platformCheckResult.tests,
+          command
+        );
+        this.logger.debug(
+          `Confirming the Android SDK and emulator image satisfy the requirement for API level ${apiLevel}`
+        );
+        const directCheck = await checkAndroidPlatformAndEmulatorImage(apiLevel, this.logger);
+        const validPlatformSetup = allOtherRequirementsMet && directCheck.success;
+        const workflowFatalErrorMessages = [
+          ...filteredErrorMessages,
+          ...(directCheck.errorMessage ? [directCheck.errorMessage] : []),
+        ].filter(Boolean);
+        return {
+          validPlatformSetup,
+          workflowFatalErrorMessages:
+            workflowFatalErrorMessages.length > 0 ? workflowFatalErrorMessages : undefined,
+          ...this.getAndroidEnvProperties(),
+        };
+      }
+
       return {
         validPlatformSetup: platformCheckResult.allRequirementsMet,
         workflowFatalErrorMessages:
@@ -116,6 +154,7 @@ export class PlatformCheckNode extends BaseNode<State> {
   ): {
     allRequirementsMet: boolean;
     errorMessages: string[];
+    tests: PlatformCheckResult['tests'];
   } {
     try {
       const environmentCheckReport = JSON.parse(output);
@@ -128,12 +167,14 @@ export class PlatformCheckNode extends BaseNode<State> {
         errorMessages: platformCheckResult.tests
           .filter(test => !test.hasPassed)
           .map(test => `Platform setup check for "${command}" failed: ${test.message}`),
+        tests: platformCheckResult.tests,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       return {
         allRequirementsMet: false,
         errorMessages: [`Command output is not valid JSON: ${errorMessage}`],
+        tests: [],
       };
     }
   }
