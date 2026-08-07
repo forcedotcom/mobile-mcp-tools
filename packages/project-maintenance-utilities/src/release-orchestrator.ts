@@ -2,7 +2,7 @@ import { GitHubUtils } from './github-utils.js';
 import { NpmUtils, type CleanupResult } from './npm-utils.js';
 import { ActionsReporter } from './actions-reporter.js';
 import type { Context as GitHubContext } from '@actions/github/lib/context';
-import { join, resolve } from 'path';
+import { join, resolve, sep } from 'path';
 import {
   FileSystemServiceProvider,
   ProcessServiceProvider,
@@ -66,15 +66,30 @@ export class ReleaseOrchestrator {
   }
 
   /**
+   * Resolve a package path against the workspace root, rejecting paths that escape it
+   * @param workspaceRoot - Path to workspace root directory
+   * @param packagePath - Package path input (relative or absolute)
+   * @returns Resolved absolute path, guaranteed to be within workspaceRoot
+   */
+  private resolvePackagePath(workspaceRoot: string, packagePath: string): string {
+    const resolved = resolve(workspaceRoot, packagePath.trim());
+    const normalizedRoot = resolve(workspaceRoot) + sep;
+    if (resolved !== resolve(workspaceRoot) && !resolved.startsWith(normalizedRoot)) {
+      throw new Error(`Invalid package_path: "${packagePath}" resolves outside the workspace`);
+    }
+    return resolved;
+  }
+
+  /**
    * Create a release workflow
    * @param options - Release options
    */
   async createRelease(options: CreateReleaseOptions): Promise<void> {
     const workspaceRoot = this.fsService.workspaceRoot;
-    const packagePath = resolve(workspaceRoot, options.packagePath.trim());
     const packageDisplayName = options.packageDisplayName.trim();
 
     try {
+      const packagePath = this.resolvePackagePath(workspaceRoot, options.packagePath);
       this.reporter.step('Getting package information');
       const packageInfo = this.packageService.getPackageInfo(packagePath);
       const releaseName = this.packageService.createReleaseName(
@@ -190,13 +205,21 @@ export class ReleaseOrchestrator {
    */
   async publishRelease(options: PublishReleaseOptions): Promise<void> {
     const workspaceRoot = this.fsService.workspaceRoot;
-    const packagePath = resolve(workspaceRoot, options.packagePath.trim());
     const releaseTag = options.releaseTag.trim();
     const npmTag = (options.npmTag ?? 'latest').trim();
     const dryRun = options.dryRun ?? false;
 
     try {
       this.reporter.step('Validating inputs and release');
+
+      const packagePath = this.resolvePackagePath(workspaceRoot, options.packagePath);
+
+      if (!/^[a-z][a-z0-9-]*$/.test(npmTag)) {
+        this.reporter.setFailed(
+          `Invalid npm_tag: "${npmTag}". Must be lowercase alphanumeric with hyphens (e.g. "latest", "beta").`
+        );
+        return;
+      }
 
       // Parse release tag
       const { packageIdentifier, packageVersion } = this.packageService.parseReleaseTag(releaseTag);

@@ -27,7 +27,16 @@ export class MockProcessService implements ProcessServiceProvider {
 
   execSync(command: string, options?: { stdio?: 'inherit' | 'pipe' }): Buffer {
     this.executedCommands.push(command);
+    return this.resolveResponse(command, options);
+  }
 
+  execFileSync(file: string, args: string[], options?: { stdio?: 'inherit' | 'pipe' }): Buffer {
+    const command = [file, ...args].join(' ');
+    this.executedCommands.push(command);
+    return this.resolveResponse(command, options);
+  }
+
+  private resolveResponse(command: string, options?: { stdio?: 'inherit' | 'pipe' }): Buffer {
     const response = this.commandResponses.get(command);
     if (!response) {
       throw new Error(`Mock: No response configured for command: ${command}`);
