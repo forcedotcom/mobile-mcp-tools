@@ -108,13 +108,12 @@ describe('DefaultCommandRunner', () => {
       const spawnCall = vi.mocked(spawn).mock.calls[0];
       const env = spawnCall[2]?.env;
 
-      // shell: true on Windows, false on macOS/Linux
-      const expectedShell = process.platform === 'win32';
+      // shell is always false now — no shell parsing of arguments on any platform
       expect(spawn).toHaveBeenCalledWith('echo', ['hello'], {
         env: expect.objectContaining({
           ...process.env,
         }),
-        shell: expectedShell,
+        shell: false,
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd: undefined,
       });

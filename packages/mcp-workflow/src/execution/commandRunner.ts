@@ -9,6 +9,7 @@ import { spawn } from 'child_process';
 import { createWriteStream } from 'fs';
 import { Logger, createComponentLogger } from '../logging/logger.js';
 import type { CommandResult, CommandExecutionOptions } from './types.js';
+import { buildSpawnInvocation } from './safeSpawn.js';
 
 /**
  * Generic command execution abstraction that handles process spawning,
@@ -29,13 +30,6 @@ export interface CommandRunner {
     options?: CommandExecutionOptions
   ): Promise<CommandResult>;
 }
-
-/**
- * Determines if shell mode should be used based on platform.
- * - Windows: shell: true (needed for command resolution)
- * - macOS/Linux: shell: false (properly handles arguments with spaces)
- */
-const isWindows = process.platform === 'win32';
 
 /**
  * Default implementation of CommandRunner using Node.js spawn.
@@ -85,11 +79,13 @@ export class DefaultCommandRunner implements CommandRunner {
     return new Promise<CommandResult>((resolve, reject) => {
       const outputStream = outputFilePath ? createWriteStream(outputFilePath) : null;
 
-      // Use shell: true on Windows (needed for command resolution),
-      // shell: false on macOS/Linux (properly handles arguments with spaces)
-      const childProcess = spawn(command, args, {
+      // Never route arguments through a shell. buildSpawnInvocation returns shell:false on all
+      // platforms and, on Windows, wraps the command in cmd.exe with an allowlist so .cmd/.bat
+      // tools still resolve without reintroducing shell parsing of arguments. See safeSpawn.ts.
+      const inv = buildSpawnInvocation(command, args);
+      const childProcess = spawn(inv.command, inv.args, {
         env,
-        shell: isWindows,
+        shell: inv.shell,
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd,
       });
