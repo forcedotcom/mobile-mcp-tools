@@ -700,10 +700,7 @@ describe('ReleaseOrchestrator', () => {
 
         // Setup process service - all commands succeed
         mockProcess.clear();
-        mockProcess.setCommandToThrow(
-          'npm view @test/package@1.0.0 version',
-          'Version not found'
-        );
+        mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
         mockProcess.setCommandResponse(
           `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
           'package/package.json\npackage/index.js'
@@ -778,10 +775,7 @@ describe('ReleaseOrchestrator', () => {
 
         // Setup process service for npm commands
         mockProcess.clear();
-        mockProcess.setCommandToThrow(
-          'npm view @test/package@1.0.0 version',
-          'Version not found'
-        );
+        mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
         mockProcess.setCommandResponse(
           `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public`,
           ''
