@@ -138,7 +138,7 @@ export class NpmUtils {
   isVersionPublished(packageName: string, version: string): boolean {
     try {
       // Check if this version is already published
-      this.processService.execSync(`npm view "${packageName}@${version}" version`, {
+      this.processService.execFileSync('npm', ['view', `${packageName}@${version}`, 'version'], {
         stdio: 'pipe',
       });
       return true;
@@ -155,18 +155,18 @@ export class NpmUtils {
    * @throws Error with descriptive message if publish fails
    */
   publishToNpm(tarballPath: string, npmTag = 'latest', dryRun = false): void {
-    const dryRunFlag = dryRun ? '--dry-run' : '';
-
     // Resolve to absolute path to prevent npm from interpreting as git repository URL
     const absoluteTarballPath = resolve(tarballPath);
 
+    const args = ['publish', absoluteTarballPath, '--tag', npmTag, '--access', 'public'];
+    if (dryRun) {
+      args.push('--dry-run');
+    }
+
     try {
-      this.processService.execSync(
-        `npm publish "${absoluteTarballPath}" --tag "${npmTag}" --access public ${dryRunFlag}`.trim(),
-        {
-          stdio: 'inherit',
-        }
-      );
+      this.processService.execFileSync('npm', args, {
+        stdio: 'inherit',
+      });
     } catch (error) {
       throw new Error(
         `Failed to ${dryRun ? 'validate' : 'publish'} package: ${this.getErrorMessage(error)}`
@@ -190,7 +190,9 @@ export class NpmUtils {
   ): VerificationResult {
     try {
       // Show tarball contents (first 20 files)
-      const contents = this.processService.execSync(`tar -tzf "${tarballPath}"`, { stdio: 'pipe' });
+      const contents = this.processService.execFileSync('tar', ['-tzf', tarballPath], {
+        stdio: 'pipe',
+      });
       const files = contents
         .toString('utf8')
         .split('\n')
@@ -202,7 +204,9 @@ export class NpmUtils {
         this.fsService.mkdirSync(tempDir, { recursive: true });
       }
 
-      this.processService.execSync(`tar -xzf "${tarballPath}" -C "${tempDir}"`, { stdio: 'pipe' });
+      this.processService.execFileSync('tar', ['-xzf', tarballPath, '-C', tempDir], {
+        stdio: 'pipe',
+      });
 
       // Verify package.json exists and version matches
       const extractedPackageJsonPath = join(tempDir, 'package', 'package.json');

@@ -263,7 +263,7 @@ describe('NpmUtils', () => {
 
   describe('isVersionPublished', () => {
     it('should return true if version is published', () => {
-      mockProcess.setCommandResponse('npm view "test-package@1.0.0" version', '1.0.0');
+      mockProcess.setCommandResponse('npm view test-package@1.0.0 version', '1.0.0');
 
       const result = npmUtils.isVersionPublished('test-package', '1.0.0');
 
@@ -271,7 +271,7 @@ describe('NpmUtils', () => {
     });
 
     it('should return false if version is not published', () => {
-      mockProcess.setCommandToThrow('npm view "test-package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view test-package@1.0.0 version', 'Version not found');
 
       const result = npmUtils.isVersionPublished('test-package', '1.0.0');
 
@@ -279,7 +279,7 @@ describe('NpmUtils', () => {
     });
 
     it('should handle scoped packages', () => {
-      mockProcess.setCommandResponse('npm view "@scope/package@1.0.0" version', '1.0.0');
+      mockProcess.setCommandResponse('npm view @scope/package@1.0.0 version', '1.0.0');
 
       const result = npmUtils.isVersionPublished('@scope/package', '1.0.0');
 
@@ -291,20 +291,20 @@ describe('NpmUtils', () => {
     it('should publish successfully', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --access public`,
+        `npm publish ${tarballPath} --tag latest --access public`,
         'Published successfully'
       );
 
       expect(() => npmUtils.publishToNpm(tarballPath, 'latest', false)).not.toThrow();
 
       const commands = mockProcess.getExecutedCommands();
-      expect(commands).toContain(`npm publish "${tarballPath}" --tag "latest" --access public`);
+      expect(commands).toContain(`npm publish ${tarballPath} --tag latest --access public`);
     });
 
     it('should handle dry run mode', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`,
+        `npm publish ${tarballPath} --tag latest --access public --dry-run`,
         'Dry run successful'
       );
 
@@ -312,14 +312,14 @@ describe('NpmUtils', () => {
 
       const commands = mockProcess.getExecutedCommands();
       expect(commands).toContain(
-        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`
+        `npm publish ${tarballPath} --tag latest --access public --dry-run`
       );
     });
 
     it('should use default tag if not specified', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --access public`,
+        `npm publish ${tarballPath} --tag latest --access public`,
         'Published successfully'
       );
 
@@ -329,7 +329,7 @@ describe('NpmUtils', () => {
     it('should throw descriptive error on publish failure', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandToThrow(
-        `npm publish "${tarballPath}" --tag "latest" --access public`,
+        `npm publish ${tarballPath} --tag latest --access public`,
         'Publish failed'
       );
 
@@ -341,7 +341,7 @@ describe('NpmUtils', () => {
     it('should throw descriptive error on dry run validation failure', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandToThrow(
-        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`,
+        `npm publish ${tarballPath} --tag latest --access public --dry-run`,
         'Validation failed'
       );
 
@@ -357,10 +357,10 @@ describe('NpmUtils', () => {
 
     beforeEach(() => {
       mockProcess.setCommandResponse(
-        `tar -tzf "${tarballPath}"`,
+        `tar -tzf ${tarballPath}`,
         'package/\npackage/package.json\npackage/index.js\n'
       );
-      mockProcess.setCommandResponse(`tar -xzf "${tarballPath}" -C "temp-verify"`, '');
+      mockProcess.setCommandResponse(`tar -xzf ${tarballPath} -C temp-verify`, '');
       mockFs.setFileContent(
         path.join('temp-verify', 'package', 'package.json'),
         JSON.stringify({
@@ -404,8 +404,8 @@ describe('NpmUtils', () => {
     it('should handle missing package.json', () => {
       // Clear the beforeEach setup and don't set the package.json file
       mockFs.clear();
-      mockProcess.setCommandResponse(`tar -tzf "${tarballPath}"`, 'package/\npackage/index.js\n');
-      mockProcess.setCommandResponse(`tar -xzf "${tarballPath}" -C "temp-verify"`, '');
+      mockProcess.setCommandResponse(`tar -tzf ${tarballPath}`, 'package/\npackage/index.js\n');
+      mockProcess.setCommandResponse(`tar -xzf ${tarballPath} -C temp-verify`, '');
       // Don't set the package.json file to exist
 
       const result = npmUtils.verifyTarball(tarballPath, expectedVersion);
@@ -416,7 +416,7 @@ describe('NpmUtils', () => {
 
     it('should handle extraction errors', () => {
       mockProcess.clearCommandResponses();
-      mockProcess.setCommandToThrow(`tar -tzf "${tarballPath}"`, 'Extraction failed');
+      mockProcess.setCommandToThrow(`tar -tzf ${tarballPath}`, 'Extraction failed');
 
       const result = npmUtils.verifyTarball(tarballPath, expectedVersion);
 
@@ -427,10 +427,10 @@ describe('NpmUtils', () => {
     it('should use custom temp directory', () => {
       const customTempDir = 'custom-temp';
       mockProcess.setCommandResponse(
-        `tar -tzf "${tarballPath}"`,
+        `tar -tzf ${tarballPath}`,
         'package/\npackage/package.json\npackage/index.js\n'
       );
-      mockProcess.setCommandResponse(`tar -xzf "${tarballPath}" -C "${customTempDir}"`, '');
+      mockProcess.setCommandResponse(`tar -xzf ${tarballPath} -C ${customTempDir}`, '');
       // The verifyTarball method creates the directory if it doesn't exist, so we need to ensure it's created
       mockFs.setDirectoryExists(customTempDir);
       mockFs.setFileContent(

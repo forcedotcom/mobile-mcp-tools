@@ -91,6 +91,8 @@ export class PackageService implements PackageServiceProvider {
       );
     }
 
+    // packageIdentifier is intentionally unvalidated: it only ever reaches setOutput/reporter.info
+    // today, never a shell or file-path sink. If a future change wires it into one, validate it there.
     const packageIdentifier = tagMatch[1];
     const packageVersion = tagMatch[2];
 

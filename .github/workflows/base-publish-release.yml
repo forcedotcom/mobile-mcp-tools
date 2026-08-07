@@ -55,15 +55,20 @@ jobs:
         uses: actions/github-script@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_PATH: ${{ inputs.package_path }}
+          PACKAGE_DISPLAY_NAME: ${{ inputs.package_display_name }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          NPM_TAG: ${{ inputs.npm_tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
         with:
           script: |
-            const { createReleaseOrchestrator } = await import('${{ github.workspace }}/packages/project-maintenance-utilities/dist/index.js');
+            const { createReleaseOrchestrator } = await import(`${process.env.GITHUB_WORKSPACE}/packages/project-maintenance-utilities/dist/index.js`);
 
             const orchestrator = createReleaseOrchestrator(context);
             await orchestrator.publishRelease({
-              packagePath: '${{ inputs.package_path }}',
-              packageDisplayName: '${{ inputs.package_display_name }}',
-              releaseTag: '${{ inputs.release_tag }}',
-              npmTag: '${{ inputs.npm_tag }}',
-              dryRun: ${{ inputs.dry_run }}
+              packagePath: process.env.PACKAGE_PATH,
+              packageDisplayName: process.env.PACKAGE_DISPLAY_NAME,
+              releaseTag: process.env.RELEASE_TAG,
+              npmTag: process.env.NPM_TAG,
+              dryRun: process.env.DRY_RUN === 'true'
             });
