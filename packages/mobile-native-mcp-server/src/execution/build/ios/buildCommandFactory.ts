@@ -38,11 +38,21 @@ export class iOSBuildCommandFactory implements BuildCommandFactory {
       LC_ALL: 'en_US.UTF-8',
     };
 
+    // Build xcodebuild as an executable + argv array so no value (projectPath, projectName,
+    // buildOutputDir) is ever parsed by a shell. The working directory is set via `cwd`
+    // (commandRunner honors it), replacing the previous `cd "…" &&` shell prefix.
     return {
-      executable: 'sh',
+      executable: 'xcodebuild',
       args: [
-        '-c',
-        `cd "${params.projectPath}" && xcodebuild -workspace ${params.projectName}.xcworkspace -scheme ${params.projectName} -destination 'generic/platform=iOS Simulator' clean build CONFIGURATION_BUILD_DIR="${params.buildOutputDir}"`,
+        '-workspace',
+        `${params.projectName}.xcworkspace`,
+        '-scheme',
+        params.projectName,
+        '-destination',
+        'generic/platform=iOS Simulator',
+        'clean',
+        'build',
+        `CONFIGURATION_BUILD_DIR=${params.buildOutputDir}`,
       ],
       env,
       cwd: params.projectPath,

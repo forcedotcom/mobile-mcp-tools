@@ -17,131 +17,61 @@ describe('iOSBuildCommandFactory', () => {
   });
 
   describe('create', () => {
-    it('should create command with correct executable', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
+    const params = {
+      projectPath: '/path/to/project',
+      projectName: 'TestApp',
+      buildOutputDir: '/output',
+    };
 
+    it('should use xcodebuild as the executable (no shell)', () => {
       const command = factory.create(params);
-
-      expect(command.executable).toBe('sh');
-      expect(command.args).toContain('-c');
+      expect(command.executable).toBe('xcodebuild');
+      expect(command.args).not.toContain('-c');
+      expect(command.args).not.toContain('sh');
     });
 
-    it('should include project path in command', () => {
-      const params = {
-        projectPath: '/custom/path',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
+    it('should build a pure argv array with workspace and scheme', () => {
       const command = factory.create(params);
-
-      expect(command.args[1]).toContain('/custom/path');
+      expect(command.args).toEqual([
+        '-workspace',
+        'TestApp.xcworkspace',
+        '-scheme',
+        'TestApp',
+        '-destination',
+        'generic/platform=iOS Simulator',
+        'clean',
+        'build',
+        'CONFIGURATION_BUILD_DIR=/output',
+      ]);
     });
 
-    it('should include xcodebuild command with workspace', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
-      const command = factory.create(params);
-
-      expect(command.args[1]).toContain('xcodebuild');
-      expect(command.args[1]).toContain('TestApp.xcworkspace');
+    it('should pass a malicious projectName verbatim as a single argv element', () => {
+      const malicious = { ...params, projectName: 'App; rm -rf ~' };
+      const command = factory.create(malicious);
+      // The dangerous value appears untouched as its own argv element, never concatenated
+      // into a shell string.
+      expect(command.args).toContain('App; rm -rf ~');
+      expect(command.args).toContain('App; rm -rf ~.xcworkspace');
+      expect(command.args.join(' ')).not.toContain('&&');
     });
 
-    it('should include scheme in command', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'MyApp',
-        buildOutputDir: '/output',
-      };
-
-      const command = factory.create(params);
-
-      expect(command.args[1]).toContain('-scheme MyApp');
+    it('should pass a malicious projectPath only via cwd, not a shell string', () => {
+      const malicious = { ...params, projectPath: '/tmp/x"; touch pwned; "' };
+      const command = factory.create(malicious);
+      expect(command.cwd).toBe('/tmp/x"; touch pwned; "');
+      // projectPath is not interpolated into any arg
+      expect(command.args.some(a => a.includes('touch pwned'))).toBe(false);
     });
 
-    it('should include destination in command', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
+    it('should set cwd to the project path', () => {
       const command = factory.create(params);
-
-      expect(command.args[1]).toContain("destination 'generic/platform=iOS Simulator'");
-    });
-
-    it('should include clean build in command', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
-      const command = factory.create(params);
-
-      expect(command.args[1]).toContain('clean build');
-    });
-
-    it('should include CONFIGURATION_BUILD_DIR in command', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/custom/output',
-      };
-
-      const command = factory.create(params);
-
-      expect(command.args[1]).toContain('CONFIGURATION_BUILD_DIR="/custom/output"');
-    });
-
-    it('should set cwd to project path', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
-      const command = factory.create(params);
-
       expect(command.cwd).toBe('/path/to/project');
     });
 
-    it('should set locale environment variables', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
+    it('should set locale environment variables and preserve existing env', () => {
       const command = factory.create(params);
-
-      expect(command.env).toBeDefined();
       expect(command.env?.LANG).toBe('en_US.UTF-8');
       expect(command.env?.LC_ALL).toBe('en_US.UTF-8');
-    });
-
-    it('should preserve other environment variables', () => {
-      const params = {
-        projectPath: '/path/to/project',
-        projectName: 'TestApp',
-        buildOutputDir: '/output',
-      };
-
-      const command = factory.create(params);
-
-      expect(command.env).toBeDefined();
-      // Should include original env plus locale vars
-      expect(Object.keys(command.env || {})).toContain('LANG');
-      expect(Object.keys(command.env || {})).toContain('LC_ALL');
     });
   });
 
