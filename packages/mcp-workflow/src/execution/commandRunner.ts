@@ -80,14 +80,16 @@ export class DefaultCommandRunner implements CommandRunner {
       const outputStream = outputFilePath ? createWriteStream(outputFilePath) : null;
 
       // Never route arguments through a shell. buildSpawnInvocation returns shell:false on all
-      // platforms and, on Windows, wraps the command in cmd.exe with an allowlist so .cmd/.bat
-      // tools still resolve without reintroducing shell parsing of arguments. See safeSpawn.ts.
+      // platforms and, on Windows, wraps the command in cmd.exe with each arg double-quoted (and
+      // rejects the unquotable " % CR LF) so .cmd/.bat tools resolve without shell parsing of
+      // arguments. windowsVerbatimArguments is forwarded so libuv does not re-quote. See safeSpawn.ts.
       const inv = buildSpawnInvocation(command, args);
       const childProcess = spawn(inv.command, inv.args, {
         env,
         shell: inv.shell,
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd,
+        windowsVerbatimArguments: inv.windowsVerbatimArguments,
       });
 
       // Initialize progress reporting
