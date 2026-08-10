@@ -27,6 +27,21 @@ vi.mock('fs', () => {
   };
 });
 
+// Mock safeSpawn's buildSpawnInvocation as an identity passthrough (shell: false). The real
+// implementation rewrites command/args on win32 (wrapping in cmd.exe) — that platform-specific
+// behavior is covered by safeSpawn.test.ts. This suite only needs to prove commandRunner forwards
+// whatever buildSpawnInvocation returns straight through to spawn, deterministically on every OS.
+vi.mock('../../src/execution/safeSpawn.js', () => {
+  return {
+    buildSpawnInvocation: vi.fn((command: string, args: string[]) => ({
+      command,
+      args,
+      shell: false as const,
+      windowsVerbatimArguments: undefined,
+    })),
+  };
+});
+
 describe('DefaultCommandRunner', () => {
   let commandRunner: DefaultCommandRunner;
   let mockLogger: MockLogger;
@@ -108,15 +123,15 @@ describe('DefaultCommandRunner', () => {
       const spawnCall = vi.mocked(spawn).mock.calls[0];
       const env = spawnCall[2]?.env;
 
-      // shell: true on Windows, false on macOS/Linux
-      const expectedShell = process.platform === 'win32';
+      // shell is always false now — no shell parsing of arguments on any platform
       expect(spawn).toHaveBeenCalledWith('echo', ['hello'], {
         env: expect.objectContaining({
           ...process.env,
         }),
-        shell: expectedShell,
+        shell: false,
         stdio: ['ignore', 'pipe', 'pipe'],
         cwd: undefined,
+        windowsVerbatimArguments: undefined,
       });
 
       // Ensure UTF-8 encoding variables are set (either from existing env or defaults)

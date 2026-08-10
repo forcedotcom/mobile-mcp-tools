@@ -64,8 +64,9 @@ describe('DefaultBuildExecutor', () => {
 
       expect(mockCommandRunner.execute).toHaveBeenCalled();
       const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
-      expect(callArgs[0]).toBe('sh');
-      expect(callArgs[1][1]).toContain('xcodebuild');
+      expect(callArgs[0]).toBe('xcodebuild');
+      expect(callArgs[1]).toContain('-workspace');
+      expect(callArgs[1]).toContain('TestApp.xcworkspace');
     });
 
     it('should select Android factory for Android platform', async () => {
@@ -482,7 +483,9 @@ describe('DefaultBuildExecutor', () => {
 
       const callArgs = vi.mocked(mockCommandRunner.execute).mock.calls[0];
       // iOS command should include the app artifact root path
-      expect(callArgs[1][1]).toContain(mockTempDirManager.getAppArtifactRootPath('MyApp'));
+      expect(callArgs[1]).toContain(
+        `CONFIGURATION_BUILD_DIR=${mockTempDirManager.getAppArtifactRootPath('MyApp')}`
+      );
     });
   });
 });

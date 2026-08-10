@@ -109,9 +109,13 @@ export {
   MCPProgressReporter,
   CommandRunner,
   DefaultCommandRunner,
+  SafeSpawnError,
+  buildSpawnInvocation,
+  quoteForCmd,
   type Command,
   type CommandResult,
   type ProgressParseResult,
   type ProgressParser,
   type CommandExecutionOptions,
+  type SpawnInvocation,
 } from './execution/index.js';

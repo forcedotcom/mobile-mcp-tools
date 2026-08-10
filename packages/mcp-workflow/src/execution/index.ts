@@ -7,6 +7,12 @@
 
 export { ProgressReporter, MCPProgressReporter } from './progressReporter.js';
 export { CommandRunner, DefaultCommandRunner } from './commandRunner.js';
+export {
+  SafeSpawnError,
+  buildSpawnInvocation,
+  quoteForCmd,
+  type SpawnInvocation,
+} from './safeSpawn.js';
 export type {
   Command,
   CommandResult,

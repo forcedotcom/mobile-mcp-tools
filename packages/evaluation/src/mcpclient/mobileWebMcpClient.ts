@@ -7,6 +7,7 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { buildSpawnInvocation } from '@salesforce/magen-mcp-workflow';
 import { fileURLToPath } from 'url';
 import path, { dirname, join } from 'path';
 import { spawn, ChildProcess } from 'child_process';
@@ -36,10 +37,12 @@ export class MobileWebMcpClient {
 
   async connect() {
     console.log('🔄 Starting MCP server...');
-    this.serverProcess = spawn('npm', ['run', 'mobile-web:server:start'], {
+    const invocation = buildSpawnInvocation('npm', ['run', 'mobile-web:server:start']);
+    this.serverProcess = spawn(invocation.command, invocation.args, {
       cwd: path.resolve(__dirname, '../../../../..'),
       stdio: ['pipe', 'pipe', 'pipe'],
-      shell: true,
+      shell: invocation.shell,
+      windowsVerbatimArguments: invocation.windowsVerbatimArguments,
     });
 
     // Add process event handlers for debugging

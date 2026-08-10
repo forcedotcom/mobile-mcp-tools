@@ -6,7 +6,12 @@
  */
 
 import { State } from '../metadata.js';
-import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
+import {
+  BaseNode,
+  createComponentLogger,
+  Logger,
+  buildSpawnInvocation,
+} from '@salesforce/magen-mcp-workflow';
 import { MOBILE_SDK_TEMPLATES_PATH } from '../../common.js';
 import { spawnSync } from 'child_process';
 import { TEMPLATE_LIST_SCHEMA, TemplateListOutput } from '../../common/schemas.js';
@@ -32,9 +37,21 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
 
     // Execute the sf mobilesdk listtemplates command directly
     const platformLower = state.platform.toLowerCase();
-    const command = `sf mobilesdk ${platformLower} listtemplates --templatesource=${MOBILE_SDK_TEMPLATES_PATH} --doc --json`;
+    // Build argv (no shell string). Untrusted `platformLower` becomes an inert argv element.
+    const templateArgs = [
+      'mobilesdk',
+      platformLower,
+      'listtemplates',
+      `--templatesource=${MOBILE_SDK_TEMPLATES_PATH}`,
+      '--doc',
+      '--json',
+    ];
+    const invocation = buildSpawnInvocation('sf', templateArgs);
 
-    this.logger.debug(`Executing template options fetch command`, { command });
+    this.logger.debug(`Executing template options fetch command`, {
+      command: invocation.command,
+      args: invocation.args,
+    });
 
     let templateOptions: TemplateListOutput;
 
@@ -51,11 +68,12 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
         const outputFd = openSync(outputFile, 'w');
         try {
           // Redirect stdout directly to file to avoid pipe buffer limits
-          result = spawnSync(command, {
+          result = spawnSync(invocation.command, invocation.args, {
             encoding: 'utf-8',
             timeout: 30000,
             stdio: ['ignore', outputFd, 'pipe'], // stdin: ignore, stdout: file, stderr: pipe
-            shell: true, // Execute through shell to handle command properly
+            shell: invocation.shell,
+            windowsVerbatimArguments: invocation.windowsVerbatimArguments,
           });
 
           if (result.error) {
