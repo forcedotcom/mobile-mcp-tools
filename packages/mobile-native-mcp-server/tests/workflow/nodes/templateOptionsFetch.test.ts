@@ -42,7 +42,7 @@ describe('TemplateOptionsFetchNode', () => {
   }
 
   it('spawns sf with an argv array, never a shell string', () => {
-    runWith('iOS');
+    runWith('Android');
 
     expect(spawnSyncMock).toHaveBeenCalledTimes(1);
     const [command, args, options] = spawnSyncMock.mock.calls[0] as [
@@ -58,16 +58,16 @@ describe('TemplateOptionsFetchNode', () => {
   });
 
   it('passes the platform as an inert argv element', () => {
-    runWith('iOS');
+    runWith('Android');
     const args = spawnSyncMock.mock.calls[0][1] as string[];
     // Assert on the flattened command line rather than standalone array elements: on POSIX each
     // token is its own inert argv element, while on Windows buildSpawnInvocation folds them into a
-    // single quoted `cmd.exe /d /s /c "sf "mobilesdk" "ios" ..."` element. The command-construction
-    // intent (sf subcommand + iOS->ios mapping) holds on both platforms; the per-platform argv
-    // shape and cmd.exe quoting are covered by safeSpawn.test.ts.
+    // single quoted `cmd.exe /d /s /c "sf "mobilesdk" "android" ..."` element. The
+    // command-construction intent (sf subcommand + Android->android mapping) holds on both
+    // platforms; the per-platform argv shape and cmd.exe quoting are covered by safeSpawn.test.ts.
     const commandLine = args.join(' ');
     expect(commandLine).toContain('mobilesdk');
-    expect(commandLine).toContain('ios');
+    expect(commandLine).toContain('android');
     expect(commandLine).toContain('listtemplates');
     expect(commandLine).toContain('--doc');
     expect(commandLine).toContain('--json');
