@@ -5,16 +5,6 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-/**
- * Characters safe to pass to cmd.exe as (Node-quoted) argv elements. Allowlist rather than
- * denylist: the values that reach the Windows cmd.exe path are structured (device ids, paths,
- * `system-images;api;image;abi` strings, name=value args), so a strict allowlist rejects
- * anything unexpected instead of trying to enumerate every cmd metacharacter. `;` and `=` are
- * permitted (system-image paths and name=value args); space is permitted. Every cmd
- * metacharacter (`& | < > ^ ( ) " % !`) is excluded.
- */
-export const CMD_SAFE_ARG = /^[A-Za-z0-9 ._:;@\\/=+-]+$/;
-
 /** Thrown when an argv element cannot be safely passed to cmd.exe. */
 export class SafeSpawnError extends Error {
   public readonly code = 'UnsafeCmdArgument';
@@ -29,36 +19,56 @@ export interface SpawnInvocation {
   command: string;
   args: string[];
   shell: false;
+  /**
+   * Set true only on the Windows cmd.exe path. Callers MUST forward this into their
+   * spawn/spawnSync options: it tells libuv to pass our already-quoted argv through verbatim
+   * instead of re-quoting (which would corrupt the cmd.exe command line). Ignored by Node on
+   * POSIX and when undefined.
+   */
+  windowsVerbatimArguments?: boolean;
 }
 
-/** Throws SafeSpawnError if `value` contains a character outside the cmd.exe allowlist. */
-export function assertSafeForCmd(value: string): void {
-  if (!CMD_SAFE_ARG.test(value)) {
-    throw new SafeSpawnError(`Value cannot be safely passed to cmd.exe: ${JSON.stringify(value)}`);
+/**
+ * Quote a single argument for a cmd.exe command line.
+ *
+ * cmd.exe treats `& | < > ^ ( )` (and spaces/commas) as literal INSIDE double quotes, so wrapping
+ * in `"..."` neutralizes the injection metacharacters. Three things quoting cannot make safe, so we
+ * reject them: a literal `"` (closes the quote context), `%` (env-var expansion happens even inside
+ * quotes and has no reliable command-line escape), and CR/LF (line breaks). These characters are not
+ * legitimate in the values our callers pass (paths, name=value flags, callback URLs, org names,
+ * template properties).
+ */
+export function quoteForCmd(value: string): string {
+  if (/["%\r\n]/.test(value)) {
+    throw new SafeSpawnError(
+      `Value cannot be safely quoted for cmd.exe (contains one of " % CR LF): ${JSON.stringify(value)}`
+    );
   }
+  return `"${value}"`;
 }
 
 /**
  * Build a shell:false spawn invocation.
  *
- * POSIX: the command and args pass through unchanged; each arg reaches the OS as a single inert
- * element.
+ * POSIX: command and args pass through unchanged; each arg reaches the OS as a single inert element.
  *
  * Windows: many CLIs ship as `.cmd`/`.bat`, which shell:false cannot launch directly (CreateProcess
  * only auto-appends `.exe`; post-CVE-2024-27980 Node refuses `.bat`/`.cmd` without shell:true). We
- * launch through `cmd.exe /d /s /c` with shell:false so PATHEXT resolves the wrapper. Because
- * cmd.exe re-parses the flattened command line with its own grammar (and libuv only quotes
- * space/tab/`"`), a bare metacharacter would inject; we therefore validate each untrusted arg
- * against a strict allowlist first. `command` is a trusted, code-derived binary name and is not
- * validated.
+ * launch through `cmd.exe /d /s /c` with shell:false so PATHEXT resolves the wrapper. cmd.exe
+ * re-parses the flattened command line with its own grammar, so we quote each arg with quoteForCmd
+ * and wrap the whole inner command in one outer pair of quotes; the `/s` flag then strips exactly
+ * that outer pair and runs the remainder verbatim. `command` is a trusted, code-derived, space-free
+ * binary name and is passed bare (never quoted or validated). windowsVerbatimArguments:true stops
+ * libuv from re-quoting our argv.
  */
 export function buildSpawnInvocation(command: string, args: string[]): SpawnInvocation {
   if (process.platform === 'win32') {
-    args.forEach(arg => assertSafeForCmd(arg));
+    const inner = [command, ...args.map(quoteForCmd)].join(' ');
     return {
       command: process.env.comspec ?? 'cmd.exe',
-      args: ['/d', '/s', '/c', command, ...args],
+      args: ['/d', '/s', '/c', `"${inner}"`],
       shell: false,
+      windowsVerbatimArguments: true,
     };
   }
   return { command, args, shell: false };
