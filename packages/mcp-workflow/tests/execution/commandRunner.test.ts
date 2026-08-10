@@ -122,16 +122,17 @@ describe('DefaultCommandRunner', () => {
 
       const spawnCall = vi.mocked(spawn).mock.calls[0];
       const env = spawnCall[2]?.env;
-      const options = spawnCall[2];
 
-      // Verify spawn was called with correct command and arguments
-      expect(spawn).toHaveBeenCalledWith('echo', ['hello'], expect.anything());
-
-      // Verify spawn options are correct
-      expect(options).toHaveProperty('shell', false);
-      expect(options).toHaveProperty('stdio', ['ignore', 'pipe', 'pipe']);
-      expect(options).toHaveProperty('windowsVerbatimArguments', undefined);
-      expect(options?.env).toBeDefined();
+      // shell is always false now — no shell parsing of arguments on any platform
+      expect(spawn).toHaveBeenCalledWith('echo', ['hello'], {
+        env: expect.objectContaining({
+          ...process.env,
+        }),
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: undefined,
+        windowsVerbatimArguments: undefined,
+      });
 
       // Ensure UTF-8 encoding variables are set (either from existing env or defaults)
       expect(env).toBeDefined();
