@@ -42,6 +42,7 @@ export class MobileWebMcpClient {
       cwd: path.resolve(__dirname, '../../../../..'),
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: invocation.shell,
+      windowsVerbatimArguments: invocation.windowsVerbatimArguments,
     });
 
     // Add process event handlers for debugging

@@ -73,6 +73,7 @@ export class TemplateOptionsFetchNode extends BaseNode<State> {
             timeout: 30000,
             stdio: ['ignore', outputFd, 'pipe'], // stdin: ignore, stdout: file, stderr: pipe
             shell: invocation.shell,
+            windowsVerbatimArguments: invocation.windowsVerbatimArguments,
           });
 
           if (result.error) {
