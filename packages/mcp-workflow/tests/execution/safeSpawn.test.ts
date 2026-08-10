@@ -6,7 +6,11 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest';
-import { quoteForCmd, buildSpawnInvocation, SafeSpawnError } from '../../src/execution/safeSpawn.js';
+import {
+  quoteForCmd,
+  buildSpawnInvocation,
+  SafeSpawnError,
+} from '../../src/execution/safeSpawn.js';
 
 const originalPlatform = process.platform;
 function setPlatform(platform: string): void {

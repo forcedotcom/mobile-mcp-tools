@@ -12,12 +12,12 @@ import { DefaultCommandRunner } from '../../src/execution/commandRunner.js';
 // verbatim to the program and never parsed by a shell.
 //
 // POSIX-only: this test asserts the "passed verbatim" property, which is a POSIX guarantee.
-// On Windows, buildSpawnInvocation validates EVERY argv element (including this test's own
-// `node -e` harness script, which necessarily contains `(`, `)`, `|`, `"` — all outside
-// CMD_SAFE_ARG) and throws SafeSpawnError. That win32 behavior is rejection, not passthrough,
-// and is exercised directly by the metacharacter allowlist tests in safeSpawn.test.ts. Running
-// this real-subprocess passthrough assertion on Windows would therefore fail on the harness arg
-// itself, so we skip it there rather than assert a property the platform does not provide.
+// On Windows, buildSpawnInvocation wraps the call in cmd.exe and double-quotes every argv element
+// via quoteForCmd. This test's own `node -e` harness script contains a `"` (see argv[1] below),
+// which quoteForCmd rejects (it throws SafeSpawnError on " % CR LF — the chars quoting cannot
+// neutralize), so the invocation would fail on the harness arg itself rather than exercise
+// passthrough. The Windows quote-and-reject behavior is covered directly by safeSpawn.test.ts.
+// We therefore skip this real-subprocess passthrough assertion on Windows.
 describe('DefaultCommandRunner injection safety', () => {
   it.skipIf(process.platform === 'win32')(
     'passes a metacharacter-laden argument verbatim, without shell interpretation',
