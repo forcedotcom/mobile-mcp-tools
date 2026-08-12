@@ -31,6 +31,9 @@
     "url": "https://github.com/forcedotcom/mobile-mcp-tools/issues"
   },
   "homepage": "https://github.com/forcedotcom/mobile-mcp-tools#readme",
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
     "@nx/workspace": "^21.6.5",
     "@types/node": "^24.10.0",
