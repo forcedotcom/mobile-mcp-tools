@@ -65,8 +65,14 @@ describe('Evaluator', () => {
     } as unknown as LwcReviewRefactorEvaluator;
     // Mock the static create methods and constructors
     vi.mocked(LwcGenerationEvaluator).create = vi.fn().mockResolvedValue(mockGenerationEvaluator);
-    (LwcReviewRefactorEvaluator as Mock).mockImplementation(() => mockReviewRefactorEvaluator);
-    (MobileWebMcpClient as Mock).mockImplementation(() => mockMcpClient);
+    // Use regular functions (not arrow functions) so vitest 4 can invoke these
+    // mocked classes with `new` — arrow functions cannot be constructors.
+    (LwcReviewRefactorEvaluator as Mock).mockImplementation(function () {
+      return mockReviewRefactorEvaluator;
+    });
+    (MobileWebMcpClient as Mock).mockImplementation(function () {
+      return mockMcpClient;
+    });
   });
 
   afterEach(() => {
