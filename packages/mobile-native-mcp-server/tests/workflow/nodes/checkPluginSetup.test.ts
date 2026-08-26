@@ -32,6 +32,25 @@ describe('PluginCheckNode', () => {
     vi.clearAllMocks();
   });
 
+  // Helper to mock both plugins as valid
+  const mockBothPluginsValid = () => {
+    mockExecSync
+      .mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+          type: 'jit',
+        })
+      )
+      .mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+          type: 'jit',
+        })
+      );
+  };
+
   describe('Constructor', () => {
     it('should initialize with correct node name', () => {
       expect(node.name).toBe('checkPluginSetup');
@@ -56,16 +75,25 @@ describe('PluginCheckNode', () => {
   });
 
   describe('execute() - Plugin Already Installed and Valid', () => {
-    it('should handle plugin installed with valid version', () => {
+    it('should handle both plugins installed with valid versions', () => {
       const inputState = createTestState({});
 
-      const mockOutput = JSON.stringify({
-        name: 'sfdx-mobilesdk-plugin',
-        version: '13.1.0',
-        type: 'jit',
-      });
-
-      mockExecSync.mockReturnValue(mockOutput);
+      // Mock both plugins as installed with valid versions
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: 'sfdx-mobilesdk-plugin',
+            version: '13.2.0-alpha.1',
+            type: 'jit',
+          })
+        )
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: '@salesforce/lwc-dev-mobile',
+            version: '3.0.0-alpha.3',
+            type: 'jit',
+          })
+        );
 
       const result = node.execute(inputState);
 
@@ -73,20 +101,37 @@ describe('PluginCheckNode', () => {
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       expect(mockExecSync).toHaveBeenCalledWith('sf plugins inspect sfdx-mobilesdk-plugin --json', {
         encoding: 'utf-8',
-        timeout: 10000,
+        timeout: 3 * 60 * 1000,
+        maxBuffer: 2 * 1024 * 1024,
       });
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'sf plugins inspect @salesforce/lwc-dev-mobile --json',
+        {
+          encoding: 'utf-8',
+          timeout: 3 * 60 * 1000,
+          maxBuffer: 2 * 1024 * 1024,
+        }
+      );
     });
 
-    it('should handle plugin with version higher than minimum', () => {
+    it('should handle both plugins with versions higher than minimum', () => {
       const inputState = createTestState({});
 
-      const mockOutput = JSON.stringify({
-        name: 'sfdx-mobilesdk-plugin',
-        version: '14.0.0',
-        type: 'jit',
-      });
-
-      mockExecSync.mockReturnValue(mockOutput);
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: 'sfdx-mobilesdk-plugin',
+            version: '14.0.0',
+            type: 'jit',
+          })
+        )
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: '@salesforce/lwc-dev-mobile',
+            version: '4.0.0',
+            type: 'jit',
+          })
+        );
 
       const result = node.execute(inputState);
 
@@ -94,16 +139,24 @@ describe('PluginCheckNode', () => {
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should handle plugin with complex version string', () => {
+    it('should handle both plugins with complex version strings', () => {
       const inputState = createTestState({});
 
-      const mockOutput = JSON.stringify({
-        name: 'sfdx-mobilesdk-plugin',
-        version: '13.1.2',
-        type: 'jit',
-      });
-
-      mockExecSync.mockReturnValue(mockOutput);
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: 'sfdx-mobilesdk-plugin',
+            version: '13.2.0-alpha.2',
+            type: 'jit',
+          })
+        )
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: '@salesforce/lwc-dev-mobile',
+            version: '3.0.0-alpha.4',
+            type: 'jit',
+          })
+        );
 
       const result = node.execute(inputState);
 
@@ -113,15 +166,25 @@ describe('PluginCheckNode', () => {
     it('should handle plugin info with result wrapper', () => {
       const inputState = createTestState({});
 
-      const mockOutput = JSON.stringify({
-        result: {
-          name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
-          type: 'jit',
-        },
-      });
-
-      mockExecSync.mockReturnValue(mockOutput);
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify({
+            result: {
+              name: 'sfdx-mobilesdk-plugin',
+              version: '13.2.0-alpha.1',
+              type: 'jit',
+            },
+          })
+        )
+        .mockReturnValueOnce(
+          JSON.stringify({
+            result: {
+              name: '@salesforce/lwc-dev-mobile',
+              version: '3.0.0-alpha.3',
+              type: 'jit',
+            },
+          })
+        );
 
       const result = node.execute(inputState);
 
@@ -131,15 +194,25 @@ describe('PluginCheckNode', () => {
     it('should handle plugin info as array', () => {
       const inputState = createTestState({});
 
-      const mockOutput = JSON.stringify([
-        {
-          name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
-          type: 'jit',
-        },
-      ]);
-
-      mockExecSync.mockReturnValue(mockOutput);
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify([
+            {
+              name: 'sfdx-mobilesdk-plugin',
+              version: '13.2.0-alpha.1',
+              type: 'jit',
+            },
+          ])
+        )
+        .mockReturnValueOnce(
+          JSON.stringify([
+            {
+              name: '@salesforce/lwc-dev-mobile',
+              version: '3.0.0-alpha.3',
+              type: 'jit',
+            },
+          ])
+        );
 
       const result = node.execute(inputState);
 
@@ -148,32 +221,52 @@ describe('PluginCheckNode', () => {
   });
 
   describe('execute() - Plugin Not Installed', () => {
-    it('should install plugin when not found', () => {
+    it('should install both plugins when not found', () => {
       const inputState = createTestState({});
 
-      // First call fails (plugin not installed)
+      // First plugin: not installed, then install, then verify
       mockExecSync.mockImplementationOnce(() => {
         throw new Error('Plugin not found');
       });
-
-      // Second call installs plugin
       mockExecSync.mockImplementationOnce(() => '');
-
-      // Third call verifies installation
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin: not installed, then install, then verify
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Plugin not found');
+      });
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
         })
       );
 
       const result = node.execute(inputState);
 
       expect(result.validPluginSetup).toBe(true);
-      expect(mockExecSync).toHaveBeenCalledWith('sf plugins install sfdx-mobilesdk-plugin', {
-        encoding: 'utf-8',
-        timeout: 60000,
-      });
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'echo y | sf plugins install sfdx-mobilesdk-plugin@alpha',
+        {
+          encoding: 'utf-8',
+          timeout: 3 * 60 * 1000,
+          maxBuffer: 2 * 1024 * 1024,
+        }
+      );
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'echo y | sf plugins install @salesforce/lwc-dev-mobile',
+        {
+          encoding: 'utf-8',
+          timeout: 3 * 60 * 1000,
+          maxBuffer: 2 * 1024 * 1024,
+        }
+      );
     });
 
     it('should log info when plugin not installed', () => {
@@ -187,7 +280,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
@@ -245,7 +338,7 @@ describe('PluginCheckNode', () => {
 
       expect(result.validPluginSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
-      expect(result.workflowFatalErrorMessages![0]).toContain('below minimum 13.1.0');
+      expect(result.workflowFatalErrorMessages![0]).toContain('below minimum 13.2.0-alpha.1');
     });
   });
 
@@ -253,32 +346,40 @@ describe('PluginCheckNode', () => {
     it('should upgrade plugin when version is below minimum', () => {
       const inputState = createTestState({});
 
-      // First call returns old version
+      // First plugin: old version, upgrade, verify
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
           version: '12.0.0',
         })
       );
-
-      // Second call upgrades plugin
       mockExecSync.mockImplementationOnce(() => '');
-
-      // Third call verifies upgrade
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin is valid
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
         })
       );
 
       const result = node.execute(inputState);
 
       expect(result.validPluginSetup).toBe(true);
-      expect(mockExecSync).toHaveBeenCalledWith('sf plugins update sfdx-mobilesdk-plugin', {
-        encoding: 'utf-8',
-        timeout: 60000,
-      });
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'echo y | sf plugins install sfdx-mobilesdk-plugin@alpha',
+        {
+          encoding: 'utf-8',
+          timeout: 3 * 60 * 1000,
+          maxBuffer: 2 * 1024 * 1024,
+        }
+      );
     });
 
     it('should log info when upgrading plugin', () => {
@@ -295,7 +396,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
@@ -304,7 +405,9 @@ describe('PluginCheckNode', () => {
 
       const infoLogs = mockLogger.getLogsByLevel('info');
       const upgradeLog = infoLogs.find(log =>
-        log.message.includes('Plugin version 12.0.0 is below minimum 13.1.0, attempting upgrade')
+        log.message.includes(
+          'Plugin version 12.0.0 is below minimum 13.2.0-alpha.1, attempting upgrade'
+        )
       );
       expect(upgradeLog).toBeDefined();
     });
@@ -360,19 +463,74 @@ describe('PluginCheckNode', () => {
       expect(result.validPluginSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain(
-        'Plugin upgraded but version 12.5.0 is still below minimum 13.1.0'
+        'Plugin upgraded but version 12.5.0 is below minimum 13.2.0-alpha.1'
       );
     });
   });
 
   describe('execute() - Version Comparison', () => {
-    it('should accept exact minimum version', () => {
+    it('should accept exact minimum alpha versions for both plugins', () => {
+      const inputState = createTestState({});
+
+      mockBothPluginsValid();
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should accept stable versions with same numeric part as minimum alpha', () => {
+      const inputState = createTestState({});
+
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: 'sfdx-mobilesdk-plugin',
+            version: '13.2.0',
+          })
+        )
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: '@salesforce/lwc-dev-mobile',
+            version: '3.0.0',
+          })
+        );
+
+      const result = node.execute(inputState);
+
+      // Stable version (no prerelease) is greater than alpha version
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should accept higher major versions (stable)', () => {
+      const inputState = createTestState({});
+
+      mockExecSync
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: 'sfdx-mobilesdk-plugin',
+            version: '14.0.0',
+          })
+        )
+        .mockReturnValueOnce(
+          JSON.stringify({
+            name: '@salesforce/lwc-dev-mobile',
+            version: '4.0.0',
+          })
+        );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should accept higher minor version (stable)', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.3.0',
         })
       );
 
@@ -381,13 +539,13 @@ describe('PluginCheckNode', () => {
       expect(result.validPluginSetup).toBe(true);
     });
 
-    it('should accept higher major version', () => {
+    it('should accept higher patch version (stable)', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '14.0.0',
+          version: '13.2.1',
         })
       );
 
@@ -396,13 +554,13 @@ describe('PluginCheckNode', () => {
       expect(result.validPluginSetup).toBe(true);
     });
 
-    it('should accept higher minor version', () => {
+    it('should accept higher alpha version', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.2.0',
+          version: '13.2.0-alpha.2',
         })
       );
 
@@ -411,13 +569,13 @@ describe('PluginCheckNode', () => {
       expect(result.validPluginSetup).toBe(true);
     });
 
-    it('should accept higher patch version', () => {
+    it('should accept higher numeric version with alpha tag', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.1',
+          version: '13.3.0-alpha.1',
         })
       );
 
@@ -429,18 +587,26 @@ describe('PluginCheckNode', () => {
     it('should reject lower major version', () => {
       const inputState = createTestState({});
 
+      // First plugin: old version, upgrade, verify
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
           version: '12.9.9',
         })
       );
-
       mockExecSync.mockImplementationOnce(() => '');
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin is valid
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
         })
       );
 
@@ -448,7 +614,7 @@ describe('PluginCheckNode', () => {
 
       expect(result.validPluginSetup).toBe(true);
       expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('sf plugins update'),
+        expect.stringContaining('sf plugins install'),
         expect.any(Object)
       );
     });
@@ -459,7 +625,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.0.9',
+          version: '13.1.9',
         })
       );
 
@@ -467,16 +633,99 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
       node.execute(inputState);
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('sf plugins update'),
+        expect.stringContaining('sf plugins install'),
         expect.any(Object)
       );
+    });
+
+    it('should reject lower alpha version with same numeric part', () => {
+      const inputState = createTestState({});
+
+      // First plugin: old alpha version, upgrade, verify
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.0',
+        })
+      );
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin is valid
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('sf plugins install'),
+        expect.any(Object)
+      );
+    });
+
+    it('should correctly compare numeric prerelease identifiers (alpha.10 > alpha.2)', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.10',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // alpha.10 should be greater than minimum alpha.1
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should correctly compare alpha vs beta prerelease identifiers', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-beta.1',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // beta.1 should be greater than minimum alpha.1 (lexicographically "beta" > "alpha")
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should correctly compare numeric vs non-numeric prerelease identifiers', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.beta',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // alpha.beta should be greater than alpha.1 (non-numeric > numeric per SemVer)
+      expect(result.validPluginSetup).toBe(true);
     });
   });
 
@@ -531,40 +780,32 @@ describe('PluginCheckNode', () => {
   });
 
   describe('execute() - Logging', () => {
-    it('should log debug message when checking plugin', () => {
+    it('should log debug message when checking plugins', () => {
       const inputState = createTestState({});
 
-      mockExecSync.mockReturnValue(
-        JSON.stringify({
-          name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
-        })
-      );
+      mockBothPluginsValid();
 
       mockLogger.reset();
       node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
-      const checkLog = debugLogs.find(log => log.message.includes('Checking plugin installation'));
-      expect(checkLog).toBeDefined();
+      const checkLogs = debugLogs.filter(log =>
+        log.message.includes('Checking plugin installation')
+      );
+      expect(checkLogs.length).toBe(2);
     });
 
-    it('should log debug message when plugin check passed', () => {
+    it('should log debug message when both plugin checks passed', () => {
       const inputState = createTestState({});
 
-      mockExecSync.mockReturnValue(
-        JSON.stringify({
-          name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
-        })
-      );
+      mockBothPluginsValid();
 
       mockLogger.reset();
       node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
-      const passedLog = debugLogs.find(log => log.message.includes('Plugin check passed'));
-      expect(passedLog).toBeDefined();
+      const passedLogs = debugLogs.filter(log => log.message.includes('Plugin check passed'));
+      expect(passedLogs.length).toBe(2);
     });
 
     it('should log info when plugin installed successfully', () => {
@@ -578,7 +819,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
@@ -606,7 +847,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
@@ -626,7 +867,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
@@ -638,15 +879,10 @@ describe('PluginCheckNode', () => {
       expect(typeof result.validPluginSetup).toBe('boolean');
     });
 
-    it('should return validPluginSetup true on success', () => {
+    it('should return validPluginSetup true when both plugins succeed', () => {
       const inputState = createTestState({});
 
-      mockExecSync.mockReturnValue(
-        JSON.stringify({
-          name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
-        })
-      );
+      mockBothPluginsValid();
 
       const result = node.execute(inputState);
 
@@ -690,29 +926,95 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0-alpha.1',
+          version: '13.2.0-alpha.1',
         })
       );
 
       const result = node.execute(inputState);
 
-      // Should consider 13.1.0-alpha.1 as >= 13.1.0 based on first three parts
+      // Should accept exact minimum alpha version
       expect(result.validPluginSetup).toBe(true);
     });
 
-    it('should handle very long version strings', () => {
+    it('should accept higher alpha version', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0.0.0.0',
+          version: '13.2.0-alpha.2',
         })
       );
 
       const result = node.execute(inputState);
 
+      // Should accept alpha version higher than minimum
       expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should accept stable version higher than alpha minimum', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // Should accept stable version (no prerelease) as it's greater than alpha
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should accept newer stable version (13.3.0) without alpha tag', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.3.0',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // Should accept stable version higher than minimum alpha version
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should accept newer stable version (14.0.0) without alpha tag', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '14.0.0',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // Should accept stable version higher than minimum alpha version
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should handle invalid version strings gracefully', () => {
+      const inputState = createTestState({});
+
+      mockExecSync.mockReturnValue(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0.0.0.0', // Invalid SemVer (too many parts)
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      // Should reject invalid versions (semver library will throw, caught by try-catch)
+      expect(result.validPluginSetup).toBe(false);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
     });
   });
 
@@ -723,7 +1025,7 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValue(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
@@ -731,11 +1033,12 @@ describe('PluginCheckNode', () => {
 
       expect(mockExecSync).toHaveBeenCalledWith(expect.any(String), {
         encoding: 'utf-8',
-        timeout: 10000,
+        timeout: 3 * 60 * 1000,
+        maxBuffer: 2 * 1024 * 1024,
       });
     });
 
-    it('should set timeout to 60000ms for install command', () => {
+    it('should set timeout to 3 minutes for install command', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockImplementationOnce(() => {
@@ -746,19 +1049,23 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
       node.execute(inputState);
 
-      expect(mockExecSync).toHaveBeenCalledWith('sf plugins install sfdx-mobilesdk-plugin', {
-        encoding: 'utf-8',
-        timeout: 60000,
-      });
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'echo y | sf plugins install sfdx-mobilesdk-plugin@alpha',
+        {
+          encoding: 'utf-8',
+          timeout: 3 * 60 * 1000,
+          maxBuffer: 2 * 1024 * 1024,
+        }
+      );
     });
 
-    it('should set timeout to 60000ms for update command', () => {
+    it('should set timeout to 3 minutes for update command', () => {
       const inputState = createTestState({});
 
       mockExecSync.mockReturnValueOnce(
@@ -772,16 +1079,277 @@ describe('PluginCheckNode', () => {
       mockExecSync.mockReturnValueOnce(
         JSON.stringify({
           name: 'sfdx-mobilesdk-plugin',
-          version: '13.1.0',
+          version: '13.2.0-alpha.1',
         })
       );
 
       node.execute(inputState);
 
-      expect(mockExecSync).toHaveBeenCalledWith('sf plugins update sfdx-mobilesdk-plugin', {
-        encoding: 'utf-8',
-        timeout: 60000,
+      expect(mockExecSync).toHaveBeenCalledWith(
+        'echo y | sf plugins install sfdx-mobilesdk-plugin@alpha',
+        {
+          encoding: 'utf-8',
+          timeout: 3 * 60 * 1000,
+          maxBuffer: 2 * 1024 * 1024,
+        }
+      );
+    });
+  });
+
+  describe('execute() - Multi-Plugin Scenarios', () => {
+    it('should return true only when both plugins are valid', () => {
+      const inputState = createTestState({});
+
+      mockBothPluginsValid();
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+      expect(result.workflowFatalErrorMessages).toBeUndefined();
+    });
+
+    it('should return false when first plugin fails and second succeeds', () => {
+      const inputState = createTestState({});
+
+      // First plugin fails
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Plugin not found');
       });
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Installation failed');
+      });
+
+      // Second plugin succeeds
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(false);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages!.length).toBeGreaterThan(0);
+      expect(result.workflowFatalErrorMessages![0]).toContain('sfdx-mobilesdk-plugin');
+    });
+
+    it('should return false when first plugin succeeds and second fails', () => {
+      const inputState = createTestState({});
+
+      // First plugin succeeds
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin fails
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Plugin not found');
+      });
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Installation failed');
+      });
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(false);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages!.length).toBeGreaterThan(0);
+      expect(result.workflowFatalErrorMessages![0]).toContain('@salesforce/lwc-dev-mobile');
+    });
+
+    it('should return false when both plugins fail', () => {
+      const inputState = createTestState({});
+
+      // Both plugins fail installation
+      mockExecSync
+        .mockImplementationOnce(() => {
+          throw new Error('Plugin not found');
+        })
+        .mockImplementationOnce(() => {
+          throw new Error('Installation failed');
+        })
+        .mockImplementationOnce(() => {
+          throw new Error('Plugin not found');
+        })
+        .mockImplementationOnce(() => {
+          throw new Error('Installation failed');
+        });
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(false);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages!.length).toBe(2);
+      expect(result.workflowFatalErrorMessages![0]).toContain('sfdx-mobilesdk-plugin');
+      expect(result.workflowFatalErrorMessages![1]).toContain('@salesforce/lwc-dev-mobile');
+    });
+
+    it('should handle first plugin needs upgrade and second is valid', () => {
+      const inputState = createTestState({});
+
+      // First plugin needs upgrade
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '12.0.0',
+        })
+      );
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin is valid
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should handle first plugin is valid and second needs upgrade', () => {
+      const inputState = createTestState({});
+
+      // First plugin is valid
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin needs upgrade
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '2.0.0',
+        })
+      );
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should handle both plugins need installation', () => {
+      const inputState = createTestState({});
+
+      // First plugin: not installed, install, verify
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Plugin not found');
+      });
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin: not installed, install, verify
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Plugin not found');
+      });
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should handle both plugins need upgrade', () => {
+      const inputState = createTestState({});
+
+      // First plugin: old version, upgrade, verify
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '12.0.0',
+        })
+      );
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: 'sfdx-mobilesdk-plugin',
+          version: '13.2.0-alpha.1',
+        })
+      );
+
+      // Second plugin: old version, upgrade, verify
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '2.0.0',
+        })
+      );
+      mockExecSync.mockImplementationOnce(() => '');
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '3.0.0-alpha.3',
+        })
+      );
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(true);
+    });
+
+    it('should aggregate error messages from multiple plugin failures', () => {
+      const inputState = createTestState({});
+
+      // First plugin: installation fails
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Plugin not found');
+      });
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Network error');
+      });
+
+      // Second plugin: version too old and upgrade fails
+      mockExecSync.mockReturnValueOnce(
+        JSON.stringify({
+          name: '@salesforce/lwc-dev-mobile',
+          version: '2.0.0',
+        })
+      );
+      mockExecSync.mockImplementationOnce(() => {
+        throw new Error('Upgrade failed');
+      });
+
+      const result = node.execute(inputState);
+
+      expect(result.validPluginSetup).toBe(false);
+      expect(result.workflowFatalErrorMessages).toBeDefined();
+      expect(result.workflowFatalErrorMessages!.length).toBe(2);
+      expect(result.workflowFatalErrorMessages![0]).toContain('sfdx-mobilesdk-plugin');
+      expect(result.workflowFatalErrorMessages![1]).toContain('@salesforce/lwc-dev-mobile');
     });
   });
 });

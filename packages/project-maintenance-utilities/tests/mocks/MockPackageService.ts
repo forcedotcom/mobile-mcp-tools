@@ -8,6 +8,8 @@ export class MockPackageService implements PackageServiceProvider {
   private packageInfoMap: Map<string, PackageInfo> = new Map();
   private releaseTagMap: Map<string, ParsedReleaseTag> = new Map();
   private validationMap: Map<string, PackageInfo> = new Map();
+  private wildcardResolutionMap: Map<string, { originalContent: string; modifiedContent: string }> =
+    new Map();
 
   // Mock configuration methods
   setPackageInfo(packagePath: string, packageInfo: PackageInfo): void {
@@ -22,10 +24,19 @@ export class MockPackageService implements PackageServiceProvider {
     this.validationMap.set(`${packagePath}:${expectedVersion}`, packageInfo);
   }
 
+  setWildcardResolution(
+    packagePath: string,
+    workspaceRoot: string,
+    resolution: { originalContent: string; modifiedContent: string }
+  ): void {
+    this.wildcardResolutionMap.set(`${packagePath}:${workspaceRoot}`, resolution);
+  }
+
   clear(): void {
     this.packageInfoMap.clear();
     this.releaseTagMap.clear();
     this.validationMap.clear();
+    this.wildcardResolutionMap.clear();
   }
 
   // Interface implementation
@@ -57,5 +68,28 @@ export class MockPackageService implements PackageServiceProvider {
       );
     }
     return packageInfo;
+  }
+
+  resolveWildcardDependencies(
+    packagePath: string,
+    workspaceRoot: string
+  ): { originalContent: string; modifiedContent: string } {
+    const resolution = this.wildcardResolutionMap.get(`${packagePath}:${workspaceRoot}`);
+    if (!resolution) {
+      // Default: return same content (no wildcards to resolve)
+      const packageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+        },
+        null,
+        2
+      );
+      return {
+        originalContent: packageJson,
+        modifiedContent: packageJson,
+      };
+    }
+    return resolution;
   }
 }

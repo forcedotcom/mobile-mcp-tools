@@ -2,7 +2,7 @@ import { GitHubUtils } from './github-utils.js';
 import { NpmUtils, type CleanupResult } from './npm-utils.js';
 import { ActionsReporter } from './actions-reporter.js';
 import type { Context as GitHubContext } from '@actions/github/lib/context';
-import { join } from 'path';
+import { join, resolve, sep } from 'path';
 import {
   FileSystemServiceProvider,
   ProcessServiceProvider,
@@ -28,6 +28,14 @@ interface PublishReleaseOptions {
   npmTag?: string;
   dryRun?: boolean;
 }
+
+/**
+ * Function type for resolving wildcard dependencies before packing
+ */
+type WildcardResolver = (packagePath: string) => {
+  originalContent: string;
+  modifiedContent: string;
+};
 
 /**
  * Release orchestrator that combines all utility modules with dependency injection
@@ -58,14 +66,30 @@ export class ReleaseOrchestrator {
   }
 
   /**
+   * Resolve a package path against the workspace root, rejecting paths that escape it
+   * @param workspaceRoot - Path to workspace root directory
+   * @param packagePath - Package path input (relative or absolute)
+   * @returns Resolved absolute path, guaranteed to be within workspaceRoot
+   */
+  private resolvePackagePath(workspaceRoot: string, packagePath: string): string {
+    const resolved = resolve(workspaceRoot, packagePath.trim());
+    const normalizedRoot = resolve(workspaceRoot) + sep;
+    if (resolved !== resolve(workspaceRoot) && !resolved.startsWith(normalizedRoot)) {
+      throw new Error(`Invalid package_path: "${packagePath}" resolves outside the workspace`);
+    }
+    return resolved;
+  }
+
+  /**
    * Create a release workflow
    * @param options - Release options
    */
   async createRelease(options: CreateReleaseOptions): Promise<void> {
-    const packagePath = options.packagePath.trim();
+    const workspaceRoot = this.fsService.workspaceRoot;
     const packageDisplayName = options.packageDisplayName.trim();
 
     try {
+      const packagePath = this.resolvePackagePath(workspaceRoot, options.packagePath);
       this.reporter.step('Getting package information');
       const packageInfo = this.packageService.getPackageInfo(packagePath);
       const releaseName = this.packageService.createReleaseName(
@@ -91,7 +115,32 @@ export class ReleaseOrchestrator {
       this.reporter.success(`Tag ${packageInfo.tagName} is available`);
 
       this.reporter.step('Creating package tarball');
-      const tarballInfo = this.npmUtils.createTarball(packagePath);
+      // Resolve wildcard dependencies before packing
+      this.reporter.info(`Using workspace root: ${workspaceRoot}`);
+      const resolveWildcards: WildcardResolver = (pkgPath: string) => {
+        const result = this.packageService.resolveWildcardDependencies(pkgPath, workspaceRoot);
+        if (result.modifiedContent !== result.originalContent) {
+          // Parse to show what was resolved
+          const originalJson = JSON.parse(result.originalContent);
+          const modifiedJson = JSON.parse(result.modifiedContent);
+          const resolved: string[] = [];
+
+          if (originalJson.dependencies && modifiedJson.dependencies) {
+            for (const [depName, depVersion] of Object.entries(originalJson.dependencies)) {
+              if (depVersion === '*' && modifiedJson.dependencies[depName] !== '*') {
+                resolved.push(`${depName}: * -> ${modifiedJson.dependencies[depName]}`);
+              }
+            }
+          }
+
+          if (resolved.length > 0) {
+            this.reporter.info(`Resolved wildcard dependencies: ${resolved.join(', ')}`);
+          }
+        }
+        return result;
+      };
+
+      const tarballInfo = this.npmUtils.createTarball(packagePath, resolveWildcards);
       this.reporter.setOutput('tarball_name', tarballInfo.tarballName);
       this.reporter.setOutput('tarball_path', tarballInfo.tarballPath);
       this.reporter.success(`Created tarball: ${tarballInfo.tarballName}`);
@@ -155,13 +204,22 @@ export class ReleaseOrchestrator {
    * @param options - Publish options
    */
   async publishRelease(options: PublishReleaseOptions): Promise<void> {
-    const packagePath = options.packagePath.trim();
+    const workspaceRoot = this.fsService.workspaceRoot;
     const releaseTag = options.releaseTag.trim();
     const npmTag = (options.npmTag ?? 'latest').trim();
     const dryRun = options.dryRun ?? false;
 
     try {
       this.reporter.step('Validating inputs and release');
+
+      const packagePath = this.resolvePackagePath(workspaceRoot, options.packagePath);
+
+      if (!/^[a-z][a-z0-9-]*$/.test(npmTag)) {
+        this.reporter.setFailed(
+          `Invalid npm_tag: "${npmTag}". Must be lowercase alphanumeric with hyphens (e.g. "latest", "beta").`
+        );
+        return;
+      }
 
       // Parse release tag
       const { packageIdentifier, packageVersion } = this.packageService.parseReleaseTag(releaseTag);

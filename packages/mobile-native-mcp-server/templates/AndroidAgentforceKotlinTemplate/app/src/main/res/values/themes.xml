@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme using AppCompat (required for agentforce SDK) -->
+    <style name="Theme.AgentforceDemo" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Primary brand color (Salesforce Blue) -->
+        <item name="colorPrimary">@color/salesforce_blue</item>
+        <item name="colorPrimaryDark">@color/salesforce_blue_dark</item>
+        <item name="colorAccent">@color/salesforce_blue</item>
+        
+        <!-- Control colors (required by agentforce SDK) -->
+        <item name="colorControlNormal">@android:color/black</item>
+        <item name="colorControlActivated">@color/salesforce_blue</item>
+        <item name="colorControlHighlight">@color/salesforce_blue</item>
+
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/salesforce_blue</item>
+
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@android:color/white</item>
+    </style>
+</resources>

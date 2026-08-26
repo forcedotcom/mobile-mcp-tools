@@ -1,0 +1,84 @@
+{
+  "$schema": "../template-schema.json",
+  "version": "0.0.1",
+  "platform": "ios",
+  "displayName": "iOS Native Swift Template",
+  "description": "A basic iOS native Swift application template using Salesforce Mobile SDK with MobileSync, SwiftUI, and Combine. This template provides a foundation for building iOS apps that integrate with Salesforce, featuring basic authentication, account listing, and contact management capabilities.",
+  "useCase": "Use this template when you need to create a basic iOS native app that integrates with Salesforce using Swift, SwiftUI, and Combine. It's ideal for developers starting with Salesforce Mobile SDK who want a minimal but functional starting point.",
+  "features": [
+    "native-ios",
+    "swift",
+    "swiftui",
+    "combine",
+    "salesforce-sdk",
+    "mobilesync",
+    "authentication",
+    "account-list",
+    "contact-management",
+    "smartstore",
+    "offline-capability"
+  ],
+  "complexity": "simple",
+  "customizationPoints": [
+    {
+      "feature": "app-configuration",
+      "description": "Customize the app name, package name, and organization details",
+      "files": [
+        "template.js",
+        "package.json",
+        "iOSNativeSwiftTemplate.xcodeproj/project.pbxproj",
+        "iOSNativeSwiftTemplate/iOSNativeSwiftTemplate.entitlements"
+      ],
+      "instructions": [
+        "Update template.js with new app name, package name, and organization",
+        "Modify package.json with new app name",
+        "Update Xcode project files with new identifiers",
+        "Update entitlements file with new package name"
+      ]
+    },
+    {
+      "feature": "salesforce-objects",
+      "description": "Add new Salesforce objects beyond the default Account and Contact",
+      "files": [
+        "iOSNativeSwiftTemplate/AccountsListModel.swift",
+        "iOSNativeSwiftTemplate/ContactsForAccountModel.swift",
+        "iOSNativeSwiftTemplate/ContactDetailModel.swift"
+      ],
+      "instructions": [
+        "Create new model files for additional SObjects",
+        "Implement ObservableObject pattern with @Published properties",
+        "Add SmartStore queries for new objects",
+        "Create corresponding SwiftUI views for new objects"
+      ]
+    },
+    {
+      "feature": "authentication-flow",
+      "description": "Customize the authentication and login experience",
+      "files": [
+        "iOSNativeSwiftTemplate/AppDelegate.swift",
+        "iOSNativeSwiftTemplate/LoginTypeSelectionViewController.swift"
+      ],
+      "instructions": [
+        "Modify AppDelegate.swift to customize SDK initialization",
+        "Update LoginTypeSelectionViewController for custom login flows",
+        "Configure push notification handling if needed",
+        "Add custom authentication logic"
+      ]
+    },
+    {
+      "feature": "ui-components",
+      "description": "Extend the SwiftUI interface with additional components",
+      "files": [
+        "iOSNativeSwiftTemplate/AccountsListView.swift",
+        "iOSNativeSwiftTemplate/ContactsForAccountListView.swift",
+        "iOSNativeSwiftTemplate/ContactDetailsView.swift"
+      ],
+      "instructions": [
+        "Add new SwiftUI views for additional functionality",
+        "Implement navigation between new views",
+        "Add search and filtering capabilities",
+        "Customize the UI theme and styling"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "$schema": "../template-schema.json",
+  "version": "0.0.1",
+  "platform": "ios",
+  "displayName": "MobileSync Explorer Swift",
+  "description": "A comprehensive iOS Swift application template demonstrating advanced Salesforce Mobile SDK integration using MobileSync data framework. This template provides a full-featured contact management app with offline sync capabilities, search functionality, and a modern SwiftUI interface with split-view navigation.",
+  "useCase": "Use this template when you need to create a production-ready iOS app with full Salesforce data synchronization capabilities. It's ideal for developers building apps that require offline functionality, complex data relationships, and professional-grade user interfaces.",
+  "features": [
+    "native-ios",
+    "swift",
+    "swiftui",
+    "salesforce-sdk",
+    "mobilesync",
+    "offline-sync",
+    "smartstore",
+    "contact-management",
+    "search-functionality",
+    "split-view-navigation",
+    "notifications",
+    "settings-management",
+    "widget-support",
+    "dark-mode-support"
+  ],
+  "complexity": "moderate",
+  "customizationPoints": [
+    {
+      "feature": "app-configuration",
+      "description": "Customize the app name, package name, and organization details",
+      "files": [
+        "template.js",
+        "package.json",
+        "MobileSyncExplorerSwift.xcodeproj/project.pbxproj",
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift.entitlements"
+      ],
+      "instructions": [
+        "Update template.js with new app name, package name, and organization",
+        "Modify package.json with new app name",
+        "Update Xcode project files with new identifiers",
+        "Update entitlements file with new package name"
+      ]
+    },
+    {
+      "feature": "salesforce-objects",
+      "description": "Add new Salesforce objects beyond the default Contact",
+      "files": [
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/SObjects/Contacts.swift",
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/SObjects/SObjects.swift"
+      ],
+      "instructions": [
+        "Create new SObject data classes following the ContactSObjectData pattern",
+        "Implement required protocols and constants",
+        "Add new objects to the SObjects.swift registry",
+        "Create corresponding UI components for new objects"
+      ]
+    },
+    {
+      "feature": "ui-components",
+      "description": "Extend the SwiftUI interface with additional components",
+      "files": [
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/ContactList/ContactList.swift",
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/ContactDetail/ContactDetail.swift",
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/Settings/Settings.swift"
+      ],
+      "instructions": [
+        "Add new SwiftUI views for additional functionality",
+        "Implement navigation between new views",
+        "Add new toolbar items and actions",
+        "Customize the split-view navigation behavior"
+      ]
+    },
+    {
+      "feature": "data-synchronization",
+      "description": "Customize MobileSync synchronization behavior",
+      "files": [
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/ContactList/ContactListViewModel.swift",
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/ContactDetail/ContactDetailViewModel.swift"
+      ],
+      "instructions": [
+        "Modify sync up/down logic in ViewModels",
+        "Add custom sync targets and configurations",
+        "Implement conflict resolution strategies",
+        "Add custom sync status indicators"
+      ]
+    },
+    {
+      "feature": "notifications",
+      "description": "Customize push notification handling",
+      "files": [
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/Notifications/NotificationList.swift",
+        "MobileSyncExplorerSwift/MobileSyncExplorerSwift/UI/Notifications/NotificationListModel.swift"
+      ],
+      "instructions": [
+        "Modify notification fetching logic",
+        "Add custom notification types",
+        "Implement notification actions",
+        "Customize notification display format"
+      ]
+    },
+    {
+      "feature": "widget-extension",
+      "description": "Customize the widget extension for recent contacts",
+      "files": [
+        "MobileSyncExplorerSwift/RecentContacts/RecentContacts.swift",
+        "MobileSyncExplorerSwift/RecentContacts/RecentContactsWidget.swift"
+      ],
+      "instructions": [
+        "Modify widget data source",
+        "Customize widget appearance and layout",
+        "Add new widget configurations",
+        "Implement widget interactions"
+      ]
+    }
+  ]
+}

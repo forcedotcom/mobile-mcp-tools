@@ -72,13 +72,31 @@ export class NpmUtils {
   /**
    * Create NPM package tarball
    * @param packagePath - Path to package directory
+   * @param resolveWildcards - Optional function to resolve wildcard dependencies before packing
    * @returns Tarball information
    */
-  createTarball(packagePath: string): TarballInfo {
+  createTarball(
+    packagePath: string,
+    resolveWildcards?: (pkgPath: string) => {
+      originalContent: string;
+      modifiedContent: string;
+    }
+  ): TarballInfo {
     const originalCwd = this.processService.cwd();
+    let originalPackageJson: string | null = null;
 
     try {
       this.processService.chdir(packagePath);
+
+      // Resolve wildcard dependencies if resolver function is provided
+      // Note: packagePath is absolute, so resolveWildcards receives an absolute path
+      if (resolveWildcards) {
+        const { originalContent, modifiedContent } = resolveWildcards(packagePath);
+        originalPackageJson = originalContent;
+        if (modifiedContent !== originalContent) {
+          this.fsService.writeFileSync('package.json', modifiedContent, 'utf8');
+        }
+      }
 
       // Get tarball filename without creating it
       const dryRunOutput = this.processService.execSync('npm pack --dry-run --json', {
@@ -95,6 +113,7 @@ export class NpmUtils {
         throw new Error(`Tarball not created: ${tarballName}`);
       }
 
+      // Return absolute path to tarball
       const tarballPath = join(packagePath, tarballName);
 
       return {
@@ -102,6 +121,10 @@ export class NpmUtils {
         tarballPath,
       };
     } finally {
+      // Restore original package.json if it was modified
+      if (originalPackageJson) {
+        this.fsService.writeFileSync('package.json', originalPackageJson, 'utf8');
+      }
       this.processService.chdir(originalCwd);
     }
   }
@@ -115,7 +138,7 @@ export class NpmUtils {
   isVersionPublished(packageName: string, version: string): boolean {
     try {
       // Check if this version is already published
-      this.processService.execSync(`npm view "${packageName}@${version}" version`, {
+      this.processService.execFileSync('npm', ['view', `${packageName}@${version}`, 'version'], {
         stdio: 'pipe',
       });
       return true;
@@ -132,18 +155,18 @@ export class NpmUtils {
    * @throws Error with descriptive message if publish fails
    */
   publishToNpm(tarballPath: string, npmTag = 'latest', dryRun = false): void {
-    const dryRunFlag = dryRun ? '--dry-run' : '';
-
     // Resolve to absolute path to prevent npm from interpreting as git repository URL
     const absoluteTarballPath = resolve(tarballPath);
 
+    const args = ['publish', absoluteTarballPath, '--tag', npmTag, '--access', 'public'];
+    if (dryRun) {
+      args.push('--dry-run');
+    }
+
     try {
-      this.processService.execSync(
-        `npm publish "${absoluteTarballPath}" --tag "${npmTag}" --access public ${dryRunFlag}`.trim(),
-        {
-          stdio: 'inherit',
-        }
-      );
+      this.processService.execFileSync('npm', args, {
+        stdio: 'inherit',
+      });
     } catch (error) {
       throw new Error(
         `Failed to ${dryRun ? 'validate' : 'publish'} package: ${this.getErrorMessage(error)}`
@@ -167,7 +190,9 @@ export class NpmUtils {
   ): VerificationResult {
     try {
       // Show tarball contents (first 20 files)
-      const contents = this.processService.execSync(`tar -tzf "${tarballPath}"`, { stdio: 'pipe' });
+      const contents = this.processService.execFileSync('tar', ['-tzf', tarballPath], {
+        stdio: 'pipe',
+      });
       const files = contents
         .toString('utf8')
         .split('\n')
@@ -179,7 +204,9 @@ export class NpmUtils {
         this.fsService.mkdirSync(tempDir, { recursive: true });
       }
 
-      this.processService.execSync(`tar -xzf "${tarballPath}" -C "${tempDir}"`, { stdio: 'pipe' });
+      this.processService.execFileSync('tar', ['-xzf', tarballPath, '-C', tempDir], {
+        stdio: 'pipe',
+      });
 
       // Verify package.json exists and version matches
       const extractedPackageJsonPath = join(tempDir, 'package', 'package.json');

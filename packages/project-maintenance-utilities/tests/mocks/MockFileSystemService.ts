@@ -1,10 +1,16 @@
 import { FileSystemServiceProvider } from '../../src/services/interfaces/index.js';
-import { sep, join } from 'path';
+import { sep, join, resolve } from 'path';
 
 interface ErrorConfig {
   error: Error;
   path?: string; // If undefined, applies to all paths
-  operation?: 'existsSync' | 'mkdirSync' | 'readFileSync' | 'writeFileSync' | 'rmSync';
+  operation?:
+    | 'existsSync'
+    | 'mkdirSync'
+    | 'readFileSync'
+    | 'writeFileSync'
+    | 'rmSync'
+    | 'readdirSync';
 }
 
 /**
@@ -16,6 +22,22 @@ export class MockFileSystemService implements FileSystemServiceProvider {
   private files: Map<string, string | Buffer> = new Map();
   private directories: Set<string> = new Set();
   private errorConfigs: ErrorConfig[] = [];
+  private _workspaceRoot: string = resolve('/workspace');
+
+  /**
+   * Get the workspace root directory path
+   * Can be configured for testing using setWorkspaceRoot()
+   */
+  public get workspaceRoot(): string {
+    return this._workspaceRoot;
+  }
+
+  /**
+   * Set the workspace root for testing
+   */
+  setWorkspaceRoot(path: string): void {
+    this._workspaceRoot = path;
+  }
 
   /**
    * Check if an error should be thrown for the given operation and path
@@ -124,6 +146,41 @@ export class MockFileSystemService implements FileSystemServiceProvider {
       this.files.delete(path);
       this.directories.delete(path);
     }
+  }
+
+  readdirSync(path: string): string[] {
+    this.checkForError('readdirSync', path);
+    if (!this.directories.has(path)) {
+      throw new Error(`ENOENT: no such file or directory, scandir '${path}'`);
+    }
+
+    // Return entries that are direct children of this directory
+    const entries: string[] = [];
+    const pathWithSep = path.endsWith(sep) ? path : path + sep;
+
+    // Check for files
+    for (const filePath of this.files.keys()) {
+      if (filePath.startsWith(pathWithSep) || filePath.startsWith(path + sep)) {
+        const relativePath = filePath.replace(path + sep, '').replace(pathWithSep, '');
+        const firstPart = relativePath.split(sep)[0];
+        if (firstPart && !entries.includes(firstPart)) {
+          entries.push(firstPart);
+        }
+      }
+    }
+
+    // Check for subdirectories
+    for (const dirPath of this.directories) {
+      if (dirPath !== path && (dirPath.startsWith(pathWithSep) || dirPath.startsWith(path + sep))) {
+        const relativePath = dirPath.replace(path + sep, '').replace(pathWithSep, '');
+        const firstPart = relativePath.split(sep)[0];
+        if (firstPart && !entries.includes(firstPart)) {
+          entries.push(firstPart);
+        }
+      }
+    }
+
+    return entries;
   }
 
   // Helper methods for testing

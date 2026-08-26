@@ -11,6 +11,7 @@ import { InputExtractionService } from '../../src/services/inputExtractionServic
 import { MockToolExecutor } from '../utils/MockToolExecutor.js';
 import { MockLogger } from '../utils/MockLogger.js';
 import { PropertyMetadataCollection } from '../../src/common/propertyMetadata.js';
+import { isNodeGuidanceData } from '../../src/common/metadata.js';
 
 describe('InputExtractionService', () => {
   let mockToolExecutor: MockToolExecutor;
@@ -106,7 +107,7 @@ describe('InputExtractionService', () => {
       );
     });
 
-    it('should call tool executor with correct metadata', () => {
+    it('should call tool executor with NodeGuidanceData', () => {
       mockToolExecutor.setResult(toolId, {
         extractedProperties: {
           platform: 'iOS',
@@ -118,13 +119,35 @@ describe('InputExtractionService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      expect(call.llmMetadata.name).toBe(toolId);
-      expect(call.input).toHaveProperty('userUtterance');
-      expect(call.input).toHaveProperty('propertiesToExtract');
-      expect(call.input).toHaveProperty('resultSchema');
+      // Uses NodeGuidanceData structure
+      if (isNodeGuidanceData(call)) {
+        expect(call.nodeId).toBe(toolId);
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
     });
 
-    it('should include userUtterance in tool call', () => {
+    it('should include taskGuidance in NodeGuidanceData', () => {
+      mockToolExecutor.setResult(toolId, {
+        extractedProperties: {
+          platform: 'iOS',
+        },
+      });
+
+      service.extractProperties('iOS app', properties);
+
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory.length).toBe(1);
+      const call = callHistory[0];
+      // NodeGuidanceData should have taskGuidance
+      if (isNodeGuidanceData(call)) {
+        expect(call.taskGuidance).toContain('data extraction');
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
+    });
+
+    it('should include userUtterance in taskGuidance', () => {
       const userInput = 'Create an Android app';
       mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
@@ -133,11 +156,16 @@ describe('InputExtractionService', () => {
       service.extractProperties(userInput, properties);
 
       const call = mockToolExecutor.getLastCall();
-      expect(call?.input).toHaveProperty('userUtterance');
-      expect((call?.input as { userUtterance: unknown }).userUtterance).toBe(userInput);
+      expect(call).toBeDefined();
+      // User input is now embedded in taskGuidance
+      if (isNodeGuidanceData(call!)) {
+        expect(call.taskGuidance).toContain(userInput);
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
     });
 
-    it('should prepare properties for extraction', () => {
+    it('should include properties in taskGuidance', () => {
       mockToolExecutor.setResult(toolId, {
         extractedProperties: {},
       });
@@ -145,29 +173,14 @@ describe('InputExtractionService', () => {
       service.extractProperties('test', properties);
 
       const call = mockToolExecutor.getLastCall();
-      const input = call?.input as {
-        propertiesToExtract: Array<{ propertyName: string; description: string }>;
-      };
-      expect(input.propertiesToExtract).toBeDefined();
-      expect(Array.isArray(input.propertiesToExtract)).toBe(true);
-      expect(input.propertiesToExtract.length).toBe(2);
-      expect(input.propertiesToExtract[0]).toHaveProperty('propertyName');
-      expect(input.propertiesToExtract[0]).toHaveProperty('description');
-    });
-
-    it('should include resultSchema in tool call', () => {
-      mockToolExecutor.setResult(toolId, {
-        extractedProperties: {},
-      });
-
-      service.extractProperties('test', properties);
-
-      const call = mockToolExecutor.getLastCall();
-      const input = call?.input as { resultSchema: string };
-      expect(input.resultSchema).toBeDefined();
-      expect(typeof input.resultSchema).toBe('string');
-      // Should be valid JSON
-      expect(() => JSON.parse(input.resultSchema)).not.toThrow();
+      expect(call).toBeDefined();
+      // Property names are now embedded in taskGuidance
+      if (isNodeGuidanceData(call!)) {
+        expect(call.taskGuidance).toContain('platform');
+        expect(call.taskGuidance).toContain('projectName');
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
     });
 
     it('should handle empty properties collection', () => {

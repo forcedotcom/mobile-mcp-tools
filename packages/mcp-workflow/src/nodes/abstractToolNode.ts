@@ -8,7 +8,7 @@
 import z from 'zod';
 import { StateType, StateDefinition } from '@langchain/langgraph';
 import { BaseNode } from './abstractBaseNode.js';
-import { MCPToolInvocationData } from '../common/metadata.js';
+import { InterruptData } from '../common/metadata.js';
 import { Logger, createComponentLogger } from '../logging/logger.js';
 import { ToolExecutor, LangGraphToolExecutor } from './toolExecutor.js';
 import { executeToolWithLogging } from '../utils/toolExecutionUtils.js';
@@ -41,20 +41,22 @@ export abstract class AbstractToolNode<
    * This method uses the common toolExecutionUtils.executeToolWithLogging function
    * to ensure consistent behavior across all tool invocations in the codebase.
    *
-   * @param toolInvocationData The tool invocation data to pass to the tool executor
+   * Supports both MCPToolInvocationData (delegate mode) and NodeGuidanceData (direct guidance mode).
+   *
+   * @param interruptData The interrupt data (MCPToolInvocationData or NodeGuidanceData) to pass to the tool executor
    * @param resultSchema The schema to validate the result against
    * @param validator Optional custom validator function
    * @returns The validated result from the tool execution
    */
   protected executeToolWithLogging<TResultSchema extends z.ZodObject<z.ZodRawShape>>(
-    toolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
+    interruptData: InterruptData<z.ZodObject<z.ZodRawShape>, TResultSchema>,
     resultSchema: TResultSchema,
     validator?: (result: unknown, schema: TResultSchema) => z.infer<TResultSchema>
   ): z.infer<TResultSchema> {
     return executeToolWithLogging(
       this.toolExecutor,
       this.logger,
-      toolInvocationData,
+      interruptData,
       resultSchema,
       validator
     );

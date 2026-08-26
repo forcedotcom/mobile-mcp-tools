@@ -16,47 +16,109 @@ vi.mock('child_process', () => ({
   execSync: vi.fn(),
 }));
 
-describe('PlatformCheckNode', () => {
+// Mock the envConfig module to ensure Android env vars are set for tests
+const mockLoadAndSetEnvVars = vi.hoisted(() => vi.fn());
+vi.mock('../../../src/workflow/utils/envConfig.js', () => ({
+  loadAndSetEnvVars: mockLoadAndSetEnvVars,
+}));
+
+// Mock Android-specific util so we control filtering and direct check without real AndroidUtils
+const mockFilterAndroidSetupFailures = vi.hoisted(() => vi.fn());
+const mockCheckAndroidPlatformAndEmulatorImage = vi.hoisted(() => vi.fn());
+vi.mock('../../../src/workflow/utils/androidPlatformCheck.js', () => ({
+  filterAndroidSetupFailures: (...args: unknown[]) => mockFilterAndroidSetupFailures(...args),
+  checkAndroidPlatformAndEmulatorImage: (...args: unknown[]) =>
+    mockCheckAndroidPlatformAndEmulatorImage(...args),
+}));
+
+describe('PlatformCheckNode', async () => {
   let node: PlatformCheckNode;
   let mockLogger: MockLogger;
   let mockExecSync: ReturnType<typeof vi.fn>;
+  let originalAndroidHome: string | undefined;
+  let originalJavaHome: string | undefined;
 
   beforeEach(() => {
+    // Save original env vars
+    originalAndroidHome = process.env.ANDROID_HOME;
+    originalJavaHome = process.env.JAVA_HOME;
+
+    // Clear env vars to simulate CI environment
+    delete process.env.ANDROID_HOME;
+    delete process.env.JAVA_HOME;
+
+    // Mock loadAndSetEnvVars to set env vars when called (simulating successful config load)
+    mockLoadAndSetEnvVars.mockImplementation(() => {
+      process.env.ANDROID_HOME = '/mock/android/home';
+      process.env.JAVA_HOME = '/mock/java/home';
+      return {
+        androidHomeLoaded: true,
+        javaHomeLoaded: true,
+      };
+    });
+
     mockLogger = new MockLogger();
     node = new PlatformCheckNode(mockLogger);
     mockExecSync = vi.mocked(childProcess.execSync);
     mockExecSync.mockReset();
+
+    // Default Android util mocks: mirror real filter (skip two titles), direct check passes
+    const titlesToSkip = ['Checking SDK Platform API', 'Checking SDK Platform Emulator Images'];
+    mockFilterAndroidSetupFailures.mockImplementation(
+      (tests: { hasPassed: boolean; title: string; message: string }[], command: string) => {
+        const failed = tests.filter(t => !t.hasPassed);
+        const filtered = failed.filter(t => !titlesToSkip.includes(t.title));
+        return {
+          filteredErrorMessages: filtered.map(
+            t => `Platform setup check for "${command}" failed: ${t.message}`
+          ),
+          allOtherRequirementsMet: filtered.length === 0,
+        };
+      }
+    );
+    mockCheckAndroidPlatformAndEmulatorImage.mockResolvedValue({ success: true });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Restore original env vars
+    if (originalAndroidHome !== undefined) {
+      process.env.ANDROID_HOME = originalAndroidHome;
+    } else {
+      delete process.env.ANDROID_HOME;
+    }
+    if (originalJavaHome !== undefined) {
+      process.env.JAVA_HOME = originalJavaHome;
+    } else {
+      delete process.env.JAVA_HOME;
+    }
   });
 
-  describe('Constructor', () => {
-    it('should initialize with correct node name', () => {
+  describe('Constructor', async () => {
+    it('should initialize with correct node name', async () => {
       expect(node.name).toBe('checkPlatformSetup');
     });
 
-    it('should extend BaseNode', () => {
+    it('should extend BaseNode', async () => {
       expect(node).toBeDefined();
       expect(node.name).toBeDefined();
       expect(node.execute).toBeDefined();
     });
 
-    it('should create default logger when none provided', () => {
+    it('should create default logger when none provided', async () => {
       const nodeWithoutLogger = new PlatformCheckNode();
       expect(nodeWithoutLogger).toBeDefined();
     });
 
-    it('should use provided logger', () => {
+    it('should use provided logger', async () => {
       const customLogger = new MockLogger();
       const nodeWithCustomLogger = new PlatformCheckNode(customLogger);
       expect(nodeWithCustomLogger['logger']).toBe(customLogger);
     });
   });
 
-  describe('execute() - iOS Platform - Success', () => {
-    it('should handle successful iOS platform check', () => {
+  describe('execute() - iOS Platform - Success', async () => {
+    it('should handle successful iOS platform check', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -84,17 +146,17 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       expect(mockExecSync).toHaveBeenCalledWith(
         'sf force lightning local setup -p ios -l 17.0 --json',
-        { encoding: 'utf-8', timeout: 20000 }
+        { encoding: 'utf-8', timeout: 120000 }
       );
     });
 
-    it('should handle iOS platform check with all requirements met', () => {
+    it('should handle iOS platform check with all requirements met', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -108,13 +170,13 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should use correct API level for iOS', () => {
+    it('should use correct API level for iOS', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -128,7 +190,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(mockExecSync).toHaveBeenCalledWith(
         expect.stringContaining('-l 17.0'),
@@ -137,8 +199,8 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - Android Platform - Success', () => {
-    it('should handle successful Android platform check', () => {
+  describe('execute() - Android Platform - Success', async () => {
+    it('should handle successful Android platform check', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -166,17 +228,17 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
       expect(mockExecSync).toHaveBeenCalledWith(
         'sf force lightning local setup -p android -l 35 --json',
-        { encoding: 'utf-8', timeout: 20000 }
+        { encoding: 'utf-8', timeout: 120000 }
       );
     });
 
-    it('should use correct API level for Android', () => {
+    it('should use correct API level for Android', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -190,7 +252,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(mockExecSync).toHaveBeenCalledWith(
         expect.stringContaining('-l 35'),
@@ -199,13 +261,13 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - Invalid Platform', () => {
-    it('should handle invalid platform', () => {
+  describe('execute() - Invalid Platform', async () => {
+    it('should handle invalid platform', async () => {
       const inputState = createTestState({
         platform: 'Windows' as 'iOS' | 'Android',
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -214,31 +276,31 @@ describe('PlatformCheckNode', () => {
       expect(mockExecSync).not.toHaveBeenCalled();
     });
 
-    it('should handle missing platform', () => {
+    it('should handle missing platform', async () => {
       const inputState = createTestState({
         platform: undefined,
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(mockExecSync).not.toHaveBeenCalled();
     });
 
-    it('should not execute command for invalid platform', () => {
+    it('should not execute command for invalid platform', async () => {
       const inputState = createTestState({
         platform: 'Linux' as 'iOS' | 'Android',
       });
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(mockExecSync).not.toHaveBeenCalled();
     });
   });
 
-  describe('execute() - Platform Check Failures', () => {
-    it('should handle platform check with some failed requirements', () => {
+  describe('execute() - Platform Check Failures', async () => {
+    it('should handle platform check with some failed requirements', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -266,7 +328,7 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -279,7 +341,7 @@ describe('PlatformCheckNode', () => {
       );
     });
 
-    it('should handle platform check with multiple failed requirements', () => {
+    it('should handle platform check with multiple failed requirements', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -313,7 +375,7 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -326,7 +388,7 @@ describe('PlatformCheckNode', () => {
       );
     });
 
-    it('should handle platform check with all requirements failed', () => {
+    it('should handle platform check with all requirements failed', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -351,15 +413,15 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toHaveLength(2);
     });
   });
 
-  describe('execute() - Command Execution Errors', () => {
-    it('should handle execSync throwing an error', () => {
+  describe('execute() - Command Execution Errors', async () => {
+    it('should handle execSync throwing an error', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -368,7 +430,7 @@ describe('PlatformCheckNode', () => {
         throw new Error('Command not found: sf');
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -379,7 +441,7 @@ describe('PlatformCheckNode', () => {
       expect(result.workflowFatalErrorMessages![0]).toContain('Command not found: sf');
     });
 
-    it('should handle non-Error exceptions', () => {
+    it('should handle non-Error exceptions', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -388,7 +450,7 @@ describe('PlatformCheckNode', () => {
         throw 'Unknown error';
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -398,7 +460,7 @@ describe('PlatformCheckNode', () => {
       expect(result.workflowFatalErrorMessages![0]).toContain('Unknown error');
     });
 
-    it('should handle timeout errors', () => {
+    it('should handle timeout errors', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -408,7 +470,7 @@ describe('PlatformCheckNode', () => {
         throw error;
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -416,15 +478,15 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - JSON Parsing Errors', () => {
-    it('should handle invalid JSON output', () => {
+  describe('execute() - JSON Parsing Errors', async () => {
+    it('should handle invalid JSON output', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
 
       mockExecSync.mockReturnValue('This is not valid JSON');
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -432,21 +494,21 @@ describe('PlatformCheckNode', () => {
       expect(result.workflowFatalErrorMessages![0]).toContain('Command output is not valid JSON');
     });
 
-    it('should handle empty output', () => {
+    it('should handle empty output', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
 
       mockExecSync.mockReturnValue('');
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('Command output is not valid JSON');
     });
 
-    it('should handle JSON with missing outputContent', () => {
+    it('should handle JSON with missing outputContent', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -457,7 +519,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -465,8 +527,8 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - Schema Validation Errors', () => {
-    it('should handle invalid schema - missing hasMetAllRequirements', () => {
+  describe('execute() - Schema Validation Errors', async () => {
+    it('should handle invalid schema - missing hasMetAllRequirements', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -479,14 +541,14 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('Command output is not valid JSON');
     });
 
-    it('should handle invalid schema - missing tests array', () => {
+    it('should handle invalid schema - missing tests array', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -499,14 +561,14 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
       expect(result.workflowFatalErrorMessages![0]).toContain('Command output is not valid JSON');
     });
 
-    it('should handle invalid test object schema', () => {
+    it('should handle invalid test object schema', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -526,13 +588,13 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
     });
 
-    it('should handle optional fields in schema', () => {
+    it('should handle optional fields in schema', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -554,14 +616,14 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
     });
   });
 
-  describe('execute() - Logging', () => {
-    it('should log debug message before command execution', () => {
+  describe('execute() - Logging', async () => {
+    it('should log debug message before command execution', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -576,7 +638,7 @@ describe('PlatformCheckNode', () => {
       );
 
       mockLogger.reset();
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const preExecutionLog = debugLogs.find(log =>
@@ -585,7 +647,7 @@ describe('PlatformCheckNode', () => {
       expect(preExecutionLog).toBeDefined();
     });
 
-    it('should log debug message after command execution', () => {
+    it('should log debug message after command execution', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -600,7 +662,7 @@ describe('PlatformCheckNode', () => {
       mockExecSync.mockReturnValue(mockOutput);
 
       mockLogger.reset();
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const postExecutionLog = debugLogs.find(log =>
@@ -609,7 +671,7 @@ describe('PlatformCheckNode', () => {
       expect(postExecutionLog).toBeDefined();
     });
 
-    it('should log command in debug message', () => {
+    it('should log command in debug message', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -624,7 +686,7 @@ describe('PlatformCheckNode', () => {
       );
 
       mockLogger.reset();
-      node.execute(inputState);
+      await node.execute(inputState);
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const commandLog = debugLogs.find(
@@ -639,8 +701,8 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - Return Value', () => {
-    it('should return partial state object', () => {
+  describe('execute() - Return Value', async () => {
+    it('should return partial state object', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -654,7 +716,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result).toBeDefined();
       expect(typeof result).toBe('object');
@@ -662,7 +724,7 @@ describe('PlatformCheckNode', () => {
       expect(typeof result.validPlatformSetup).toBe('boolean');
     });
 
-    it('should return all expected properties on success', () => {
+    it('should return all expected properties on success', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -676,14 +738,14 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result).toHaveProperty('validPlatformSetup');
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should return all expected properties on failure', () => {
+    it('should return all expected properties on failure', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -703,7 +765,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result).toHaveProperty('validPlatformSetup');
       expect(result).toHaveProperty('workflowFatalErrorMessages');
@@ -712,8 +774,8 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - State Independence', () => {
-    it('should only depend on platform from state', () => {
+  describe('execute() - State Independence', async () => {
+    it('should only depend on platform from state', async () => {
       const inputState = createTestState({
         platform: 'iOS',
         projectName: 'TestProject',
@@ -730,7 +792,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       // Command should only use platform, not other state properties
@@ -740,7 +802,7 @@ describe('PlatformCheckNode', () => {
       );
     });
 
-    it('should not modify input state', () => {
+    it('should not modify input state', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -756,12 +818,12 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(inputState.platform).toBe(originalPlatform);
     });
 
-    it('should produce consistent results for same platform', () => {
+    it('should produce consistent results for same platform', async () => {
       const state1 = createTestState({
         platform: 'iOS',
         projectName: 'Project1',
@@ -781,15 +843,15 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result1 = node.execute(state1);
-      const result2 = node.execute(state2);
+      const result1 = await node.execute(state1);
+      const result2 = await node.execute(state2);
 
       expect(result1.validPlatformSetup).toBe(result2.validPlatformSetup);
     });
   });
 
-  describe('execute() - Real World Scenarios', () => {
-    it('should handle typical iOS setup check success', () => {
+  describe('execute() - Real World Scenarios', async () => {
+    it('should handle typical iOS setup check success', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -829,13 +891,13 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should handle typical Android setup check success', () => {
+    it('should handle typical Android setup check success', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -875,13 +937,13 @@ describe('PlatformCheckNode', () => {
 
       mockExecSync.mockReturnValue(mockOutput);
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should handle CI/CD environment without proper setup', () => {
+    it('should handle CI/CD environment without proper setup', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -890,7 +952,7 @@ describe('PlatformCheckNode', () => {
         throw new Error('Command failed: sf force lightning local setup');
       });
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages).toBeDefined();
@@ -898,8 +960,8 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - Multiple Invocations', () => {
-    it('should handle multiple sequential invocations', () => {
+  describe('execute() - Multiple Invocations', async () => {
+    it('should handle multiple sequential invocations', async () => {
       const mockOutput = JSON.stringify({
         outputContent: {
           hasMetAllRequirements: true,
@@ -912,15 +974,15 @@ describe('PlatformCheckNode', () => {
       const iosState = createTestState({ platform: 'iOS' });
       const androidState = createTestState({ platform: 'Android' });
 
-      const result1 = node.execute(iosState);
-      const result2 = node.execute(androidState);
+      const result1 = await node.execute(iosState);
+      const result2 = await node.execute(androidState);
 
       expect(result1.validPlatformSetup).toBe(true);
       expect(result2.validPlatformSetup).toBe(true);
       expect(mockExecSync).toHaveBeenCalledTimes(2);
     });
 
-    it('should maintain independent state across invocations', () => {
+    it('should maintain independent state across invocations', async () => {
       const state1 = createTestState({ platform: 'iOS' });
 
       mockExecSync.mockReturnValueOnce(
@@ -932,7 +994,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result1 = node.execute(state1);
+      const result1 = await node.execute(state1);
       expect(result1.validPlatformSetup).toBe(true);
 
       const state2 = createTestState({ platform: 'Android' });
@@ -952,7 +1014,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result2 = node.execute(state2);
+      const result2 = await node.execute(state2);
       expect(result2.validPlatformSetup).toBe(false);
 
       // First state should not affect second
@@ -960,8 +1022,8 @@ describe('PlatformCheckNode', () => {
     });
   });
 
-  describe('execute() - Edge Cases', () => {
-    it('should handle empty tests array with hasMetAllRequirements true', () => {
+  describe('execute() - Edge Cases', async () => {
+    it('should handle empty tests array with hasMetAllRequirements true', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -975,13 +1037,13 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(true);
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should handle empty tests array with hasMetAllRequirements false', () => {
+    it('should handle empty tests array with hasMetAllRequirements false', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -995,7 +1057,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       // When there are no failed tests but hasMetAllRequirements is false,
@@ -1003,7 +1065,7 @@ describe('PlatformCheckNode', () => {
       expect(result.workflowFatalErrorMessages).toBeUndefined();
     });
 
-    it('should handle very long error messages', () => {
+    it('should handle very long error messages', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -1025,13 +1087,13 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages![0]).toContain(longMessage);
     });
 
-    it('should handle special characters in error messages', () => {
+    it('should handle special characters in error messages', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -1051,15 +1113,15 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      const result = node.execute(inputState);
+      const result = await node.execute(inputState);
 
       expect(result.validPlatformSetup).toBe(false);
       expect(result.workflowFatalErrorMessages![0]).toContain('special characters');
     });
   });
 
-  describe('execute() - Command Timeout Configuration', () => {
-    it('should set timeout to 20000ms', () => {
+  describe('execute() - Command Timeout Configuration', async () => {
+    it('should set timeout to 120000ms', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -1073,17 +1135,17 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(mockExecSync).toHaveBeenCalledWith(expect.any(String), {
         encoding: 'utf-8',
-        timeout: 20000,
+        timeout: 120000,
       });
     });
   });
 
-  describe('execute() - Command Format', () => {
-    it('should format command correctly for iOS', () => {
+  describe('execute() - Command Format', async () => {
+    it('should format command correctly for iOS', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -1097,7 +1159,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(mockExecSync).toHaveBeenCalledWith(
         'sf force lightning local setup -p ios -l 17.0 --json',
@@ -1105,7 +1167,7 @@ describe('PlatformCheckNode', () => {
       );
     });
 
-    it('should format command correctly for Android', () => {
+    it('should format command correctly for Android', async () => {
       const inputState = createTestState({
         platform: 'Android',
       });
@@ -1119,7 +1181,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       expect(mockExecSync).toHaveBeenCalledWith(
         'sf force lightning local setup -p android -l 35 --json',
@@ -1127,7 +1189,7 @@ describe('PlatformCheckNode', () => {
       );
     });
 
-    it('should use lowercase platform name in command', () => {
+    it('should use lowercase platform name in command', async () => {
       const inputState = createTestState({
         platform: 'iOS',
       });
@@ -1141,7 +1203,7 @@ describe('PlatformCheckNode', () => {
         })
       );
 
-      node.execute(inputState);
+      await node.execute(inputState);
 
       // Verify lowercase 'ios' not 'iOS'
       expect(mockExecSync).toHaveBeenCalledWith(

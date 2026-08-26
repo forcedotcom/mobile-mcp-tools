@@ -37,12 +37,9 @@ vi.mock('@salesforce/magen-mcp-workflow', async () => {
   };
 });
 
-// Type helper for accessing private properties in tests
-type NodeWithBaseExtract = ExtractAndroidSetupNode & {
-  baseExtractNode: {
-    execute: ReturnType<typeof vi.fn>;
-  };
-};
+const getBaseExtractNode = (n: ExtractAndroidSetupNode) =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (n as any).baseExtractNode as { execute: ReturnType<typeof vi.fn> };
 
 describe('ExtractAndroidSetupNode', () => {
   let node: ExtractAndroidSetupNode;
@@ -63,14 +60,13 @@ describe('ExtractAndroidSetupNode', () => {
     mockExistsSync.mockReset();
 
     // Import after mocks are set up
-    const { ExtractAndroidSetupNode: Node } = await import(
-      '../../../src/workflow/nodes/extractAndroidSetup.js'
-    );
+    const { ExtractAndroidSetupNode: Node } =
+      await import('../../../src/workflow/nodes/extractAndroidSetup.js');
     node = new Node();
 
     // Mock the base extraction node's execute method
     const mockExecute = vi.fn();
-    (node as NodeWithBaseExtract).baseExtractNode.execute = mockExecute;
+    getBaseExtractNode(node).execute = mockExecute;
   });
 
   afterEach(() => {
@@ -94,7 +90,7 @@ describe('ExtractAndroidSetupNode', () => {
     });
 
     it('should create base extraction node', () => {
-      expect((node as NodeWithBaseExtract).baseExtractNode).toBeDefined();
+      expect(getBaseExtractNode(node)).toBeDefined();
     });
   });
 
@@ -105,7 +101,7 @@ describe('ExtractAndroidSetupNode', () => {
       });
 
       // Mock base extraction to return extracted paths
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/valid/android',
         javaHome: '/valid/java',
       });
@@ -126,7 +122,7 @@ describe('ExtractAndroidSetupNode', () => {
       const { saveEnvVarsToFile } = await import('../../../src/workflow/utils/envConfig.js');
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/valid/android',
         javaHome: '/valid/java',
       });
@@ -149,7 +145,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should set ANDROID_HOME when only it is valid', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/valid/android',
         javaHome: '/invalid/java',
       });
@@ -173,7 +169,7 @@ describe('ExtractAndroidSetupNode', () => {
       const { saveEnvVarsToFile } = await import('../../../src/workflow/utils/envConfig.js');
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/valid/android',
         javaHome: '/invalid/java',
       });
@@ -196,7 +192,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should set JAVA_HOME when only it is valid', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/invalid/android',
         javaHome: '/valid/java',
       });
@@ -221,7 +217,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should not set environment variables when both paths are invalid', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/invalid/android',
         javaHome: '/invalid/java',
       });
@@ -241,7 +237,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should include both error messages', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/invalid/android',
         javaHome: '/invalid/java',
       });
@@ -262,7 +258,7 @@ describe('ExtractAndroidSetupNode', () => {
       const { saveEnvVarsToFile } = await import('../../../src/workflow/utils/envConfig.js');
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/invalid/android',
         javaHome: '/invalid/java',
       });
@@ -279,7 +275,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle missing ANDROID_HOME', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         javaHome: '/valid/java',
       });
 
@@ -294,7 +290,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle missing JAVA_HOME', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/valid/android',
       });
 
@@ -309,7 +305,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle both paths missing', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({});
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({});
 
       const result = node.execute(inputState);
 
@@ -326,7 +322,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should append to existing error messages', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/invalid/android',
         workflowFatalErrorMessages: ['Existing error'],
       });
@@ -344,7 +340,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle undefined as missing', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: undefined,
         javaHome: undefined,
       });
@@ -360,7 +356,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should pass through other properties from base extraction', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/valid/android',
         javaHome: '/valid/java',
         androidInstalled: true,
@@ -380,7 +376,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle empty string paths', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '',
         javaHome: '',
       });
@@ -395,7 +391,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle paths with spaces', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/path with spaces/android',
         javaHome: '/path with spaces/java',
       });
@@ -411,7 +407,7 @@ describe('ExtractAndroidSetupNode', () => {
     it('should handle paths with special characters', () => {
       const inputState = createTestState({});
 
-      (node as NodeWithBaseExtract).baseExtractNode.execute = vi.fn().mockReturnValue({
+      getBaseExtractNode(node).execute = vi.fn().mockReturnValue({
         androidHome: '/path/to/android-sdk_r24',
         javaHome: '/path/to/java_17.0.1',
       });

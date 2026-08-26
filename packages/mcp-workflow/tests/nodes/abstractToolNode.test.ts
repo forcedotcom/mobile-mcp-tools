@@ -9,7 +9,12 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import z from 'zod';
 import { AbstractToolNode } from '../../src/nodes/abstractToolNode.js';
 import { MockToolExecutor } from '../utils/MockToolExecutor.js';
-import { MCPToolInvocationData } from '../../src/common/metadata.js';
+import {
+  MCPToolInvocationData,
+  NodeGuidanceData,
+  InterruptData,
+  isNodeGuidanceData,
+} from '../../src/common/metadata.js';
 import { MockLogger } from '../utils/MockLogger.js';
 
 // Simple test state type
@@ -26,7 +31,7 @@ type TestState = {
  */
 class TestNode extends AbstractToolNode<TestState> {
   public lastExecutedState?: TestState;
-  public lastToolInvocationData?: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>;
+  public lastInterruptData?: InterruptData<z.ZodObject<z.ZodRawShape>, z.ZodObject<z.ZodRawShape>>;
   public lastResultSchema?: z.ZodObject<z.ZodRawShape>;
 
   execute = (state: TestState): Partial<TestState> => {
@@ -36,13 +41,13 @@ class TestNode extends AbstractToolNode<TestState> {
 
   // Expose executeToolWithLogging for testing
   public executeToolPublic<TResultSchema extends z.ZodObject<z.ZodRawShape>>(
-    toolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
+    interruptData: InterruptData<z.ZodObject<z.ZodRawShape>, TResultSchema>,
     resultSchema: TResultSchema,
     validator?: (result: unknown, schema: TResultSchema) => z.infer<TResultSchema>
   ): z.infer<TResultSchema> {
-    this.lastToolInvocationData = toolInvocationData;
+    this.lastInterruptData = interruptData;
     this.lastResultSchema = resultSchema;
-    return this.executeToolWithLogging(toolInvocationData, resultSchema, validator);
+    return this.executeToolWithLogging(interruptData, resultSchema, validator);
   }
 }
 
@@ -146,11 +151,11 @@ describe('AbstractToolNode', () => {
 
       const debugLogs = mockLogger.getLogsByLevel('debug');
       const preExecutionLog = debugLogs.find(log =>
-        log.message.includes('Tool invocation data (pre-execution)')
+        log.message.includes('Interrupt data (pre-execution)')
       );
 
       expect(preExecutionLog).toBeDefined();
-      expect(preExecutionLog?.data).toHaveProperty('toolInvocationData');
+      expect(preExecutionLog?.data).toHaveProperty('interruptData');
     });
 
     it('should log tool execution result post-execution', () => {
@@ -488,11 +493,18 @@ describe('AbstractToolNode', () => {
       expect(result2.resultField).toBe('result-2');
       expect(result2.numberField).toBe(2);
 
-      // Verify both tools were called
+      // Verify both tools were called with MCPToolInvocationData
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory).toHaveLength(2);
-      expect(callHistory[0].llmMetadata.name).toBe('tool-1');
-      expect(callHistory[1].llmMetadata.name).toBe('tool-2');
+      // Both calls are MCPToolInvocationData, so use type guard to narrow
+      const call0 = callHistory[0];
+      const call1 = callHistory[1];
+      if (!isNodeGuidanceData(call0) && !isNodeGuidanceData(call1)) {
+        expect(call0.llmMetadata.name).toBe('tool-1');
+        expect(call1.llmMetadata.name).toBe('tool-2');
+      } else {
+        expect.fail('Expected MCPToolInvocationData');
+      }
     });
 
     it('should handle different result schemas for different tools', () => {
@@ -530,6 +542,169 @@ describe('AbstractToolNode', () => {
 
       expect(result1).toEqual({ resultField: 'result-1', numberField: 1 });
       expect(result2).toEqual({ alternateField: true });
+    });
+  });
+
+  describe('executeToolWithLogging - NodeGuidanceData Support', () => {
+    it('should execute with NodeGuidanceData and validate result with schema', () => {
+      const nodeGuidanceData: NodeGuidanceData<typeof TestResultSchema> = {
+        nodeId: 'test-node',
+        taskGuidance: 'Test guidance for the LLM',
+        resultSchema: TestResultSchema,
+      };
+
+      const expectedResult = {
+        resultField: 'success',
+        numberField: 42,
+      };
+
+      mockToolExecutor.setResult('test-node', expectedResult);
+
+      const result = testNode.executeToolPublic(nodeGuidanceData, TestResultSchema);
+
+      expect(result).toEqual(expectedResult);
+      expect(result.resultField).toBe('success');
+      expect(result.numberField).toBe(42);
+    });
+
+    it('should log NodeGuidanceData pre-execution', () => {
+      const nodeGuidanceData: NodeGuidanceData<typeof TestResultSchema> = {
+        nodeId: 'test-node',
+        taskGuidance: 'Test guidance',
+        resultSchema: TestResultSchema,
+      };
+
+      mockToolExecutor.setResult('test-node', { resultField: 'test', numberField: 1 });
+      mockLogger.reset();
+
+      testNode.executeToolPublic(nodeGuidanceData, TestResultSchema);
+
+      const debugLogs = mockLogger.getLogsByLevel('debug');
+      const preExecutionLog = debugLogs.find(log =>
+        log.message.includes('Interrupt data (pre-execution)')
+      );
+
+      expect(preExecutionLog).toBeDefined();
+      expect(preExecutionLog?.data).toHaveProperty('interruptData');
+    });
+
+    it('should throw ZodError when NodeGuidanceData result does not match schema', () => {
+      const nodeGuidanceData: NodeGuidanceData<typeof TestResultSchema> = {
+        nodeId: 'test-node',
+        taskGuidance: 'Test guidance',
+        resultSchema: TestResultSchema,
+      };
+
+      // Invalid result - missing required fields
+      mockToolExecutor.setResult('test-node', { resultField: 'test' });
+
+      expect(() => {
+        testNode.executeToolPublic(nodeGuidanceData, TestResultSchema);
+      }).toThrow(z.ZodError);
+    });
+
+    it('should use custom validator with NodeGuidanceData', () => {
+      const nodeGuidanceData: NodeGuidanceData<typeof TestResultSchema> = {
+        nodeId: 'test-node',
+        taskGuidance: 'Test guidance',
+        resultSchema: TestResultSchema,
+      };
+
+      const rawResult = {
+        resultField: 'original',
+        numberField: 10,
+      };
+
+      mockToolExecutor.setResult('test-node', rawResult);
+
+      // Custom validator that transforms the result
+      const customValidator = (
+        result: unknown,
+        schema: typeof TestResultSchema
+      ): z.infer<typeof TestResultSchema> => {
+        const parsed = schema.parse(result);
+        return {
+          ...parsed,
+          resultField: parsed.resultField.toUpperCase(),
+          numberField: parsed.numberField * 2,
+        };
+      };
+
+      const result = testNode.executeToolPublic(
+        nodeGuidanceData,
+        TestResultSchema,
+        customValidator
+      );
+
+      expect(result.resultField).toBe('ORIGINAL');
+      expect(result.numberField).toBe(20);
+    });
+
+    it('should handle NodeGuidanceData with exampleOutput', () => {
+      const nodeGuidanceData: NodeGuidanceData<typeof TestResultSchema> = {
+        nodeId: 'test-node',
+        taskGuidance: 'Test guidance',
+        resultSchema: TestResultSchema,
+        exampleOutput: JSON.stringify({ resultField: 'example', numberField: 99 }),
+      };
+
+      const expectedResult = { resultField: 'actual', numberField: 50 };
+      mockToolExecutor.setResult('test-node', expectedResult);
+
+      const result = testNode.executeToolPublic(nodeGuidanceData, TestResultSchema);
+
+      expect(result).toEqual(expectedResult);
+    });
+
+    it('should support mixing MCPToolInvocationData and NodeGuidanceData calls', () => {
+      const mcpToolData: MCPToolInvocationData<typeof TestInputSchema> = {
+        llmMetadata: {
+          name: 'mcp-tool',
+          description: 'An MCP tool',
+          inputSchema: TestInputSchema,
+        },
+        input: {
+          testField: 'mcp-value',
+        },
+      };
+
+      const nodeGuidanceData: NodeGuidanceData<typeof TestResultSchema> = {
+        nodeId: 'guidance-node',
+        taskGuidance: 'Guidance for LLM',
+        resultSchema: TestResultSchema,
+      };
+
+      mockToolExecutor.setResult('mcp-tool', { resultField: 'mcp-result', numberField: 1 });
+      mockToolExecutor.setResult('guidance-node', {
+        resultField: 'guidance-result',
+        numberField: 2,
+      });
+
+      const result1 = testNode.executeToolPublic(mcpToolData, TestResultSchema);
+      const result2 = testNode.executeToolPublic(nodeGuidanceData, TestResultSchema);
+
+      expect(result1.resultField).toBe('mcp-result');
+      expect(result2.resultField).toBe('guidance-result');
+
+      // Verify both were called and have correct types
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory).toHaveLength(2);
+
+      // First call should be MCPToolInvocationData
+      const call0 = callHistory[0];
+      if (!isNodeGuidanceData(call0)) {
+        expect(call0.llmMetadata.name).toBe('mcp-tool');
+      } else {
+        expect.fail('Expected MCPToolInvocationData for first call');
+      }
+
+      // Second call should be NodeGuidanceData
+      const call1 = callHistory[1];
+      if (isNodeGuidanceData(call1)) {
+        expect(call1.nodeId).toBe('guidance-node');
+      } else {
+        expect.fail('Expected NodeGuidanceData for second call');
+      }
     });
   });
 });

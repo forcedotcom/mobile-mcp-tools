@@ -273,8 +273,20 @@ By the end of each Design/Iterate phase, the user validates implemented features
 
 #### Connected App Configuration
 
-- Gather required Connected App Client ID and Callback URI
-- Essential inputs for baseline mobile app project creation
+For MSDK apps (Mobile SDK templates without custom properties), the workflow automatically retrieves Connected App credentials from the user's Salesforce org:
+
+1. **Org Discovery**: The workflow executes `sf org list --json` to discover all connected Salesforce orgs (DevHubs) available on the user's machine
+2. **Org Selection**: Presents the list of connected orgs to the user for selection
+3. **Connected App Discovery**: Executes `sf org list metadata -m ConnectedApp --json -o <selectedOrg>` to discover available Connected Apps in the selected org
+4. **Connected App Selection**: Presents the list of Connected Apps to the user for selection
+5. **Metadata Retrieval**: Retrieves the selected Connected App's metadata using `sf project retrieve start -m ConnectedApp:<appName> -o <selectedOrg>` in a temporary SFDX project
+6. **Credential Extraction**: Parses the XML metadata to extract the `consumerKey`, `callbackUrl`, and the org's `instanceUrl` (login host) for OAuth configuration
+
+This approach is more secure than environment variables as it:
+- Lets the user choose which org to retrieve credentials from
+- Retrieves credentials directly from the selected org
+- Ensures credentials match actual Connected App configuration
+- Eliminates manual environment variable setup
 
 #### Project Creation and Setup
 
@@ -837,16 +849,24 @@ The StateGraph implements the three-phase architecture through deterministic nod
 const WorkflowStateAnnotation = Annotation.Root({
   // Core workflow data
   userInput: Annotation<unknown>,
+  templatePropertiesUserInput: Annotation<unknown>,
   platform: Annotation<'iOS' | 'Android'>,
 
   // Plan phase state
-  validEnvironment: Annotation<boolean>,
+  validPlatformSetup: Annotation<boolean>,
+  validPluginSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
   selectedTemplate: Annotation<string>,
+  templateProperties: Annotation<Record<string, string>>,
+  templatePropertiesMetadata: Annotation<TemplatePropertiesMetadata>,
   projectName: Annotation<string>,
   projectPath: Annotation<string>,
   packageName: Annotation<string>,
   organization: Annotation<string>,
+
+  // Connected App state (for MSDK apps)
+  connectedAppList: Annotation<ConnectedAppInfo[]>,
+  selectedConnectedAppName: Annotation<string>,
   connectedAppClientId: Annotation<string>,
   connectedAppCallbackUri: Annotation<string>,
   loginHost: Annotation<string>,
@@ -865,10 +885,18 @@ const WorkflowStateAnnotation = Annotation.Root({
 
 const workflowGraph = new StateGraph(WorkflowStateAnnotation)
   // Workflow nodes (steel thread implementation)
-  .addNode('validateEnvironment', environmentValidationNode.execute)
   .addNode('initialUserInputExtraction', initialUserInputExtractionNode.execute)
   .addNode('getUserInput', userInputNode.execute)
+  .addNode('pluginCheck', pluginCheckNode.execute)
+  .addNode('platformCheck', platformCheckNode.execute)
   .addNode('templateDiscovery', templateDiscoveryNode.execute)
+  .addNode('templateSelection', templateSelectionNode.execute)
+  .addNode('templatePropertiesExtraction', templatePropertiesExtractionNode.execute)
+  .addNode('templatePropertiesUserInput', templatePropertiesUserInputNode.execute)
+  // Connected app nodes (for MSDK apps)
+  .addNode('fetchConnectedAppList', fetchConnectedAppListNode.execute)
+  .addNode('selectConnectedApp', selectConnectedAppNode.execute)
+  .addNode('retrieveConnectedAppMetadata', retrieveConnectedAppMetadataNode.execute)
   .addNode('projectGeneration', projectGenerationNode.execute)
   .addNode('buildValidation', buildValidationNode.execute)
   .addNode('buildRecovery', buildRecoveryNode.execute)
@@ -876,12 +904,20 @@ const workflowGraph = new StateGraph(WorkflowStateAnnotation)
   .addNode('completion', completionNode.execute)
   .addNode('failure', failureNode.execute)
 
-  // Define workflow edges
-  .addEdge(START, 'validateEnvironment')
-  .addConditionalEdges('validateEnvironment', checkEnvironmentValidatedRouter.execute)
+  // Define workflow edges - start with user input extraction
+  .addEdge(START, 'initialUserInputExtraction')
   .addConditionalEdges('initialUserInputExtraction', checkPropertiesFulFilledRouter.execute)
   .addEdge('getUserInput', 'initialUserInputExtraction')
-  .addEdge('templateDiscovery', 'projectGeneration')
+  .addConditionalEdges('pluginCheck', checkPluginValidatedRouter.execute)
+  .addConditionalEdges('platformCheck', checkSetupValidatedRouter.execute)
+  .addEdge('templateDiscovery', 'templateSelection')
+  .addEdge('templateSelection', 'templatePropertiesExtraction')
+  .addConditionalEdges('templatePropertiesExtraction', checkTemplatePropertiesFulfilledRouter.execute)
+  .addEdge('templatePropertiesUserInput', 'templatePropertiesExtraction')
+  // Connected app flow (for MSDK apps)
+  .addEdge('fetchConnectedAppList', 'selectConnectedApp')
+  .addEdge('selectConnectedApp', 'retrieveConnectedAppMetadata')
+  .addConditionalEdges('retrieveConnectedAppMetadata', checkConnectedAppRetrievedRouter.execute)
   .addEdge('projectGeneration', 'buildValidation')
   // Build validation with recovery loop
   .addConditionalEdges('buildValidation', checkBuildSuccessfulRouter.execute)
@@ -892,19 +928,21 @@ const workflowGraph = new StateGraph(WorkflowStateAnnotation)
   .addEdge('failure', END);
 
 // Example node implementations following the interrupt pattern
-// Environment validation (synchronous node - no interrupt)
-class EnvironmentValidationNode extends BaseNode {
-  execute = (state: State): Partial<State> => {
-    const { invalidEnvironmentMessages, connectedAppClientId, connectedAppCallbackUri } =
-      this.validateEnvironmentVariables();
-
-    const validEnvironment = invalidEnvironmentMessages.length === 0;
-    return {
-      validEnvironment,
-      workflowFatalErrorMessages: validEnvironment ? undefined : invalidEnvironmentMessages,
-      connectedAppClientId,
-      connectedAppCallbackUri,
-    };
+// Connected App List Fetch (async node - fetches from Salesforce org)
+class FetchConnectedAppListNode extends BaseNode {
+  execute = async (state: State): Promise<Partial<State>> => {
+    // Execute sf org list metadata -m ConnectedApp --json
+    const result = await this.commandRunner.execute('sf', [
+      'org', 'list', 'metadata', '-m', 'ConnectedApp', '--json'
+    ]);
+    
+    // Parse JSON and extract fullName and createdByName
+    const connectedAppList = result.result.map(app => ({
+      fullName: app.fullName,
+      createdByName: app.createdByName,
+    }));
+    
+    return { connectedAppList };
   };
 }
 
@@ -1514,6 +1552,8 @@ mobile-native-mcp-server/
 │       └── logger.ts
 ├── templates/     # Official Salesforce Mobile SDK Templates (packaged with NPM)
 │   ├── iOSNativeSwiftTemplate/
+│   ├── AgentforceDemo/
+│   ├── AndroidAgentforceKotlinTemplate/
 │   ├── AndroidNativeKotlinTemplate/
 │   ├── MobileSyncExplorerSwift/
 │   ├── MobileSyncExplorerKotlinTemplate/

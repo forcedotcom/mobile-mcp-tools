@@ -5,41 +5,24 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import {
-  AbstractToolNode,
-  Logger,
-  MCPToolInvocationData,
-  ToolExecutor,
-} from '@salesforce/magen-mcp-workflow';
+import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
-import { DEPLOYMENT_TOOL } from '../../tools/run/sfmobile-native-deployment/metadata.js';
 
-export class DeploymentNode extends AbstractToolNode<State> {
-  constructor(toolExecutor?: ToolExecutor, logger?: Logger) {
-    super('deployApp', toolExecutor, logger);
+/**
+ * Simple router node that routes to platform-specific deployment flows.
+ * The actual deployment nodes are added to the workflow graph separately.
+ */
+export class DeploymentNode extends BaseNode<State> {
+  protected readonly logger: Logger;
+
+  constructor(logger?: Logger) {
+    super('deployApp');
+    this.logger = logger ?? createComponentLogger('DeploymentNode');
   }
 
-  execute = (state: State): Partial<State> => {
-    const toolInvocationData: MCPToolInvocationData<typeof DEPLOYMENT_TOOL.inputSchema> = {
-      llmMetadata: {
-        name: DEPLOYMENT_TOOL.toolId,
-        description: DEPLOYMENT_TOOL.description,
-        inputSchema: DEPLOYMENT_TOOL.inputSchema,
-      },
-      input: {
-        platform: state.platform,
-        projectPath: state.projectPath,
-        buildType: state.buildType,
-        targetDevice: state.targetDevice,
-        packageName: state.packageName,
-        projectName: state.projectName,
-      },
-    };
-
-    const validatedResult = this.executeToolWithLogging(
-      toolInvocationData,
-      DEPLOYMENT_TOOL.resultSchema
-    );
-    return validatedResult;
+  execute = (_state: State): Partial<State> => {
+    // This node just passes through - routing is handled by CheckDeploymentPlatformRouter
+    this.logger.debug('Deployment node executed, routing will be handled by platform router');
+    return {};
   };
 }

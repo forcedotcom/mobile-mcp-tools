@@ -274,14 +274,7 @@ packages/
 │   │   │   │   └── index.ts
 │   │   │   ├── utilities/
 │   │   │   │   ├── getInput/
-│   │   │   │   │   ├── tool.ts              # Get user input tool
-│   │   │   │   │   ├── metadata.ts          # Get input metadata
-│   │   │   │   │   ├── factory.ts           # Factory function for tool creation
-│   │   │   │   │   └── index.ts
-│   │   │   │   ├── inputExtraction/
-│   │   │   │   │   ├── tool.ts              # Input extraction tool
-│   │   │   │   │   ├── metadata.ts          # Input extraction metadata
-│   │   │   │   │   ├── factory.ts           # Factory function for tool creation
+│   │   │   │   │   ├── metadata.ts          # GET_INPUT_WORKFLOW_RESULT_SCHEMA only
 │   │   │   │   │   └── index.ts
 │   │   │   │   └── index.ts
 │   │   │   └── index.ts
@@ -329,192 +322,169 @@ packages/
 
 #### 1. Generic Orchestrator Tool
 
-The orchestrator will be generalized to accept configuration:
+The orchestrator is generic over its MCP input schema, allowing subclasses to define custom input structures while the base class handles workflow orchestration mechanics. The generic parameter `TInputSchema` defaults to `ORCHESTRATOR_INPUT_SCHEMA`, preserving backward compatibility for consumers that use the standard schema.
 
-````typescript
+**Configuration (`OrchestratorConfig<TInputSchema>`):**
+
+```typescript
 // mcp-workflow/src/tools/orchestrator/config.ts
-import { AnnotationRoot, StateDefinition } from '@langchain/langgraph';
-
-/**
- * Workflow execution environment
- */
-export type WorkflowEnvironment = 'production' | 'test';
-
-/**
- * Context object for workflow execution configuration
- * Provides high-level environment information without exposing implementation details
- */
-export interface WorkflowContext {
-  /**
-   * Execution environment - determines checkpointing strategy
-   * - 'production': Uses JsonCheckpointSaver with .magen/ directory persistence
-   * - 'test': Uses MemorySaver for isolated, in-memory state (no file I/O)
-   */
-  environment: WorkflowEnvironment;
-}
 
 /**
  * Orchestrator configuration interface
  *
- * @template TState - An AnnotationRoot type (e.g., typeof MyWorkflowState where MyWorkflowState = Annotation.Root({...}))
- *
- * Example usage:
- * ```
- * const MyWorkflowState = Annotation.Root({ messages: Annotation<string[]>() });
- * const myConfig: OrchestratorConfig<typeof MyWorkflowState> = {
- *   toolId: 'my-orchestrator',
- *   workflow: new StateGraph(MyWorkflowState)...,
- *   context: { environment: 'production' } // Optional, defaults to production
- * };
- * ```
+ * @template TInputSchema - The Zod input schema type for the orchestrator MCP tool.
+ *   Defaults to ORCHESTRATOR_INPUT_SCHEMA. When providing a custom schema, the
+ *   OrchestratorTool subclass MUST also override extractUserInput() and
+ *   extractWorkflowStateData() to map the custom schema's properties.
  */
-export interface OrchestratorConfig<TState extends AnnotationRoot<StateDefinition>> {
-  /** Unique tool identifier for MCP registration */
+export interface OrchestratorConfig<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+> {
   toolId: string;
-
-  /** Extended tool title for display */
   title: string;
-
-  /** Tool description for documentation */
   description: string;
+  workflow: StateGraph<any, any, any, any, any, any, any, any>;
 
   /**
-   * The LangGraph StateGraph workflow definition (uncompiled)
-   *
-   * Note: StateGraph has 8 generic type parameters. The first is the AnnotationRoot itself (TState),
-   * and the remaining 7 are set to 'any' because they're inferred during construction and
-   * impractical to specify as input parameters.
-   *
-   * The state type (TState['State']) is automatically derived by StateGraph from the AnnotationRoot.
+   * Custom Zod input schema for the orchestrator MCP tool.
+   * Optional - defaults to ORCHESTRATOR_INPUT_SCHEMA.
    */
-  workflow: StateGraph<TState, any, any, any, any, any, any, any>;
+  inputSchema?: TInputSchema;
 
-  /**
-   * Workflow execution context
-   * Optional - defaults to { environment: 'production' }
-   *
-   * The environment determines the checkpointing strategy:
-   * - 'production': JsonCheckpointSaver with .magen/ directory persistence
-   * - 'test': MemorySaver for isolated, in-memory state (no file I/O)
-   *
-   * All checkpointing implementation details are encapsulated within the orchestrator.
-   */
-  context?: WorkflowContext;
-
-  /**
-   * Logger instance for workflow operations
-   * Optional - defaults to logger using wellKnownDirectory for log files
-   */
+  stateManager?: WorkflowStateManager;
   logger?: Logger;
 }
+```
 
-/**
- * Orchestrator input schema
- *
- * Note: The workflow state data is optional/defaulted because the orchestrator
- * can start new workflows (where it doesn't exist yet) or continue existing ones.
- */
+**Default Input Schema:**
+
+```typescript
+// mcp-workflow/src/tools/orchestrator/metadata.ts
+
 export const ORCHESTRATOR_INPUT_SCHEMA = z.object({
-  userInput: z
-    .record(z.string(), z.unknown())
-    .optional()
-    .describe(
-      'User input - can be any data structure from initial request or previously executed MCP tool'
-    ),
-  [WORKFLOW_PROPERTY_NAMES.workflowStateData]: WORKFLOW_STATE_DATA_SCHEMA.default({
-    thread_id: '',
-  }).describe('Opaque workflow state data. Do not populate unless explicitly instructed to do so.'),
+  userInput: USER_INPUT_SCHEMA.optional(),
+  workflowStateData: WORKFLOW_STATE_DATA_SCHEMA.default({ thread_id: '' }).describe(
+    'Opaque workflow state data. Do not populate unless explicitly instructed.'
+  ),
 });
 
 export type OrchestratorInput = z.infer<typeof ORCHESTRATOR_INPUT_SCHEMA>;
 
-/**
- * Orchestrator output schema - natural language orchestration prompt
- */
-export const ORCHESTRATOR_OUTPUT_SCHEMA = z.object({
-  orchestrationInstructionsPrompt: z
-    .string()
-    .describe('The prompt describing the next workflow action for the LLM to execute.'),
-});
-
-export type OrchestratorOutput = z.infer<typeof ORCHESTRATOR_OUTPUT_SCHEMA>;
+/** Type alias used as default generic parameter (avoids circular imports) */
+export type DefaultOrchestratorInputSchema = typeof ORCHESTRATOR_INPUT_SCHEMA;
 
 /**
- * Orchestrator tool metadata type
- * The metadata for the orchestrator tool (inputs/outputs)
+ * Orchestrator tool metadata type, generic over the input schema.
  */
-export type OrchestratorToolMetadata = ToolMetadata<
-  typeof ORCHESTRATOR_INPUT_SCHEMA,
-  typeof ORCHESTRATOR_OUTPUT_SCHEMA
->;
+export type OrchestratorToolMetadata<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+> = ToolMetadata<TInputSchema, typeof ORCHESTRATOR_OUTPUT_SCHEMA>;
 
 /**
- * Factory function to create orchestrator tool metadata from configuration
- * Takes the consumer-provided config and creates the tool metadata with
- * standardized input/output schemas.
+ * Factory function that uses config.inputSchema if provided, otherwise
+ * falls back to the default ORCHESTRATOR_INPUT_SCHEMA.
  */
-export function createOrchestratorToolMetadata<TState extends AnnotationRoot<StateDefinition>>(
-  config: OrchestratorConfig<TState>
-): OrchestratorToolMetadata {
+export function createOrchestratorToolMetadata<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+>(config: OrchestratorConfig<TInputSchema>): OrchestratorToolMetadata<TInputSchema> {
+  const effectiveInputSchema = (config.inputSchema ?? ORCHESTRATOR_INPUT_SCHEMA) as TInputSchema;
   return {
     toolId: config.toolId,
     title: config.title,
     description: config.description,
-    inputSchema: ORCHESTRATOR_INPUT_SCHEMA, // Standard orchestrator input schema
-    outputSchema: ORCHESTRATOR_OUTPUT_SCHEMA, // Standard orchestrator output schema
+    inputSchema: effectiveInputSchema,
+    outputSchema: ORCHESTRATOR_OUTPUT_SCHEMA,
   };
 }
+```
 
+**OrchestratorTool class (generic, with extractor methods):**
+
+```typescript
 // mcp-workflow/src/tools/orchestrator/orchestratorTool.ts
-export class OrchestratorTool<
-  TState extends AnnotationRoot<StateDefinition>,
-> extends AbstractTool<OrchestratorToolMetadata> {
-  private readonly compiledWorkflow: CompiledStateGraph<
-    TState['State'], // S - The actual state type extracted from the AnnotationRoot
-    any, // U - Update type (derived from state)
-    any, // N - Node names (string union)
-    any, // I - Input schema
-    any, // O - Output schema
-    any, // C - Context schema
-    any // NodeReturnType
-  >;
-  private readonly checkpointer: BaseCheckpointSaver;
-  private readonly logger: Logger;
 
+export class OrchestratorTool<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+> extends AbstractTool<OrchestratorToolMetadata<TInputSchema>> {
   constructor(
     server: McpServer,
-    private readonly config: OrchestratorConfig<TState>
+    private readonly config: OrchestratorConfig<TInputSchema>
   ) {
-    super(server, createOrchestratorToolMetadata(config), config.logger);
-    this.logger = config.logger || createWorkflowLogger('OrchestratorTool');
-
-    // Initialize checkpointer based on context (encapsulated from consumer)
-    const environment = config.context?.environment || 'production';
-    if (environment === 'test') {
-      // Test environment: Use in-memory checkpointer (no file I/O)
-      this.checkpointer = new MemorySaver();
-    } else {
-      // Production environment: Use JsonCheckpointSaver with .magen/ directory persistence
-      const workflowStateStorePath = getWorkflowStateStorePath();
-      const statePersistence = new WorkflowStatePersistence(workflowStateStorePath);
-      this.checkpointer = new JsonCheckpointSaver(statePersistence);
-    }
-
-    // Compile workflow with our checkpointer
-    // This is why we accept StateGraph (uncompiled) - compilation requires the checkpointer,
-    // which is an implementation detail consumers shouldn't need to manage
-    this.compiledWorkflow = config.workflow.compile({
-      checkpointer: this.checkpointer,
-    });
+    const effectiveLogger = config.logger || createWorkflowLogger('OrchestratorTool');
+    super(server, createOrchestratorToolMetadata(config), 'OrchestratorTool', effectiveLogger);
+    this.stateManager =
+      config.stateManager || new WorkflowStateManager({ environment: 'production' });
   }
 
-  // ... handleRequest method uses this.compiledWorkflow ...
+  /**
+   * Extract the user input value from the orchestrator input.
+   * Override in subclasses with custom input schemas.
+   */
+  protected extractUserInput(input: z.infer<TInputSchema>): unknown | undefined {
+    return (input as Record<string, unknown>)[WORKFLOW_PROPERTY_NAMES.userInput];
+  }
+
+  /**
+   * Extract the workflow state data from the orchestrator input.
+   * Override in subclasses with custom input schemas.
+   */
+  protected extractWorkflowStateData(input: z.infer<TInputSchema>): WorkflowStateData | undefined {
+    const data = (input as Record<string, unknown>)[WORKFLOW_PROPERTY_NAMES.workflowStateData];
+    if (!data || typeof data !== 'object') return undefined;
+    return data as WorkflowStateData;
+  }
+
+  /**
+   * Subclasses can override createThreadConfig, createOrchestrationPrompt,
+   * and createDirectGuidancePrompt (all protected) for further customization.
+   */
+
+  // ... handleRequest, processRequest (use extractors instead of direct property access) ...
+  // ... createOrchestrationPrompt for delegate mode (protected) ...
+  // ... createDirectGuidancePrompt for direct guidance mode (protected) ...
 }
-````
+```
 
-**Design Rationale: Why Accept Uncompiled `StateGraph` and Use Context-Based Configuration?**
+**Custom Schema Consumer Example:**
 
-The `OrchestratorConfig` accepts an uncompiled `StateGraph` and a simple `context` object for several reasons:
+```typescript
+// Example: A consumer with a custom input schema
+
+const MY_CUSTOM_SCHEMA = z.object({
+  payload: z.unknown().optional(),
+  sessionState: z.object({ thread_id: z.string() }).default({ thread_id: '' }),
+});
+
+class CustomOrchestrator extends OrchestratorTool<typeof MY_CUSTOM_SCHEMA> {
+  constructor(server: McpServer, config: OrchestratorConfig<typeof MY_CUSTOM_SCHEMA>) {
+    super(server, config);
+  }
+
+  protected extractUserInput(input: z.infer<typeof MY_CUSTOM_SCHEMA>): unknown | undefined {
+    return input.payload;
+  }
+
+  protected extractWorkflowStateData(
+    input: z.infer<typeof MY_CUSTOM_SCHEMA>
+  ): WorkflowStateData | undefined {
+    return input.sessionState;
+  }
+}
+
+// Usage:
+const config: OrchestratorConfig<typeof MY_CUSTOM_SCHEMA> = {
+  toolId: 'custom-orchestrator',
+  title: 'Custom Orchestrator',
+  description: 'Uses a custom input schema',
+  workflow: myWorkflow,
+  inputSchema: MY_CUSTOM_SCHEMA,
+};
+const orchestrator = new CustomOrchestrator(server, config);
+```
+
+**Design Rationale: Why Accept Uncompiled `StateGraph`?**
+
+The `OrchestratorConfig` accepts an uncompiled `StateGraph` for several reasons:
 
 1. **Circular Dependency Prevention**: Compiling a StateGraph requires a checkpointer instance:
 
@@ -524,17 +494,23 @@ The `OrchestratorConfig` accepts an uncompiled `StateGraph` and a simple `contex
 
    If consumers had to provide a `CompiledStateGraph`, they would need to create a checkpointer first, which would expose implementation details. By accepting an uncompiled `StateGraph`, the orchestrator can create the checkpointer and compile the workflow internally.
 
-2. **Complete Encapsulation**: Consumers don't need to know about:
-   - `MemorySaver` vs `JsonCheckpointSaver` classes
-   - `WorkflowStatePersistence` implementation
-   - `.magen/` directory structure
-   - Checkpointer creation APIs
+2. **Complete Encapsulation**: Consumers don't need to know about checkpointer classes, `WorkflowStatePersistence` implementation, `.magen/` directory structure, or checkpointer creation APIs.
 
-   They simply specify `context: { environment: 'test' }` or `context: { environment: 'production' }`, and the orchestrator handles all implementation details.
+3. **Simple, Intent-Driven API**: The `WorkflowStateManager` `environment` property expresses the _intent_ ('test' or 'production') rather than the _mechanism_ (specific checkpointer classes).
 
-3. **Simple, Intent-Driven API**: The `context.environment` property expresses the _intent_ ('test' or 'production') rather than the _mechanism_ (specific checkpointer classes). This aligns with high-level configuration principles.
+4. **Separation of Concerns**: Consumers define _what_ the workflow does (`StateGraph` structure) and _what environment_ it runs in, while the orchestrator determines _how_ to implement checkpointing, persistence, and thread management.
 
-4. **Separation of Concerns**: Consumers define _what_ the workflow does (`StateGraph` structure) and _what environment_ it runs in (`context.environment`), while the orchestrator determines _how_ to implement checkpointing, persistence, and thread management.
+**Design Rationale: Extensible Input Schema via `TInputSchema` Generic**
+
+The `OrchestratorTool` is generic over `TInputSchema` rather than having a fixed input schema for these reasons:
+
+1. **Consumer Flexibility**: Different MCP server implementations may need different input structures. For example, one consumer might combine `userInput` and `workflowStateData` into a single nested object, or rename properties to match their domain conventions.
+
+2. **Backward Compatibility**: The default generic parameter (`DefaultOrchestratorInputSchema` = `typeof ORCHESTRATOR_INPUT_SCHEMA`) ensures all existing code continues to work without changes. Consumers only need to specify a type parameter when providing a custom schema.
+
+3. **Extractor Pattern**: The `extractUserInput()` and `extractWorkflowStateData()` protected methods decouple the orchestrator's internal logic from the schema structure. The base class provides default implementations for the standard schema, and subclasses override these to map custom schemas to the same semantic values.
+
+4. **Prompt Overridability**: The `createOrchestrationPrompt()` and `createDirectGuidancePrompt()` methods are `protected`, allowing subclasses with custom schemas to adjust property name references in generated LLM prompts.
 
 #### 2. Configurable Base Node
 
@@ -773,14 +749,65 @@ export interface WorkflowToolMetadata<
   readonly resultSchema: TResultSchema;
 }
 
-/** MCP tool invocation data for LangGraph interrupts */
-export interface MCPToolInvocationData<TWorkflowInputSchema extends z.ZodObject<z.ZodRawShape>> {
+/**
+ * MCP tool invocation data for LangGraph interrupts (Delegate Mode).
+ * Instructs the LLM to invoke a separate MCP tool with the provided metadata and input.
+ */
+export interface MCPToolInvocationData<TInputSchema extends z.ZodObject<z.ZodRawShape>> {
+  /** Input parameters - typed to business logic schema only (excludes workflowStateData) */
+  input: Omit<z.infer<TInputSchema>, 'workflowStateData'>;
+  /** Metadata about the tool to invoke */
   llmMetadata: {
     name: string;
     description: string;
-    inputSchema: TWorkflowInputSchema;
+    inputSchema: TInputSchema;
   };
-  input: Omit<z.infer<TWorkflowInputSchema>, 'workflowStateData'>;
+}
+
+/**
+ * Node guidance data for direct guidance mode.
+ * The orchestrator generates guidance directly instead of delegating to a separate tool.
+ *
+ * This is a runtime data structure - services construct it directly with their
+ * toolId, computed taskGuidance, and result schema.
+ *
+ * @template TResultSchema - The Zod schema for validating the result
+ */
+export interface NodeGuidanceData<TResultSchema extends z.ZodObject<z.ZodRawShape>> {
+  /** Unique identifier for this service/node - used for logging and debugging */
+  nodeId: string;
+  /** The task guidance/prompt that instructs the LLM what to do */
+  taskGuidance: string;
+  /** Zod schema defining expected output structure for result validation */
+  resultSchema: TResultSchema;
+  /**
+   * Optional example output to help the LLM understand the expected response format.
+   * When provided, this concrete example is shown alongside the schema to improve
+   * LLM compliance with the expected structure.
+   */
+  exampleOutput?: string;
+}
+
+/**
+ * Union type for all interrupt data types.
+ * The orchestrator uses this to handle both delegate and direct guidance modes.
+ *
+ * @template TInputSchema - For MCPToolInvocationData: the full workflow input schema
+ * @template TResultSchema - For NodeGuidanceData: the result validation schema
+ */
+export type InterruptData<
+  TInputSchema extends z.ZodObject<z.ZodRawShape>,
+  TResultSchema extends z.ZodObject<z.ZodRawShape>,
+> = MCPToolInvocationData<TInputSchema> | NodeGuidanceData<TResultSchema>;
+
+/**
+ * Type guard to check if interrupt data is NodeGuidanceData (direct guidance mode).
+ */
+export function isNodeGuidanceData<
+  TInputSchema extends z.ZodObject<z.ZodRawShape>,
+  TResultSchema extends z.ZodObject<z.ZodRawShape>,
+>(data: InterruptData<TInputSchema, TResultSchema>): data is NodeGuidanceData<TResultSchema> {
+  return 'taskGuidance' in data && 'resultSchema' in data && 'nodeId' in data;
 }
 ```
 
@@ -797,181 +824,187 @@ While the orchestrator and base classes provide the workflow infrastructure, man
 
 Rather than force every consumer to implement these common patterns, we provide them as part of the framework.
 
-##### 5.1 Get Input Tool
+##### 5.0 Direct Guidance Mode (Orchestrator-Handled)
+
+**Purpose**: Allows the orchestrator to handle certain tasks directly by generating guidance prompts inline, eliminating the need for an intermediate tool call.
+
+**Background**: The standard workflow (delegate mode) involves two tool calls:
+
+1. The workflow interrupts and instructs the LLM to invoke a separate MCP tool
+2. The tool returns a prompt, and the LLM executes the task
+3. The LLM returns the result to the orchestrator
+
+This adds latency and complexity. The **direct guidance mode** streamlines this by having the orchestrator generate the task prompt directly using `NodeGuidanceData`.
+
+**How It Works**:
+
+When a workflow node or service needs to provide direct guidance, it creates an interrupt with `NodeGuidanceData`. The interface is intentionally minimal - services construct it directly with their toolId, computed taskGuidance, and result schema:
+
+```typescript
+// Example from GetInputService - constructs NodeGuidanceData directly
+const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_RESULT_SCHEMA> = {
+  nodeId: this.toolId, // e.g., 'magen-get-input'
+  taskGuidance: this.generateTaskGuidance(unfulfilledProperties),
+  resultSchema: GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+  // Optional: provide example to improve LLM compliance
+  exampleOutput: JSON.stringify({ userUtterance: exampleProperties }),
+};
+return interrupt(nodeGuidanceData);
+```
+
+The orchestrator detects `NodeGuidanceData` (via the `isNodeGuidanceData` type guard) and generates a direct guidance prompt that includes:
+
+1. Task guidance instructions (the `taskGuidance` field)
+2. Post-task instructions for returning to the orchestrator
+3. Output format schema (placed at the end for better LLM attention)
+4. Optional example output to improve LLM compliance
+
+**Flow Comparison**:
+
+```
+Delegate Mode (MCPToolInvocationData):
+  Node → interrupt → Orchestrator → LLM calls separate tool → Tool returns prompt → LLM executes → Returns to Orchestrator
+
+Direct Guidance Mode (NodeGuidanceData):
+  Node → interrupt → Orchestrator generates prompt directly → LLM executes → Returns to Orchestrator
+```
+
+**Benefits**:
+
+- Reduced latency (eliminates one tool call round-trip)
+- Simpler flow for common operations
+- Example output support improves LLM compliance with expected schemas
+- Same result validation preserved for compatibility
+
+**Design Rationale**: `NodeGuidanceData` is a pure runtime data structure. Unlike `MCPToolInvocationData` which references an external tool's metadata, `NodeGuidanceData` embeds all necessary context directly. This means:
+
+- No factory functions needed - services construct the data directly
+- No separate metadata types - the result schema is passed directly
+- Dynamic result schemas are supported - `InputExtractionService` computes its schema at runtime based on the properties being extracted
+
+**Implementation**: Services like `GetInputService` and `InputExtractionService` construct `NodeGuidanceData` directly, using their `toolId` and appropriate result schemas (static for GetInput, dynamic for InputExtraction).
+
+##### 5.1 Get Input Service
 
 **Purpose**: Prompts the user to provide input for a set of required properties.
 
-**Use Case**: When a workflow needs to collect multiple pieces of information from the user (e.g., app name, description, platform), this tool generates a conversational prompt asking for those values.
+**Use Case**: When a workflow needs to collect multiple pieces of information from the user (e.g., app name, description, platform), this service generates `NodeGuidanceData` that instructs the LLM to ask for those values.
 
-**Factory Function Pattern** (to avoid tool name collisions):
-
-```typescript
-// mcp-workflow/src/tools/utilities/getInput/factory.ts
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { Logger } from '../../../logging/logger.js';
-import { GetInputTool } from './tool.js';
-
-export interface GetInputToolOptions {
-  /**
-   * Optional prefix for the tool ID to avoid collisions in multi-server environments
-   * @example 'mobile' → 'mobile-magen-get-input'
-   * @example 'salesops' → 'salesops-magen-get-input'
-   * @default undefined → 'magen-get-input'
-   */
-  toolIdPrefix?: string;
-
-  /**
-   * Optional orchestrator tool ID that this tool reports back to
-   * @default Required - must be provided
-   */
-  orchestratorToolId: string;
-
-  /** Optional logger instance */
-  logger?: Logger;
-}
-
-/**
- * Factory function to create a GetInputTool with configurable tool ID
- */
-export function createGetInputTool(server: McpServer, options: GetInputToolOptions): GetInputTool {
-  const toolId = options.toolIdPrefix
-    ? `${options.toolIdPrefix}-magen-get-input`
-    : 'magen-get-input';
-
-  return new GetInputTool(server, toolId, options.orchestratorToolId, options.logger);
-}
-```
-
-**Tool Implementation**:
+**Service Implementation**:
 
 ```typescript
-// mcp-workflow/src/tools/utilities/getInput/tool.ts
-export class GetInputTool extends AbstractWorkflowTool<GetInputToolMetadata> {
-  constructor(server: McpServer, toolId: string, orchestratorToolId: string, logger?: Logger) {
-    super(server, createGetInputMetadata(toolId), orchestratorToolId, 'GetInputTool', logger);
+// mcp-workflow/src/services/getInputService.ts
+import { GET_INPUT_WORKFLOW_RESULT_SCHEMA } from '../tools/utilities/index.js';
+import { NodeGuidanceData } from '../common/metadata.js';
+
+export class GetInputService extends AbstractService implements GetInputServiceProvider {
+  constructor(
+    private readonly toolId: string, // e.g., 'magen-get-input'
+    toolExecutor?: ToolExecutor,
+    logger?: Logger
+  ) {
+    super('GetInputService', toolExecutor, logger);
   }
 
-  public handleRequest = async (input: GetInputWorkflowInput) => {
-    const guidance = this.generatePromptForInputGuidance(input);
-    return this.finalizeWorkflowToolOutput(guidance, input.workflowStateData);
-  };
+  getInput(unfulfilledProperties: GetInputProperty[]): unknown {
+    // Build example output to help LLM compliance
+    const exampleProperties = unfulfilledProperties.reduce(
+      (acc, prop) => {
+        acc[prop.propertyName] = `<user's ${prop.friendlyName} value>`;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
 
-  private generatePromptForInputGuidance(input: GetInputWorkflowInput): string {
-    // Generate conversational prompt asking user for property values
-    // (Implementation extracted from mobile-native-mcp-server)
+    const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_RESULT_SCHEMA> = {
+      nodeId: this.toolId,
+      taskGuidance: this.generateTaskGuidance(unfulfilledProperties),
+      resultSchema: GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+      exampleOutput: JSON.stringify({ userUtterance: exampleProperties }),
+    };
+
+    // Execute with logging and validation
+    const result = this.executeToolWithLogging(nodeGuidanceData, GET_INPUT_WORKFLOW_RESULT_SCHEMA);
+    return result.userUtterance;
   }
 }
 ```
 
-**Consumer Usage**:
+**Result Schema**:
 
 ```typescript
-// Simple case - single MCP server
-const getInputTool = createGetInputTool(server, {
-  orchestratorToolId: 'my-orchestrator',
+// mcp-workflow/src/tools/utilities/getInput/metadata.ts
+export const GET_INPUT_WORKFLOW_RESULT_SCHEMA = z.object({
+  userUtterance: z.unknown().describe("The user's response to the question"),
 });
-// Registers as: 'magen-get-input'
-
-// Multi-server environment - avoid collisions
-const getInputTool = createGetInputTool(server, {
-  toolIdPrefix: 'mobile',
-  orchestratorToolId: 'mobile-orchestrator',
-});
-// Registers as: 'mobile-magen-get-input'
 ```
 
-##### 5.2 Input Extraction Tool
+##### 5.2 Input Extraction Service
 
 **Purpose**: Extracts structured property values from unstructured user input using LLM analysis.
 
-**Use Case**: After the user provides free-form input, this tool parses their response and extracts specific property values according to a defined schema.
+**Use Case**: After the user provides free-form input, this service generates `NodeGuidanceData` that instructs the LLM to parse their response and extract specific property values.
 
-**Factory Function Pattern**:
-
-```typescript
-// mcp-workflow/src/tools/utilities/inputExtraction/factory.ts
-export interface InputExtractionToolOptions {
-  /** Optional prefix for the tool ID */
-  toolIdPrefix?: string;
-
-  /** Orchestrator tool ID that this tool reports back to */
-  orchestratorToolId: string;
-
-  /** Optional logger instance */
-  logger?: Logger;
-}
-
-export function createInputExtractionTool(
-  server: McpServer,
-  options: InputExtractionToolOptions
-): InputExtractionTool {
-  const toolId = options.toolIdPrefix
-    ? `${options.toolIdPrefix}-magen-input-extraction`
-    : 'magen-input-extraction';
-
-  return new InputExtractionTool(server, toolId, options.orchestratorToolId, options.logger);
-}
-```
-
-**Tool Implementation**:
+**Service Implementation**:
 
 ```typescript
-// mcp-workflow/src/tools/utilities/inputExtraction/tool.ts
-export class InputExtractionTool extends AbstractWorkflowTool<InputExtractionToolMetadata> {
-  constructor(server: McpServer, toolId: string, orchestratorToolId: string, logger?: Logger) {
-    super(
-      server,
-      createInputExtractionMetadata(toolId),
-      orchestratorToolId,
-      'InputExtractionTool',
-      logger
+// mcp-workflow/src/services/inputExtractionService.ts
+import { NodeGuidanceData } from '../common/metadata.js';
+
+export class InputExtractionService
+  extends AbstractService
+  implements InputExtractionServiceProvider
+{
+  constructor(
+    private readonly toolId: string, // e.g., 'magen-input-extraction'
+    toolExecutor?: ToolExecutor,
+    logger?: Logger
+  ) {
+    super('InputExtractionService', toolExecutor, logger);
+  }
+
+  extractProperties(userInput: unknown, properties: PropertyMetadataCollection): ExtractionResult {
+    // Compute result schema dynamically based on properties
+    const resultSchema = this.preparePropertyResultsSchema(properties);
+
+    // Create NodeGuidanceData directly with computed schema
+    const nodeGuidanceData: NodeGuidanceData<typeof resultSchema> = {
+      nodeId: this.toolId,
+      taskGuidance: this.generateTaskGuidance(userInput, properties),
+      resultSchema: resultSchema,
+      exampleOutput: JSON.stringify({
+        extractedProperties: {
+          /* example values */
+        },
+      }),
+    };
+
+    // Execute with logging and custom validation
+    return this.executeToolWithLogging(nodeGuidanceData, resultSchema, (rawResult, schema) =>
+      this.validateAndFilterResult(rawResult, properties, schema)
     );
   }
 
-  public handleRequest = async (input: InputExtractionWorkflowInput) => {
-    const guidance = this.generateInputExtractionGuidance(input);
-    return this.finalizeWorkflowToolOutput(guidance, input.workflowStateData, input.resultSchema);
-  };
-
-  private generateInputExtractionGuidance(input: InputExtractionWorkflowInput): string {
-    // Generate LLM prompt for extracting structured data from user utterance
-    // (Implementation extracted from mobile-native-mcp-server)
+  private preparePropertyResultsSchema(properties: PropertyMetadataCollection) {
+    // Build a Zod schema dynamically based on the properties being extracted
+    const shape: Record<string, z.ZodType> = {};
+    for (const [name, metadata] of Object.entries(properties)) {
+      shape[name] = metadata.zodType.nullable().catch(ctx => ctx.input);
+    }
+    return z.object({ extractedProperties: z.object(shape).passthrough() });
   }
 }
 ```
 
-**Design Rationale: Why Factory Functions?**
+**Design Rationale: Services vs Tools**
 
-1. **Collision Avoidance**: MCP environments often have multiple servers running simultaneously. Fixed tool IDs would cause collisions.
-2. **Flexibility with Defaults**: Simple case (single server) requires no configuration. Multi-server environments can easily add prefixes.
-3. **Consistent Pattern**: Mirrors the orchestrator's configurable tool ID pattern.
-4. **Convention**: We establish a convention (use project prefix) without enforcing it.
+The original design used separate MCP tools (`GetInputTool`, `InputExtractionTool`) with factory functions. This was simplified to services that construct `NodeGuidanceData` directly for several reasons:
 
-**Naming Convention for Multi-Server Environments**:
+1. **Direct Guidance Mode**: These operations benefit from direct guidance mode - the orchestrator generates the prompt inline, eliminating an extra tool call round-trip.
 
-When deploying multiple MCP servers that use `mcp-workflow` in the same environment:
+2. **Dynamic Schemas**: `InputExtractionService` computes its result schema at runtime based on the properties being extracted. The previous design required a "nominal" schema placeholder that was never actually used, creating a design inconsistency.
 
-```typescript
-// Mobile server
-const getInputTool = createGetInputTool(server, {
-  toolIdPrefix: 'mobile',
-  orchestratorToolId: 'mobile-orchestrator',
-});
-
-// Sales ops server
-const getInputTool = createGetInputTool(server, {
-  toolIdPrefix: 'salesops',
-  orchestratorToolId: 'salesops-orchestrator',
-});
-
-// Customer success server
-const getInputTool = createGetInputTool(server, {
-  toolIdPrefix: 'cs',
-  orchestratorToolId: 'cs-orchestrator',
-});
-```
-
-This ensures unique tool names across all servers while maintaining a consistent naming pattern.
+3. **Simpler Interface**: Services construct `NodeGuidanceData` directly with just 4 fields (nodeId, taskGuidance, resultSchema, optional exampleOutput), rather than needing factory functions, metadata types, and input schemas.
 
 ---
 
@@ -1104,8 +1137,8 @@ import {
 // Import orchestrator
 import { OrchestratorTool, OrchestratorConfig } from '@salesforce/magen-mcp-workflow';
 
-// Import utility tools
-import { createGetInputTool, createInputExtractionTool } from '@salesforce/magen-mcp-workflow';
+// Import result schema for direct guidance mode (GetInputService)
+import { GET_INPUT_WORKFLOW_RESULT_SCHEMA } from '@salesforce/magen-mcp-workflow';
 
 // Import storage utilities
 import {
@@ -1115,10 +1148,12 @@ import {
   WELL_KNOWN_DIR_NAME,
 } from '@salesforce/magen-mcp-workflow';
 
-// Import types
+// Import types for interrupt data
 import {
-  WorkflowToolMetadata,
+  NodeGuidanceData,
   MCPToolInvocationData,
+  InterruptData,
+  isNodeGuidanceData,
   Logger,
 } from '@salesforce/magen-mcp-workflow';
 ```
@@ -1166,15 +1201,14 @@ const workflow = new StateGraph(SimpleState)
   .addEdge(processNode.name, END);
 // Note: Do NOT call .compile() - OrchestratorTool handles compilation internally
 
-// 4. Configure the orchestrator
-const orchestratorConfig: OrchestratorConfig<typeof SimpleState> = {
+// 4. Configure the orchestrator (uses default ORCHESTRATOR_INPUT_SCHEMA)
+const orchestratorConfig: OrchestratorConfig = {
   toolId: 'simple-orchestrator',
   title: 'Simple Orchestrator',
   description: 'A simple workflow orchestrator',
   workflow, // Pass the uncompiled StateGraph
-  // context defaults to { environment: 'production' }
-  // Production uses JsonCheckpointSaver with .magen/ directory
-  // For tests, pass: context: { environment: 'test' } to use MemorySaver
+  // inputSchema omitted - uses the default ORCHESTRATOR_INPUT_SCHEMA
+  // stateManager defaults to production WorkflowStateManager
 };
 
 // 5. Create and register the orchestrator
@@ -1192,9 +1226,12 @@ orchestrator.register({
 
 ## Document History
 
-| Version | Date       | Author       | Changes              |
-| ------- | ---------- | ------------ | -------------------- |
-| 1.0     | 2025-10-22 | AI Assistant | Initial TDD creation |
+| Version | Date       | Author       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------- | ---------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2025-10-22 | AI Assistant | Initial TDD creation                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 1.1     | 2026-01-13 | AI Assistant | Added NodeGuidanceData interface with exampleOutput support, documented direct guidance mode, added createThreadConfig method for OrchestratorTool extensibility                                                                                                                                                                                                                                                                                         |
+| 1.2     | 2026-01-25 | AI Assistant | Simplified NodeGuidanceData: removed inputSchema/input properties (not used by orchestrator), changed generic from TInputSchema to TResultSchema, removed BaseInterruptData interface. Updated InterruptData union to have two generic parameters. Removed utility metadata factory functions and type aliases - services now construct NodeGuidanceData directly. Deleted inputExtraction/metadata.ts entirely (result schema is computed dynamically). |
+| 1.3     | 2026-02-09 | AI Assistant | Made OrchestratorTool, OrchestratorConfig, and OrchestratorToolMetadata generic over TInputSchema (defaulting to ORCHESTRATOR_INPUT_SCHEMA). Added extractUserInput() and extractWorkflowStateData() protected extractor methods. Made createOrchestrationPrompt() and createDirectGuidancePrompt() protected for subclass overridability. Added DefaultOrchestratorInputSchema type alias. Added custom schema consumer example.                        |
 
 ---
 

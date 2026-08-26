@@ -6,39 +6,36 @@
  */
 
 import { State } from '../metadata.js';
-import { BaseNode, Logger, ToolExecutor } from '@salesforce/magen-mcp-workflow';
-import {
-  BuildValidationService,
-  BuildValidationServiceProvider,
-} from '../services/buildValidationService.js';
+import { BaseNode, WorkflowRunnableConfig } from '@salesforce/magen-mcp-workflow';
+import { BuildExecutor } from '../../execution/build/buildExecutor.js';
 
 export class BuildValidationNode extends BaseNode<State> {
-  private readonly buildValidationService: BuildValidationServiceProvider;
+  private readonly buildExecutor: BuildExecutor;
 
-  constructor(
-    buildValidationService?: BuildValidationServiceProvider,
-    toolExecutor?: ToolExecutor,
-    logger?: Logger
-  ) {
+  constructor(buildExecutor: BuildExecutor) {
     super('validateBuild');
-    this.buildValidationService =
-      buildValidationService ?? new BuildValidationService(toolExecutor, logger);
+    this.buildExecutor = buildExecutor;
   }
 
-  execute = (state: State): Partial<State> => {
+  execute = async (state: State, config?: WorkflowRunnableConfig): Promise<Partial<State>> => {
     // Increment build attempt count
     const attemptCount = (state.buildAttemptCount ?? 0) + 1;
 
-    const result = this.buildValidationService.executeBuild({
-      platform: state.platform,
-      projectPath: state.projectPath,
-      projectName: state.projectName,
-    });
+    // Get progress reporter from config (passed by orchestrator)
+    const progressReporter = config?.configurable?.progressReporter;
+
+    // Execute build with progress reporter
+    const result = await this.buildExecutor.execute(
+      {
+        platform: state.platform,
+        projectPath: state.projectPath,
+        projectName: state.projectName,
+      },
+      progressReporter
+    );
 
     return {
       buildSuccessful: result.buildSuccessful,
-      // Reset attempt count to 0 on success, so if we return to build validation
-      // later in the workflow, we start fresh
       buildAttemptCount: result.buildSuccessful ? 0 : attemptCount,
       buildOutputFilePath: result.buildOutputFilePath,
     };

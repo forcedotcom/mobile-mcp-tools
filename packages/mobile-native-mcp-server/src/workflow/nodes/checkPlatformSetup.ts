@@ -10,6 +10,10 @@ import { BaseNode, createComponentLogger, Logger } from '@salesforce/magen-mcp-w
 import z from 'zod';
 import { execSync } from 'child_process';
 import { loadAndSetEnvVars } from '../utils/envConfig.js';
+import {
+  filterAndroidSetupFailures,
+  checkAndroidPlatformAndEmulatorImage,
+} from '../utils/androidPlatformCheck.js';
 
 const REQUIREMENT_RESULT_SCHEMA = z.object({
   title: z.string().describe('The title of the requirement check'),
@@ -31,7 +35,7 @@ const PLATFORM_CHECK_SCHEMA = z.object({
 
 type PlatformCheckResult = z.infer<typeof PLATFORM_CHECK_SCHEMA>;
 
-const PLATFORM_API_LEVELS = {
+export const PLATFORM_API_LEVELS = {
   iOS: '17.0',
   Android: '35',
 } as const;
@@ -43,7 +47,17 @@ export class PlatformCheckNode extends BaseNode<State> {
     this.logger = logger ?? createComponentLogger('PlatformCheckNode');
   }
 
-  execute = (state: State): Partial<State> => {
+  /**
+   * Get Android environment properties from process.env to carry in state.
+   */
+  private getAndroidEnvProperties(): Pick<State, 'androidHome' | 'javaHome'> {
+    return {
+      androidHome: process.env.ANDROID_HOME ?? '',
+      javaHome: process.env.JAVA_HOME ?? '',
+    };
+  }
+
+  execute = async (state: State): Promise<Partial<State>> => {
     const platform = state.platform;
     const apiLevel = PLATFORM_API_LEVELS[platform];
     if (!apiLevel) {
@@ -64,6 +78,7 @@ export class PlatformCheckNode extends BaseNode<State> {
         if (!process.env.ANDROID_HOME || !process.env.JAVA_HOME) {
           return {
             validPlatformSetup: false,
+            ...this.getAndroidEnvProperties(),
           };
         }
       }
@@ -74,23 +89,60 @@ export class PlatformCheckNode extends BaseNode<State> {
 
     try {
       this.logger.debug(`Executing command (pre-execution)`, { command });
-      const output = execSync(command, { encoding: 'utf-8', timeout: 20000 });
+      const output = execSync(command, { encoding: 'utf-8', timeout: 120000 });
 
       const platformCheckResult = this.parsePlatformCheckOutput(output, command);
 
       this.logger.debug(`Executing command (post-execution)`, { output });
+
+      if (platform === 'Android') {
+        // Parse or schema error: no tests and CLI reported failure (e.g. invalid JSON).
+        if (platformCheckResult.tests.length === 0 && !platformCheckResult.allRequirementsMet) {
+          return {
+            validPlatformSetup: false,
+            workflowFatalErrorMessages:
+              platformCheckResult.errorMessages.length > 0
+                ? platformCheckResult.errorMessages
+                : undefined,
+            ...this.getAndroidEnvProperties(),
+          };
+        }
+        const { filteredErrorMessages, allOtherRequirementsMet } = filterAndroidSetupFailures(
+          platformCheckResult.tests,
+          command
+        );
+        this.logger.debug(
+          `Confirming the Android SDK and emulator image satisfy the requirement for API level ${apiLevel}`
+        );
+        const directCheck = await checkAndroidPlatformAndEmulatorImage(apiLevel, this.logger);
+        const validPlatformSetup = allOtherRequirementsMet && directCheck.success;
+        const workflowFatalErrorMessages = [
+          ...filteredErrorMessages,
+          ...(directCheck.errorMessage ? [directCheck.errorMessage] : []),
+        ].filter(Boolean);
+        return {
+          validPlatformSetup,
+          workflowFatalErrorMessages:
+            workflowFatalErrorMessages.length > 0 ? workflowFatalErrorMessages : undefined,
+          ...this.getAndroidEnvProperties(),
+        };
+      }
+
       return {
         validPlatformSetup: platformCheckResult.allRequirementsMet,
         workflowFatalErrorMessages:
           platformCheckResult.errorMessages.length > 0
             ? platformCheckResult.errorMessages
             : undefined,
+        ...this.getAndroidEnvProperties(),
       };
     } catch (error) {
+      this.logger.error(`Error executing platform check command: ${command}`, error as Error);
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       return {
         validPlatformSetup: false,
         workflowFatalErrorMessages: [`Error executing platform check command: ${errorMessage}`],
+        ...this.getAndroidEnvProperties(),
       };
     }
   };
@@ -102,6 +154,7 @@ export class PlatformCheckNode extends BaseNode<State> {
   ): {
     allRequirementsMet: boolean;
     errorMessages: string[];
+    tests: PlatformCheckResult['tests'];
   } {
     try {
       const environmentCheckReport = JSON.parse(output);
@@ -114,12 +167,14 @@ export class PlatformCheckNode extends BaseNode<State> {
         errorMessages: platformCheckResult.tests
           .filter(test => !test.hasPassed)
           .map(test => `Platform setup check for "${command}" failed: ${test.message}`),
+        tests: platformCheckResult.tests,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : `${error}`;
       return {
         allRequirementsMet: false,
         errorMessages: [`Command output is not valid JSON: ${errorMessage}`],
+        tests: [],
       };
     }
   }

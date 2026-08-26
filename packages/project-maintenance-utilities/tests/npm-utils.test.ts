@@ -121,11 +121,149 @@ describe('NpmUtils', () => {
       expect(() => npmUtils.createTarball(packagePath)).toThrow('Pack failed');
       expect(mockProcess.getCurrentWorkingDirectory()).toBe(originalCwd);
     });
+
+    it('should resolve wildcard dependencies before packing', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const originalPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '*',
+          },
+        },
+        null,
+        2
+      );
+      const modifiedPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '^0.0.1',
+          },
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), originalPackageJson);
+      mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball-content');
+
+      const resolveWildcards = (pkgPath: string) => {
+        expect(pkgPath).toBe(packagePath);
+        return {
+          originalContent: originalPackageJson,
+          modifiedContent: modifiedPackageJson,
+        };
+      };
+
+      npmUtils.createTarball(packagePath, resolveWildcards);
+
+      // Verify package.json was restored after packing (it should be back to original)
+      const restoredContent = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(restoredContent).toBe(originalPackageJson);
+
+      // Verify the resolver was called (implicitly verified by the fact that restoration happened)
+      // The modification happens internally and is restored, so we can't directly verify it
+      // but we can verify the final state is correct
+    });
+
+    it('should not modify package.json if resolver returns same content', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const packageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            'some-package': '^1.0.0',
+          },
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), packageJson);
+      mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball-content');
+
+      const resolveWildcards = () => ({
+        originalContent: packageJson,
+        modifiedContent: packageJson, // Same content
+      });
+
+      npmUtils.createTarball(packagePath, resolveWildcards);
+
+      // Verify package.json was not modified
+      const content = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(content).toBe(packageJson);
+    });
+
+    it('should restore package.json even if packing fails', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const originalPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '*',
+          },
+        },
+        null,
+        2
+      );
+      const modifiedPackageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+          dependencies: {
+            '@salesforce/workflow': '^0.0.1',
+          },
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), originalPackageJson);
+      mockProcess.setCommandToThrow('npm pack', 'Pack failed');
+
+      const resolveWildcards = () => ({
+        originalContent: originalPackageJson,
+        modifiedContent: modifiedPackageJson,
+      });
+
+      expect(() => npmUtils.createTarball(packagePath, resolveWildcards)).toThrow('Pack failed');
+
+      // Verify package.json was restored even after error
+      const restoredContent = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(restoredContent).toBe(originalPackageJson);
+    });
+
+    it('should work without resolver function', () => {
+      const packagePath = path.resolve(path.sep, 'test', 'package');
+      const packageJson = JSON.stringify(
+        {
+          name: 'test-package',
+          version: '1.0.0',
+        },
+        null,
+        2
+      );
+
+      mockFs.setFileContent(path.join(packagePath, 'package.json'), packageJson);
+      mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball-content');
+
+      const result = npmUtils.createTarball(packagePath);
+
+      expect(result.tarballName).toBe('test-package-1.0.0.tgz');
+      // Verify package.json was not modified
+      const content = mockFs.getFileContent(path.join(packagePath, 'package.json'));
+      expect(content).toBe(packageJson);
+    });
   });
 
   describe('isVersionPublished', () => {
     it('should return true if version is published', () => {
-      mockProcess.setCommandResponse('npm view "test-package@1.0.0" version', '1.0.0');
+      mockProcess.setCommandResponse('npm view test-package@1.0.0 version', '1.0.0');
 
       const result = npmUtils.isVersionPublished('test-package', '1.0.0');
 
@@ -133,7 +271,7 @@ describe('NpmUtils', () => {
     });
 
     it('should return false if version is not published', () => {
-      mockProcess.setCommandToThrow('npm view "test-package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view test-package@1.0.0 version', 'Version not found');
 
       const result = npmUtils.isVersionPublished('test-package', '1.0.0');
 
@@ -141,7 +279,7 @@ describe('NpmUtils', () => {
     });
 
     it('should handle scoped packages', () => {
-      mockProcess.setCommandResponse('npm view "@scope/package@1.0.0" version', '1.0.0');
+      mockProcess.setCommandResponse('npm view @scope/package@1.0.0 version', '1.0.0');
 
       const result = npmUtils.isVersionPublished('@scope/package', '1.0.0');
 
@@ -153,20 +291,20 @@ describe('NpmUtils', () => {
     it('should publish successfully', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --access public`,
+        `npm publish ${tarballPath} --tag latest --access public`,
         'Published successfully'
       );
 
       expect(() => npmUtils.publishToNpm(tarballPath, 'latest', false)).not.toThrow();
 
       const commands = mockProcess.getExecutedCommands();
-      expect(commands).toContain(`npm publish "${tarballPath}" --tag "latest" --access public`);
+      expect(commands).toContain(`npm publish ${tarballPath} --tag latest --access public`);
     });
 
     it('should handle dry run mode', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`,
+        `npm publish ${tarballPath} --tag latest --access public --dry-run`,
         'Dry run successful'
       );
 
@@ -174,14 +312,14 @@ describe('NpmUtils', () => {
 
       const commands = mockProcess.getExecutedCommands();
       expect(commands).toContain(
-        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`
+        `npm publish ${tarballPath} --tag latest --access public --dry-run`
       );
     });
 
     it('should use default tag if not specified', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandResponse(
-        `npm publish "${tarballPath}" --tag "latest" --access public`,
+        `npm publish ${tarballPath} --tag latest --access public`,
         'Published successfully'
       );
 
@@ -191,7 +329,7 @@ describe('NpmUtils', () => {
     it('should throw descriptive error on publish failure', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandToThrow(
-        `npm publish "${tarballPath}" --tag "latest" --access public`,
+        `npm publish ${tarballPath} --tag latest --access public`,
         'Publish failed'
       );
 
@@ -203,7 +341,7 @@ describe('NpmUtils', () => {
     it('should throw descriptive error on dry run validation failure', () => {
       const tarballPath = path.resolve(path.sep, 'path', 'to', 'tarball.tgz');
       mockProcess.setCommandToThrow(
-        `npm publish "${tarballPath}" --tag "latest" --access public --dry-run`,
+        `npm publish ${tarballPath} --tag latest --access public --dry-run`,
         'Validation failed'
       );
 
@@ -219,10 +357,10 @@ describe('NpmUtils', () => {
 
     beforeEach(() => {
       mockProcess.setCommandResponse(
-        `tar -tzf "${tarballPath}"`,
+        `tar -tzf ${tarballPath}`,
         'package/\npackage/package.json\npackage/index.js\n'
       );
-      mockProcess.setCommandResponse(`tar -xzf "${tarballPath}" -C "temp-verify"`, '');
+      mockProcess.setCommandResponse(`tar -xzf ${tarballPath} -C temp-verify`, '');
       mockFs.setFileContent(
         path.join('temp-verify', 'package', 'package.json'),
         JSON.stringify({
@@ -266,8 +404,8 @@ describe('NpmUtils', () => {
     it('should handle missing package.json', () => {
       // Clear the beforeEach setup and don't set the package.json file
       mockFs.clear();
-      mockProcess.setCommandResponse(`tar -tzf "${tarballPath}"`, 'package/\npackage/index.js\n');
-      mockProcess.setCommandResponse(`tar -xzf "${tarballPath}" -C "temp-verify"`, '');
+      mockProcess.setCommandResponse(`tar -tzf ${tarballPath}`, 'package/\npackage/index.js\n');
+      mockProcess.setCommandResponse(`tar -xzf ${tarballPath} -C temp-verify`, '');
       // Don't set the package.json file to exist
 
       const result = npmUtils.verifyTarball(tarballPath, expectedVersion);
@@ -278,7 +416,7 @@ describe('NpmUtils', () => {
 
     it('should handle extraction errors', () => {
       mockProcess.clearCommandResponses();
-      mockProcess.setCommandToThrow(`tar -tzf "${tarballPath}"`, 'Extraction failed');
+      mockProcess.setCommandToThrow(`tar -tzf ${tarballPath}`, 'Extraction failed');
 
       const result = npmUtils.verifyTarball(tarballPath, expectedVersion);
 
@@ -289,10 +427,10 @@ describe('NpmUtils', () => {
     it('should use custom temp directory', () => {
       const customTempDir = 'custom-temp';
       mockProcess.setCommandResponse(
-        `tar -tzf "${tarballPath}"`,
+        `tar -tzf ${tarballPath}`,
         'package/\npackage/package.json\npackage/index.js\n'
       );
-      mockProcess.setCommandResponse(`tar -xzf "${tarballPath}" -C "${customTempDir}"`, '');
+      mockProcess.setCommandResponse(`tar -xzf ${tarballPath} -C ${customTempDir}`, '');
       // The verifyTarball method creates the directory if it doesn't exist, so we need to ensure it's created
       mockFs.setDirectoryExists(customTempDir);
       mockFs.setFileContent(

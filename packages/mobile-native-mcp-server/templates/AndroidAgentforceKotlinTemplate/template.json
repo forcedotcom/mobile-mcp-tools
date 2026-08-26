@@ -1,0 +1,95 @@
+{
+  "$schema": "../template-schema.json",
+  "version": "0.0.1",
+  "platform": "android",
+  "displayName": "Agentforce SDK Demo Template (Android)",
+  "description": "A minimal Android native Kotlin application template that integrates with AgentforceSDK for service agents. This template provides a foundation for building Android apps that enable service agents to have conversations with customers using Jetpack Compose and the AgentforceSDK.",
+  "useCase": "Use this template when you need to create a minimal Android native app for service agents that integrates with AgentforceSDK. It's ideal for developers who want a simple starting point for building agent-facing applications with chat and conversation capabilities.",
+  "features": [
+    "native-android",
+    "kotlin",
+    "jetpack-compose",
+    "agentforce-sdk",
+    "service-agent",
+    "chat",
+    "conversation",
+    "material3"
+  ],
+  "complexity": "simple",
+  "customizationPoints": [
+    {
+      "feature": "agentforce-configuration",
+      "description": "Configure AgentforceSDK settings including ES developer name, organization ID, and API URL",
+      "files": [
+        "app/src/main/java/com/salesforce/agentforcedemo/Settings.kt",
+        "app/src/main/java/com/salesforce/agentforcedemo/AgentforceViewModel.kt",
+        "app/src/main/java/com/salesforce/agentforcedemo/CredentialProvider.kt"
+      ],
+      "instructions": [
+        "Update Settings.kt with your ES developer name, organization ID, API URL, and agent ID",
+        "Modify AgentforceViewModel.kt to customize ServiceAgentConfiguration",
+        "Update CredentialProvider.kt with your credential handling logic"
+      ]
+    },
+    {
+      "feature": "ui-customization",
+      "description": "Customize the Jetpack Compose interface and chat experience",
+      "files": [
+        "app/src/main/java/com/salesforce/agentforcedemo/screens/HomeScreen.kt",
+        "app/src/main/java/com/salesforce/agentforcedemo/screens/ChatScreen.kt",
+        "app/src/main/java/com/salesforce/agentforcedemo/AgentforceViewModel.kt",
+        "app/src/main/res/values/themes.xml"
+      ],
+      "instructions": [
+        "Modify HomeScreen.kt to customize the home screen UI",
+        "Modify ChatScreen.kt to customize the chat UI",
+        "Update AgentforceViewModel.kt to add custom state management",
+        "Customize Material 3 theme in themes.xml"
+      ]
+    },
+    {
+      "feature": "authentication",
+      "description": "Customize credential provider and authentication flow",
+      "files": [
+        "app/src/main/java/com/salesforce/agentforcedemo/CredentialProvider.kt",
+        "app/src/main/java/com/salesforce/agentforcedemo/MainApplication.kt"
+      ],
+      "instructions": [
+        "Update CredentialProvider.kt to implement your authentication mechanism",
+        "Modify MainApplication.kt for custom app initialization",
+        "Configure credential refresh logic if needed",
+        "Add custom authentication UI if required"
+      ]
+    }
+  ],
+  "properties": {
+    "templatePrerequisites": {
+      "properties": {
+        "templateProperties": {
+          "properties": {
+            "developerName": {
+              "value": "",
+              "required": true,
+              "description": "ES developer name from your enhanced in-app chat deployment configuration"
+            },
+            "organizationId": {
+              "value": "",
+              "required": true,
+              "description": "Organization ID from your enhanced in-app chat deployment configuration"
+            },
+            "apiURL": {
+              "value": "",
+              "required": true,
+              "description": "API URL from your enhanced in-app chat deployment configuration"
+            },
+            "agentId": {
+              "value": "",
+              "required": true,
+              "description": "Agent ID from your enhanced in-app chat deployment configuration"
+            }
+          }
+        }
+      }
+    }
+  }
+}

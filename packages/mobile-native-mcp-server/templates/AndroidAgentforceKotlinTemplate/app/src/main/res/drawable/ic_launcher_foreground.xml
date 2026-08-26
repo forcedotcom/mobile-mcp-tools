@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Chat bubble icon representing Agentforce -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,30 C41.85,30 32,38.73 32,49.5 C32,55.11 34.86,60.15 39.5,63.54 L39.5,72 L48.42,66.69 C50.19,67.14 52.06,67.5 54,67.5 C66.15,67.5 76,58.77 76,48 C76,37.23 66.15,30 54,30 Z" />
+    <!-- Inner dot indicating active chat -->
+    <path
+        android:fillColor="#0176D3"
+        android:pathData="M54,45 C56.21,45 58,46.79 58,49 C58,51.21 56.21,53 54,53 C51.79,53 50,51.21 50,49 C50,46.79 51.79,45 54,45 Z" />
+    <!-- Left dot -->
+    <path
+        android:fillColor="#0176D3"
+        android:pathData="M44,45 C46.21,45 48,46.79 48,49 C48,51.21 46.21,53 44,53 C41.79,53 40,51.21 40,49 C40,46.79 41.79,45 44,45 Z" />
+    <!-- Right dot -->
+    <path
+        android:fillColor="#0176D3"
+        android:pathData="M64,45 C66.21,45 68,46.79 68,49 C68,51.21 66.21,53 64,53 C61.79,53 60,51.21 60,49 C60,46.79 61.79,45 64,45 Z" />
+</vector>

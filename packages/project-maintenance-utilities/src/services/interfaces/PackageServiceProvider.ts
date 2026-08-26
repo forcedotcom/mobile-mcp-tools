@@ -15,4 +15,8 @@ export interface PackageServiceProvider {
   createReleaseName(displayName: string, version: string): string;
   parseReleaseTag(releaseTag: string): ParsedReleaseTag;
   validatePackageVersion(packagePath: string, expectedVersion: string): PackageInfo;
+  resolveWildcardDependencies(
+    packagePath: string,
+    workspaceRoot: string
+  ): { originalContent: string; modifiedContent: string };
 }

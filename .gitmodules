@@ -1,4 +1,0 @@
-[submodule "packages/mobile-native-mcp-server/templates"]
-	path = packages/mobile-native-mcp-server/templates
-	url = https://github.com/jhorst11/SalesforceMobileSDK-Templates.git
-	branch = spike-templates-metadata

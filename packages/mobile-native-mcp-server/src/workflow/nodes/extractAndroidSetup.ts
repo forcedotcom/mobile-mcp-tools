@@ -12,7 +12,7 @@ import {
   createComponentLogger,
   createUserInputExtractionNode,
 } from '@salesforce/magen-mcp-workflow';
-import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../../tools/utils/sfmobile-native-input-extraction/metadata.js';
+import { SFMOBILE_NATIVE_INPUT_EXTRACTION_TOOL_ID } from '../../common.js';
 import { saveEnvVarsToFile } from '../utils/envConfig.js';
 
 /**
@@ -41,7 +41,7 @@ export class ExtractAndroidSetupNode extends BaseNode<State> {
   }
 
   execute = (state: State): Partial<State> => {
-    const result = this.baseExtractNode.execute(state);
+    const result = this.baseExtractNode.execute(state) as Partial<State>;
     const errorMessages: string[] = [];
 
     // Validate extracted paths

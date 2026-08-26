@@ -5,15 +5,34 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Annotation, StateGraph, START, END, interrupt } from '@langchain/langgraph';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ServerRequest, ServerNotification } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { z } from 'zod';
 import { OrchestratorTool, OrchestratorConfig } from '../../../src/tools/orchestrator/index.js';
 import { WorkflowStateManager } from '../../../src/checkpointing/workflowStateManager.js';
 import { MockLogger } from '../../utils/MockLogger.js';
 import { MockFileSystem } from '../../utils/MockFileSystem.js';
-import { MCPToolInvocationData } from '../../../src/common/metadata.js';
+import { MCPToolInvocationData, NodeGuidanceData } from '../../../src/common/metadata.js';
+import { GET_INPUT_WORKFLOW_RESULT_SCHEMA } from '../../../src/tools/utilities/getInput/metadata.js';
+
+/**
+ * Creates a mock RequestHandlerExtra object for testing.
+ * The extra parameter is required by the ToolCallback type signature.
+ */
+function createMockExtra(): RequestHandlerExtra<ServerRequest, ServerNotification> {
+  return {
+    signal: new AbortController().signal,
+    requestId: 'test-request-id',
+    sendNotification: vi.fn().mockResolvedValue(undefined),
+    sendRequest: vi.fn().mockResolvedValue({}),
+    _meta: {
+      progressToken: 'test-progress-token',
+    },
+  } as unknown as RequestHandlerExtra<ServerRequest, ServerNotification>;
+}
 
 // Create a simple test state for testing
 const TestState = Annotation.Root({
@@ -124,10 +143,13 @@ describe('OrchestratorTool', () => {
 
       const orchestrator = new OrchestratorTool(server, config);
 
-      const result = await orchestrator.handleRequest({
-        userInput: { test: 'data' },
-        workflowStateData: { thread_id: '' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: { test: 'data' },
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       expect(result).toBeDefined();
       expect(result.content).toBeDefined();
@@ -159,14 +181,20 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       // Make two requests without thread IDs
-      await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
-      await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
+      await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+      await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       // Check that thread IDs were logged and start with 'mmw-'
       const processingLogs = mockLogger.logs.filter(log =>
@@ -201,10 +229,13 @@ describe('OrchestratorTool', () => {
 
       const orchestrator = new OrchestratorTool(server, config);
 
-      const result = await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       expect(result.structuredContent).toBeDefined();
       const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
@@ -231,10 +262,13 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       await expect(
-        orchestrator.handleRequest({
-          userInput: {},
-          workflowStateData: { thread_id: '' },
-        })
+        orchestrator.handleRequest(
+          {
+            userInput: {},
+            workflowStateData: { thread_id: '' },
+          },
+          createMockExtra()
+        )
       ).rejects.toThrow();
 
       // Verify error was logged
@@ -262,10 +296,13 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       const existingThreadId = 'mmw-12345-abc123';
-      await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: existingThreadId },
-      });
+      await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: existingThreadId },
+        },
+        createMockExtra()
+      );
 
       // Find the processing log and verify it used the existing thread ID
       const processingLog = mockLogger.logs.find(log =>
@@ -324,10 +361,13 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       // Should execute without attempting file I/O
-      const result = await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       expect(result).toBeDefined();
 
@@ -369,7 +409,7 @@ describe('OrchestratorTool', () => {
       // Create a workflow that interrupts to invoke an MCP tool
       const workflow = new StateGraph(TestState)
         .addNode('interruptNode', (_state: State) => {
-          // Simulate an interrupt for MCP tool invocation
+          // Simulate an interrupt for MCP tool invocation (delegate mode)
           const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
             llmMetadata: {
               name: 'test-mcp-tool',
@@ -399,10 +439,13 @@ describe('OrchestratorTool', () => {
 
       const orchestrator = new OrchestratorTool(server, config);
 
-      const result = await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       expect(result.structuredContent).toBeDefined();
       const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
@@ -444,14 +487,207 @@ describe('OrchestratorTool', () => {
 
       const orchestrator = new OrchestratorTool(server, config);
 
-      const result = await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
       // Should reference the custom tool ID in the prompt
       expect(output.orchestrationInstructionsPrompt).toContain(customToolId);
+    });
+
+    it('should generate direct guidance prompt when NodeGuidanceData is used', async () => {
+      const orchestratorToolId = 'test-direct-guidance-orchestrator';
+
+      const workflow = new StateGraph(TestState)
+        .addNode('getUserInput', (_state: State) => {
+          // Create NodeGuidanceData for direct guidance mode
+          const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_RESULT_SCHEMA> = {
+            nodeId: 'test-get-input',
+            taskGuidance: `
+# ROLE
+You are an input gathering tool.
+
+# TASK
+Gather user input for platform and projectName.
+
+# INSTRUCTIONS
+1. Ask the user for platform
+2. Ask the user for projectName
+3. **IMPORTANT:** YOU MUST NOW WAIT for the user to provide input.
+`,
+            resultSchema: GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+          };
+          return interrupt(nodeGuidanceData);
+        })
+        .addEdge(START, 'getUserInput')
+        .addEdge('getUserInput', END);
+
+      const config: OrchestratorConfig = {
+        toolId: orchestratorToolId,
+        title: 'Direct Guidance Test',
+        description: 'Tests direct guidance mode with NodeGuidanceData',
+        workflow,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new OrchestratorTool(server, config);
+
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result.structuredContent).toBeDefined();
+      const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
+      const prompt = output.orchestrationInstructionsPrompt;
+
+      // Should contain direct guidance prompt structure
+      expect(prompt).toContain('# ROLE');
+      expect(prompt).toContain('# TASK GUIDANCE');
+
+      // Should contain the taskGuidance content
+      expect(prompt).toContain('input gathering tool');
+      expect(prompt).toContain('YOU MUST NOW WAIT for the user');
+
+      // Input data is embedded directly in taskGuidance (no separate INPUT SCHEMA/DATA sections)
+      // The taskGuidance already contains all necessary context
+
+      // Should contain critical next step instructions
+      expect(prompt).toContain('# CRITICAL: REQUIRED NEXT STEP');
+      expect(prompt).toContain(orchestratorToolId);
+      expect(prompt).toContain('workflowStateData');
+
+      // Should contain output format section
+      expect(prompt).toContain('# OUTPUT FORMAT');
+      expect(prompt).toContain('MUST be a JSON object conforming to this schema');
+      expect(prompt).toContain('userUtterance');
+
+      // Should contain example tool call section
+      expect(prompt).toContain('# EXAMPLE TOOL CALL');
+
+      // Should NOT contain delegate mode content
+      expect(prompt).not.toContain('Invoke the following MCP server tool');
+    });
+
+    it('should use custom returnGuidance when provided in NodeGuidanceData', async () => {
+      const orchestratorToolId = 'test-return-guidance-orchestrator';
+      const customReturnMarker = '## CUSTOM RETURN GUIDANCE MARKER';
+
+      const workflow = new StateGraph(TestState)
+        .addNode('guidedNode', (_state: State) => {
+          const nodeGuidanceData: NodeGuidanceData<typeof GET_INPUT_WORKFLOW_RESULT_SCHEMA> = {
+            nodeId: 'test-custom-return',
+            taskGuidance: 'Do something interesting.',
+            resultSchema: GET_INPUT_WORKFLOW_RESULT_SCHEMA,
+            exampleOutput: '{ "userUtterance": "example" }',
+            returnGuidance: workflowStateData =>
+              `${customReturnMarker}\nReturn to orchestrator with thread: ${workflowStateData.thread_id}`,
+          };
+          return interrupt(nodeGuidanceData);
+        })
+        .addEdge(START, 'guidedNode')
+        .addEdge('guidedNode', END);
+
+      const config: OrchestratorConfig = {
+        toolId: orchestratorToolId,
+        title: 'Return Guidance Test',
+        description: 'Tests custom returnGuidance in NodeGuidanceData',
+        workflow,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new OrchestratorTool(server, config);
+
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result.structuredContent).toBeDefined();
+      const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
+      const prompt = output.orchestrationInstructionsPrompt;
+
+      // Should contain the custom return guidance
+      expect(prompt).toContain(customReturnMarker);
+      expect(prompt).toContain('Return to orchestrator with thread: mmw-');
+
+      // Should still contain the task guidance structure
+      expect(prompt).toContain('# TASK GUIDANCE');
+      expect(prompt).toContain('Do something interesting.');
+
+      // Should NOT contain the default return guidance sections
+      expect(prompt).not.toContain('# CRITICAL: REQUIRED NEXT STEP');
+      expect(prompt).not.toContain('# OUTPUT FORMAT');
+      expect(prompt).not.toContain('# EXAMPLE TOOL CALL');
+    });
+
+    it('should use delegate mode (orchestration prompt) when MCPToolInvocationData is used', async () => {
+      const workflow = new StateGraph(TestState)
+        .addNode('regularInterrupt', (_state: State) => {
+          // Create MCPToolInvocationData for delegate mode
+          const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
+            llmMetadata: {
+              name: 'regular-tool',
+              description: 'A regular MCP tool',
+              inputSchema: z.object({
+                someParam: z.string(),
+                workflowStateData: z.object({ thread_id: z.string() }),
+              }),
+            },
+            input: {
+              someParam: 'value',
+            },
+          };
+          return interrupt(mcpToolData);
+        })
+        .addEdge(START, 'regularInterrupt')
+        .addEdge('regularInterrupt', END);
+
+      const config: OrchestratorConfig = {
+        toolId: 'test-regular-orchestrator',
+        title: 'Regular Orchestrator',
+        description: 'Tests delegate mode orchestration prompt',
+        workflow,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new OrchestratorTool(server, config);
+
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result.structuredContent).toBeDefined();
+      const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
+      const prompt = output.orchestrationInstructionsPrompt;
+
+      // Should contain delegate mode (orchestration) prompt content
+      expect(prompt).toContain('# Your Role');
+      expect(prompt).toContain('# Your Task');
+      expect(prompt).toContain('Invoke the following MCP server tool');
+      expect(prompt).toContain('regular-tool');
+
+      // Should NOT contain direct guidance mode content
+      expect(prompt).not.toContain('# TASK GUIDANCE');
+      expect(prompt).not.toContain('# POST-TASK INSTRUCTIONS');
     });
 
     it('should resume interrupted workflow with user input (full interrupt->resume cycle)', async () => {
@@ -462,7 +698,7 @@ describe('OrchestratorTool', () => {
       // Create a workflow that always interrupts on first run, then processes resume input
       const workflow = new StateGraph(TestState)
         .addNode('requestData', (_state: State) => {
-          // Always interrupt to request MCP tool invocation
+          // Always interrupt to request MCP tool invocation (delegate mode)
           const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
             llmMetadata: {
               name: 'get-user-data',
@@ -508,10 +744,13 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       // STEP 1: Start workflow - should hit interrupt
-      const result1 = await orchestrator.handleRequest({
-        userInput: {},
-        workflowStateData: { thread_id: '' },
-      });
+      const result1 = await orchestrator.handleRequest(
+        {
+          userInput: {},
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       expect(result1.structuredContent).toBeDefined();
       const output1 = result1.structuredContent as { orchestrationInstructionsPrompt: string };
@@ -531,10 +770,13 @@ describe('OrchestratorTool', () => {
       mockLogger.reset();
 
       // STEP 2: Resume workflow with user input from "tool execution"
-      const result2 = await orchestrator.handleRequest({
-        userInput: { userName: 'John Doe' },
-        workflowStateData: { thread_id: threadId },
-      });
+      const result2 = await orchestrator.handleRequest(
+        {
+          userInput: { userName: 'John Doe' },
+          workflowStateData: { thread_id: threadId },
+        },
+        createMockExtra()
+      );
 
       // Should complete successfully
       expect(result2).toBeDefined();
@@ -577,10 +819,13 @@ describe('OrchestratorTool', () => {
 
       const orchestrator = new OrchestratorTool(server, config);
 
-      const result = await orchestrator.handleRequest({
-        userInput: { name: 'test' },
-        workflowStateData: { thread_id: '' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: { name: 'test' },
+          workflowStateData: { thread_id: '' },
+        },
+        createMockExtra()
+      );
 
       expect(result).toBeDefined();
       expect(result.structuredContent).toBeDefined();
@@ -608,11 +853,14 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       // Send input that violates schema - userInput should be Record<string, unknown>, not a string
-      const result = await orchestrator.handleRequest({
-        // @ts-expect-error: We are intentionally sending a string instead of an object
-        userInput: 'this should be an object, not a string',
-        workflowStateData: { thread_id: 'test-thread' },
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          // @ts-expect-error: We are intentionally sending a string instead of an object
+          userInput: 'this should be an object, not a string',
+          workflowStateData: { thread_id: 'test-thread' },
+        },
+        createMockExtra()
+      );
 
       // Should still return a valid result (starts new workflow with generated thread ID)
       expect(result).toBeDefined();
@@ -647,11 +895,14 @@ describe('OrchestratorTool', () => {
       const orchestrator = new OrchestratorTool(server, config);
 
       // Send input with malformed workflowStateData (should be object, not string)
-      const result = await orchestrator.handleRequest({
-        userInput: { test: 'data' },
-        // @ts-expect-error: We are intentionally sending a string instead of an object
-        workflowStateData: 'this is not an object',
-      });
+      const result = await orchestrator.handleRequest(
+        {
+          userInput: { test: 'data' },
+          // @ts-expect-error: We are intentionally sending a string instead of an object
+          workflowStateData: 'this is not an object',
+        },
+        createMockExtra()
+      );
 
       // Should still return a valid result
       expect(result).toBeDefined();
@@ -660,6 +911,300 @@ describe('OrchestratorTool', () => {
       // Verify error was logged and new workflow started
       expect(mockLogger.hasLoggedMessage('Error parsing orchestrator input', 'error')).toBe(true);
       expect(mockLogger.hasLoggedMessage('Starting new workflow execution', 'info')).toBe(true);
+    });
+  });
+
+  describe('custom input schema', () => {
+    // Define a custom input schema with different property names
+    const CUSTOM_INPUT_SCHEMA = z.object({
+      payload: z.unknown().optional(),
+      sessionState: z
+        .object({
+          thread_id: z.string(),
+        })
+        .default({ thread_id: '' }),
+    });
+
+    type CustomInput = z.infer<typeof CUSTOM_INPUT_SCHEMA>;
+
+    /**
+     * Custom orchestrator subclass that uses a different input schema.
+     * Overrides the extractor methods to map custom property names to
+     * the semantic values the orchestrator needs.
+     */
+    class CustomSchemaOrchestrator extends OrchestratorTool<typeof CUSTOM_INPUT_SCHEMA> {
+      constructor(server: McpServer, config: OrchestratorConfig<typeof CUSTOM_INPUT_SCHEMA>) {
+        super(server, config);
+      }
+
+      protected extractUserInput(input: CustomInput): unknown | undefined {
+        return input.payload;
+      }
+
+      protected extractWorkflowStateData(input: CustomInput): { thread_id: string } | undefined {
+        return input.sessionState;
+      }
+    }
+
+    it('should accept custom input schema via config', () => {
+      const workflow = new StateGraph(TestState)
+        .addNode('testNode', (_state: State) => ({
+          messages: ['test'],
+        }))
+        .addEdge(START, 'testNode')
+        .addEdge('testNode', END);
+
+      const config: OrchestratorConfig<typeof CUSTOM_INPUT_SCHEMA> = {
+        toolId: 'custom-schema-orchestrator',
+        title: 'Custom Schema Orchestrator',
+        description: 'Tests custom input schema',
+        workflow,
+        inputSchema: CUSTOM_INPUT_SCHEMA,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new CustomSchemaOrchestrator(server, config);
+
+      expect(orchestrator.toolMetadata.toolId).toBe('custom-schema-orchestrator');
+      // The input schema should be the custom one, not the default
+      expect(orchestrator.toolMetadata.inputSchema).toBe(CUSTOM_INPUT_SCHEMA);
+    });
+
+    it('should start and complete workflow with custom schema properties', async () => {
+      const workflow = new StateGraph(TestState)
+        .addNode('start', (_state: State) => ({
+          messages: ['Started workflow'],
+        }))
+        .addEdge(START, 'start')
+        .addEdge('start', END);
+
+      const config: OrchestratorConfig<typeof CUSTOM_INPUT_SCHEMA> = {
+        toolId: 'custom-schema-orchestrator',
+        title: 'Custom Schema Orchestrator',
+        description: 'Tests custom schema workflow execution',
+        workflow,
+        inputSchema: CUSTOM_INPUT_SCHEMA,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new CustomSchemaOrchestrator(server, config);
+
+      const result = await orchestrator.handleRequest(
+        {
+          payload: { test: 'data' },
+          sessionState: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+      expect(result.content[0].type).toBe('text');
+
+      // Verify workflow completed
+      const output = result.structuredContent as { orchestrationInstructionsPrompt: string };
+      expect(output.orchestrationInstructionsPrompt).toContain('workflow has concluded');
+    });
+
+    it('should reuse existing thread_id from custom schema properties', async () => {
+      const workflow = new StateGraph(TestState)
+        .addNode('node', (_state: State) => ({
+          messages: ['test'],
+        }))
+        .addEdge(START, 'node')
+        .addEdge('node', END);
+
+      const config: OrchestratorConfig<typeof CUSTOM_INPUT_SCHEMA> = {
+        toolId: 'custom-schema-orchestrator',
+        title: 'Custom Schema Orchestrator',
+        description: 'Tests thread ID extraction from custom schema',
+        workflow,
+        inputSchema: CUSTOM_INPUT_SCHEMA,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new CustomSchemaOrchestrator(server, config);
+
+      const existingThreadId = 'mmw-12345-abc123';
+      await orchestrator.handleRequest(
+        {
+          payload: {},
+          sessionState: { thread_id: existingThreadId },
+        },
+        createMockExtra()
+      );
+
+      // Find the processing log and verify it used the existing thread ID
+      const processingLog = mockLogger.logs.find(log =>
+        log.message.includes('Processing orchestrator request')
+      );
+      expect(processingLog).toBeDefined();
+      const threadId = (processingLog?.data as { threadId?: string })?.threadId;
+      expect(threadId).toBe(existingThreadId);
+    });
+
+    it('should generate a new thread when extractWorkflowStateData returns undefined', async () => {
+      // Define a schema where sessionState is truly optional (no .default())
+      const OPTIONAL_STATE_SCHEMA = z.object({
+        payload: z.unknown().optional(),
+        sessionState: z
+          .object({
+            thread_id: z.string(),
+          })
+          .optional(),
+      });
+
+      type OptionalStateInput = z.infer<typeof OPTIONAL_STATE_SCHEMA>;
+
+      class OptionalStateOrchestrator extends OrchestratorTool<typeof OPTIONAL_STATE_SCHEMA> {
+        constructor(
+          mcpServer: McpServer,
+          config: OrchestratorConfig<typeof OPTIONAL_STATE_SCHEMA>
+        ) {
+          super(mcpServer, config);
+        }
+
+        protected extractUserInput(input: OptionalStateInput): unknown | undefined {
+          return input.payload;
+        }
+
+        protected extractWorkflowStateData(
+          input: OptionalStateInput
+        ): { thread_id: string } | undefined {
+          return input.sessionState;
+        }
+      }
+
+      const workflow = new StateGraph(TestState)
+        .addNode('start', (_state: State) => ({
+          messages: ['Started workflow'],
+        }))
+        .addEdge(START, 'start')
+        .addEdge('start', END);
+
+      const config: OrchestratorConfig<typeof OPTIONAL_STATE_SCHEMA> = {
+        toolId: 'optional-state-orchestrator',
+        title: 'Optional State Orchestrator',
+        description: 'Tests undefined extractWorkflowStateData',
+        workflow,
+        inputSchema: OPTIONAL_STATE_SCHEMA,
+        stateManager: new WorkflowStateManager({ environment: 'test' }),
+        logger: mockLogger,
+      };
+
+      const orchestrator = new OptionalStateOrchestrator(server, config);
+
+      // Omit sessionState entirely — extractWorkflowStateData should return undefined
+      const result = await orchestrator.handleRequest(
+        { payload: { test: 'data' } },
+        createMockExtra()
+      );
+
+      expect(result).toBeDefined();
+      expect(result.content).toBeDefined();
+
+      // Should have started a new workflow (not a resumption)
+      expect(mockLogger.hasLoggedMessage('Starting new workflow execution', 'info')).toBe(true);
+
+      // The generated thread ID should follow the mmw- prefix convention
+      const processingLog = mockLogger.logs.find(log =>
+        log.message.includes('Processing orchestrator request')
+      );
+      expect(processingLog).toBeDefined();
+      const threadId = (processingLog?.data as { threadId?: string })?.threadId;
+      expect(threadId).toBeDefined();
+      expect(threadId).toMatch(/^mmw-/);
+    });
+
+    it('should handle interrupt/resume cycle with custom schema', async () => {
+      const mockFs = new MockFileSystem();
+      const testProjectPath = '/test/project';
+
+      const workflow = new StateGraph(TestState)
+        .addNode('requestData', (_state: State) => {
+          const mcpToolData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> = {
+            llmMetadata: {
+              name: 'custom-schema-tool',
+              description: 'Test tool for custom schema',
+              inputSchema: z.object({
+                query: z.string(),
+                workflowStateData: z.object({ thread_id: z.string() }),
+              }),
+            },
+            input: {
+              query: 'What is your name?',
+            },
+          };
+          return interrupt(mcpToolData);
+        })
+        .addNode('processData', (state: State) => {
+          return {
+            userInput: state.userInput,
+            someBoolean: true,
+          };
+        })
+        .addEdge(START, 'requestData')
+        .addEdge('requestData', 'processData')
+        .addEdge('processData', END);
+
+      const stateManager = new WorkflowStateManager({
+        environment: 'production',
+        projectPath: testProjectPath,
+        fileSystemOperations: mockFs,
+      });
+
+      const config: OrchestratorConfig<typeof CUSTOM_INPUT_SCHEMA> = {
+        toolId: 'custom-schema-resume-orchestrator',
+        title: 'Custom Schema Resume Test',
+        description: 'Tests interrupt/resume with custom schema',
+        workflow,
+        inputSchema: CUSTOM_INPUT_SCHEMA,
+        stateManager,
+        logger: mockLogger,
+      };
+
+      const orchestrator = new CustomSchemaOrchestrator(server, config);
+
+      // STEP 1: Start workflow - should hit interrupt
+      const result1 = await orchestrator.handleRequest(
+        {
+          payload: {},
+          sessionState: { thread_id: '' },
+        },
+        createMockExtra()
+      );
+
+      expect(result1.structuredContent).toBeDefined();
+      const output1 = result1.structuredContent as { orchestrationInstructionsPrompt: string };
+      expect(output1.orchestrationInstructionsPrompt).toContain('custom-schema-tool');
+
+      // Extract thread_id from the prompt
+      const threadIdMatch = output1.orchestrationInstructionsPrompt.match(
+        /"thread_id":\s*"(mmw-[^"]+)"/
+      );
+      expect(threadIdMatch).not.toBeNull();
+      const threadId = threadIdMatch![1];
+
+      mockLogger.reset();
+
+      // STEP 2: Resume workflow with user input via custom schema properties
+      const result2 = await orchestrator.handleRequest(
+        {
+          payload: { userName: 'John Doe' },
+          sessionState: { thread_id: threadId },
+        },
+        createMockExtra()
+      );
+
+      // Should complete successfully
+      expect(result2).toBeDefined();
+      expect(mockLogger.hasLoggedMessage('Resuming interrupted workflow', 'info')).toBe(true);
+
+      const output2 = result2.structuredContent as { orchestrationInstructionsPrompt: string };
+      expect(output2.orchestrationInstructionsPrompt).toContain('The workflow has concluded');
     });
   });
 });

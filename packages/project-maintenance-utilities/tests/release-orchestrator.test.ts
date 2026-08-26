@@ -43,8 +43,9 @@ describe('ReleaseOrchestrator', () => {
 
   describe('createRelease', () => {
     it('should create a release successfully', async () => {
-      // Setup package service
-      mockPackage.setPackageInfo(join('.', 'test-package'), {
+      // Setup package service with absolute path (orchestrator resolves to absolute)
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
+      mockPackage.setPackageInfo(absolutePackagePath, {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -71,8 +72,8 @@ describe('ReleaseOrchestrator', () => {
       // Setup filesystem - make sure tarball will exist after npm pack
       // When createTarball changes directory to packagePath, it checks for just the filename
       mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball content');
-      // Also set it at the full path for when it's read later (without ./ prefix)
-      mockFs.setFileContent(join('test-package', 'test-package-1.0.0.tgz'), 'tarball content');
+      // Also set it at the full path for when it's read later
+      mockFs.setFileContent(join(absolutePackagePath, 'test-package-1.0.0.tgz'), 'tarball content');
 
       const options = {
         packagePath: join('.', 'test-package'),
@@ -89,8 +90,9 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should fail if tag already exists', async () => {
-      // Setup package service
-      mockPackage.setPackageInfo(join('.', 'test-package'), {
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
+      mockPackage.setPackageInfo(absolutePackagePath, {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -116,6 +118,7 @@ describe('ReleaseOrchestrator', () => {
       // Setup package service to throw error
       mockPackage.clear(); // No package info configured, so it will throw
 
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       const options = {
         packagePath: join('.', 'test-package'),
         packageDisplayName: 'Test Package',
@@ -124,20 +127,21 @@ describe('ReleaseOrchestrator', () => {
       await orchestrator.createRelease(options);
 
       expect(mockActions.getFailureMessage()).toBe(
-        `Failed to create release: Mock: No package info configured for path: ${join('.', 'test-package')}`
+        `Failed to create release: Mock: No package info configured for path: ${absolutePackagePath}`
       );
     });
   });
 
   describe('publishRelease', () => {
     it('should publish a release successfully', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -166,19 +170,19 @@ describe('ReleaseOrchestrator', () => {
       // Setup process service for npm commands
       mockProcess.clear();
       // Mock npm view command to return empty (version not published)
-      mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
       // Mock npm publish command
       mockProcess.setCommandResponse(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
+        `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public`,
         ''
       );
       // Mock tar commands for tarball verification
       mockProcess.setCommandResponse(
-        `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+        `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
         'package/package.json\npackage/index.js'
       );
       mockProcess.setCommandResponse(
-        `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+        `tar -xzf ${join('temp-release', 'test-package-1.0.0.tgz')} -C temp-verify`,
         ''
       );
 
@@ -210,13 +214,14 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should handle dry run mode', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -245,19 +250,19 @@ describe('ReleaseOrchestrator', () => {
       // Setup process service for npm commands (dry run)
       mockProcess.clear();
       // Mock npm view command to return empty (version not published)
-      mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
       // Mock npm publish command with dry run
       mockProcess.setCommandResponse(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public --dry-run`,
+        `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public --dry-run`,
         ''
       );
       // Mock tar commands for tarball verification
       mockProcess.setCommandResponse(
-        `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+        `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
         'package/package.json\npackage/index.js'
       );
       mockProcess.setCommandResponse(
-        `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+        `tar -xzf ${join('temp-release', 'test-package-1.0.0.tgz')} -C temp-verify`,
         ''
       );
 
@@ -288,13 +293,14 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should fail if expected tarball is not found', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -320,7 +326,7 @@ describe('ReleaseOrchestrator', () => {
       // Setup process service for npm commands
       mockProcess.clear();
       // Mock npm view command to return empty (version not published)
-      mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
 
       const options = {
         packagePath: join('.', 'test-package'),
@@ -353,13 +359,14 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should fail if version is already published on NPM', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -368,7 +375,7 @@ describe('ReleaseOrchestrator', () => {
 
       // Setup process service to return that version IS published
       mockProcess.clear();
-      mockProcess.setCommandResponse('npm view "@test/package@1.0.0" version', '1.0.0');
+      mockProcess.setCommandResponse('npm view @test/package@1.0.0 version', '1.0.0');
 
       const options = {
         packagePath: join('.', 'test-package'),
@@ -386,13 +393,14 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should fail if tarball verification fails', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -420,10 +428,10 @@ describe('ReleaseOrchestrator', () => {
 
       // Setup process service - version not published, but tarball verification fails
       mockProcess.clear();
-      mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
       // Mock tar command to fail
       mockProcess.setCommandToThrow(
-        `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+        `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
         'tar: Error reading archive'
       );
 
@@ -446,13 +454,14 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should fail if NPM publish command fails', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -480,18 +489,18 @@ describe('ReleaseOrchestrator', () => {
 
       // Setup process service - all commands succeed except npm publish
       mockProcess.clear();
-      mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
       mockProcess.setCommandResponse(
-        `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+        `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
         'package/package.json\npackage/index.js'
       );
       mockProcess.setCommandResponse(
-        `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+        `tar -xzf ${join('temp-release', 'test-package-1.0.0.tgz')} -C temp-verify`,
         ''
       );
       // Make npm publish fail
       mockProcess.setCommandToThrow(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
+        `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public`,
         'npm ERR! 403 Forbidden'
       );
 
@@ -521,13 +530,14 @@ describe('ReleaseOrchestrator', () => {
     });
 
     it('should warn if cleanup fails', async () => {
-      // Setup package service
+      // Setup package service with absolute path
+      const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
       mockPackage.setReleaseTag('test-package_v1.0.0', {
         packageIdentifier: 'test-package',
         packageVersion: '1.0.0',
       });
 
-      mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+      mockPackage.setValidation(absolutePackagePath, '1.0.0', {
         packageFullName: '@test/package',
         version: '1.0.0',
         tagName: 'test-package_v1.0.0',
@@ -555,17 +565,17 @@ describe('ReleaseOrchestrator', () => {
 
       // Setup process service for successful publish
       mockProcess.clear();
-      mockProcess.setCommandToThrow('npm view "@test/package@1.0.0" version', 'Version not found');
+      mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
       mockProcess.setCommandResponse(
-        `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+        `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
         'package/package.json\npackage/index.js'
       );
       mockProcess.setCommandResponse(
-        `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+        `tar -xzf ${join('temp-release', 'test-package-1.0.0.tgz')} -C temp-verify`,
         ''
       );
       mockProcess.setCommandResponse(
-        `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
+        `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public`,
         ''
       );
 
@@ -602,8 +612,9 @@ describe('ReleaseOrchestrator', () => {
   describe('Input sanitization', () => {
     describe('createRelease', () => {
       it('should handle input strings with leading/trailing spaces', async () => {
-        // Setup package service with trimmed path
-        mockPackage.setPackageInfo(`.${sep}test-package`, {
+        // Setup package service with absolute path (orchestrator resolves to absolute after trimming)
+        const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
+        mockPackage.setPackageInfo(absolutePackagePath, {
           packageFullName: '@test/package',
           version: '1.0.0',
           tagName: 'test-package_v1.0.0',
@@ -630,7 +641,10 @@ describe('ReleaseOrchestrator', () => {
         // Setup filesystem
         mockFs.clear();
         mockFs.setFileContent('test-package-1.0.0.tgz', 'tarball content');
-        mockFs.setFileContent(join('test-package', 'test-package-1.0.0.tgz'), 'tarball content');
+        mockFs.setFileContent(
+          join(absolutePackagePath, 'test-package-1.0.0.tgz'),
+          'tarball content'
+        );
 
         // Test with inputs that have leading/trailing spaces
         const options = {
@@ -651,13 +665,14 @@ describe('ReleaseOrchestrator', () => {
 
     describe('publishRelease', () => {
       it('should handle input strings with leading/trailing spaces', async () => {
-        // Setup package service
+        // Setup package service with absolute path
+        const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
         mockPackage.setReleaseTag('test-package_v1.0.0', {
           packageIdentifier: 'test-package',
           packageVersion: '1.0.0',
         });
 
-        mockPackage.setValidation(`.${sep}test-package`, '1.0.0', {
+        mockPackage.setValidation(absolutePackagePath, '1.0.0', {
           packageFullName: '@test/package',
           version: '1.0.0',
           tagName: 'test-package_v1.0.0',
@@ -685,20 +700,17 @@ describe('ReleaseOrchestrator', () => {
 
         // Setup process service - all commands succeed
         mockProcess.clear();
-        mockProcess.setCommandToThrow(
-          'npm view "@test/package@1.0.0" version',
-          'Version not found'
-        );
+        mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
         mockProcess.setCommandResponse(
-          `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+          `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
           'package/package.json\npackage/index.js'
         );
         mockProcess.setCommandResponse(
-          `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+          `tar -xzf ${join('temp-release', 'test-package-1.0.0.tgz')} -C temp-verify`,
           ''
         );
         mockProcess.setCommandResponse(
-          `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
+          `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public`,
           'published'
         );
 
@@ -728,13 +740,14 @@ describe('ReleaseOrchestrator', () => {
       });
 
       it('should update release description after successful publish', async () => {
-        // Setup package service
+        // Setup package service with absolute path
+        const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
         mockPackage.setReleaseTag('test-package_v1.0.0', {
           packageIdentifier: 'test-package',
           packageVersion: '1.0.0',
         });
 
-        mockPackage.setValidation(join('.', 'test-package'), '1.0.0', {
+        mockPackage.setValidation(absolutePackagePath, '1.0.0', {
           packageFullName: '@test/package',
           version: '1.0.0',
           tagName: 'test-package_v1.0.0',
@@ -762,20 +775,17 @@ describe('ReleaseOrchestrator', () => {
 
         // Setup process service for npm commands
         mockProcess.clear();
-        mockProcess.setCommandToThrow(
-          'npm view "@test/package@1.0.0" version',
-          'Version not found'
-        );
+        mockProcess.setCommandToThrow('npm view @test/package@1.0.0 version', 'Version not found');
         mockProcess.setCommandResponse(
-          `npm publish "${resolve(join('temp-release', 'test-package-1.0.0.tgz'))}" --tag "latest" --access public`,
+          `npm publish ${resolve(join('temp-release', 'test-package-1.0.0.tgz'))} --tag latest --access public`,
           ''
         );
         mockProcess.setCommandResponse(
-          `tar -tzf "${join('temp-release', 'test-package-1.0.0.tgz')}"`,
+          `tar -tzf ${join('temp-release', 'test-package-1.0.0.tgz')}`,
           'package/package.json\npackage/index.js'
         );
         mockProcess.setCommandResponse(
-          `tar -xzf "${join('temp-release', 'test-package-1.0.0.tgz')}" -C "temp-verify"`,
+          `tar -xzf ${join('temp-release', 'test-package-1.0.0.tgz')} -C temp-verify`,
           ''
         );
 
@@ -853,6 +863,121 @@ describe('ReleaseOrchestrator', () => {
       expect(() => createReleaseOrchestrator(mockContext)).toThrow(
         'GITHUB_TOKEN environment variable is required'
       );
+    });
+  });
+
+  describe('input hardening', () => {
+    describe('npm_tag allowlist', () => {
+      it('should reject an npm_tag containing shell metacharacters', async () => {
+        mockPackage.setReleaseTag('test-package_v1.0.0', {
+          packageIdentifier: 'test-package',
+          packageVersion: '1.0.0',
+        });
+
+        const options = {
+          packagePath: join('.', 'test-package'),
+          packageDisplayName: 'Test Package',
+          releaseTag: 'test-package_v1.0.0',
+          npmTag: 'latest" ; rm -rf / ; "',
+          dryRun: false,
+        };
+
+        await orchestrator.publishRelease(options);
+
+        expect(mockActions.getFailureMessage()).toContain('Invalid npm_tag');
+        // Never reached npm view / npm publish
+        expect(mockProcess.getExecutedCommands()).toHaveLength(0);
+      });
+
+      it('should accept the standard npm dist-tags', async () => {
+        const absolutePackagePath = join(mockFs.workspaceRoot, 'test-package');
+
+        for (const tag of ['latest', 'beta', 'alpha', 'next']) {
+          mockProcess.clear();
+          mockActions.clear();
+          mockPackage.setReleaseTag('test-package_v1.0.0', {
+            packageIdentifier: 'test-package',
+            packageVersion: '1.0.0',
+          });
+          mockPackage.setValidation(absolutePackagePath, '1.0.0', {
+            packageFullName: '@test/package',
+            version: '1.0.0',
+            tagName: 'test-package_v1.0.0',
+            tagPrefix: 'test-package',
+          });
+          mockProcess.setCommandResponse('npm view @test/package@1.0.0 version', '1.0.0');
+
+          const options = {
+            packagePath: join('.', 'test-package'),
+            packageDisplayName: 'Test Package',
+            releaseTag: 'test-package_v1.0.0',
+            npmTag: tag,
+            dryRun: false,
+          };
+
+          await orchestrator.publishRelease(options);
+
+          // Passed the npm_tag guard and reached the already-published check
+          expect(mockActions.getFailureMessage()).toBe(
+            'Cannot publish: Version 1.0.0 already exists on NPM\nIf you need to republish, increment the version and create a new release'
+          );
+        }
+      });
+    });
+
+    describe('package_path traversal', () => {
+      it('should reject a package_path that escapes the workspace root', async () => {
+        const options = {
+          packagePath: '../../etc/passwd',
+          packageDisplayName: 'Test Package',
+        };
+
+        await orchestrator.createRelease(options);
+
+        expect(mockActions.getFailureMessage()).toBe(
+          'Failed to create release: Invalid package_path: "../../etc/passwd" resolves outside the workspace'
+        );
+      });
+
+      it('should reject an escaping package_path on publishRelease too', async () => {
+        mockPackage.setReleaseTag('test-package_v1.0.0', {
+          packageIdentifier: 'test-package',
+          packageVersion: '1.0.0',
+        });
+
+        const options = {
+          packagePath: '../../etc/passwd',
+          packageDisplayName: 'Test Package',
+          releaseTag: 'test-package_v1.0.0',
+          npmTag: 'latest',
+          dryRun: false,
+        };
+
+        await orchestrator.publishRelease(options);
+
+        expect(mockActions.getFailureMessage()).toBe(
+          'Failed to publish release: Invalid package_path: "../../etc/passwd" resolves outside the workspace'
+        );
+      });
+
+      it('should accept a package_path that resolves to the workspace root itself', async () => {
+        mockPackage.setPackageInfo(mockFs.workspaceRoot, {
+          packageFullName: '@test/package',
+          version: '1.0.0',
+          tagName: 'test-package_v1.0.0',
+          tagPrefix: 'test-package',
+        });
+        mockGitHub.clear();
+
+        const options = {
+          packagePath: '.',
+          packageDisplayName: 'Test Package',
+        };
+
+        await orchestrator.createRelease(options);
+
+        expect(mockActions.getOutput('package_full_name')).toBe('@test/package');
+      });
     });
   });
 });

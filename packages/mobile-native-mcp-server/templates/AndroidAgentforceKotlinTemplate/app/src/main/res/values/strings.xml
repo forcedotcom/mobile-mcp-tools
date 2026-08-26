@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AndroidAgentforceKotlinTemplate</string>
+    <string name="app_package">com.salesforce.agentforcedemo</string>
+
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="settings">Settings</string>
+
+    <!-- Home Screen -->
+    <string name="app_title">Agentforce SDK Demo</string>
+    <string name="app_subtitle">Tap the button below to start chatting</string>
+    <string name="start_chat">Start Chat</string>
+
+    <!-- Settings Screen -->
+    <string name="agent_configuration">Agent Configuration</string>
+    <string name="agent_id">Agent ID</string>
+    <string name="sfap_url">SFAP URL</string>
+    <string name="tenant_id">Tenant ID</string>
+    <string name="target_region">Target Region</string>
+</resources>

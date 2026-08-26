@@ -5,6 +5,7 @@
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
 
+import { createComponentLogger } from '@salesforce/magen-mcp-workflow';
 import { State } from '../metadata.js';
 
 /**
@@ -15,6 +16,7 @@ export class CheckSetupValidatedRouter {
   private readonly setupValidatedNodeName: string;
   private readonly androidSetupNodeName: string;
   private readonly invalidSetupNodeName: string;
+  private readonly logger = createComponentLogger('CheckSetupValidatedRouter');
 
   /**
    * Creates a new CheckSetupValidatedRouter.
@@ -36,15 +38,23 @@ export class CheckSetupValidatedRouter {
   execute = (state: State): string => {
     // If platform setup is valid, proceed
     if (state.validPlatformSetup) {
+      this.logger.info(`Platform setup valid, routing to ${this.setupValidatedNodeName}`);
       return this.setupValidatedNodeName;
     }
 
     // If platform is Android and Android/Java paths are missing, route to Android setup
     if (state.platform === 'Android' && (!state.androidHome || !state.javaHome)) {
+      const missingSetup: string[] = [];
+      if (!state.androidHome) missingSetup.push('androidHome');
+      if (!state.javaHome) missingSetup.push('javaHome');
+      this.logger.info(
+        `Android setup missing ${missingSetup.join(', ')}, routing to ${this.androidSetupNodeName}`
+      );
       return this.androidSetupNodeName;
     }
 
     // Otherwise, route to failure
+    this.logger.info(`Platform setup invalid, routing to ${this.invalidSetupNodeName}`);
     return this.invalidSetupNodeName;
   };
 }

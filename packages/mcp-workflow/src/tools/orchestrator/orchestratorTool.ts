@@ -8,20 +8,28 @@
 import z from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { ServerRequest, ServerNotification } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { Command } from '@langchain/langgraph';
 import { createWorkflowLogger } from '../../logging/logger.js';
 import { AbstractTool } from '../base/abstractTool.js';
 import {
+  InterruptData,
   MCPToolInvocationData,
+  NodeGuidanceData,
+  isNodeGuidanceData,
   WORKFLOW_PROPERTY_NAMES,
   WorkflowStateData,
 } from '../../common/metadata.js';
+import type { WorkflowRunnableConfig } from '../../common/graphConfig.js';
+import { MCPProgressReporter, type ProgressReporter } from '../../execution/progressReporter.js';
 import { WorkflowStateManager } from '../../checkpointing/workflowStateManager.js';
-import { OrchestratorConfig } from './config.js';
+import type { OrchestratorConfig } from './config.js';
 import {
-  OrchestratorInput,
-  OrchestratorOutput,
-  OrchestratorToolMetadata,
+  type OrchestratorInput,
+  type OrchestratorOutput,
+  type OrchestratorToolMetadata,
+  type DefaultOrchestratorInputSchema,
   createOrchestratorToolMetadata,
 } from './metadata.js';
 
@@ -45,12 +53,15 @@ function generateUniqueThreadId(): string {
  *
  * All state management and checkpointing responsibilities are delegated to WorkflowStateManager.
  */
-export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
+export class OrchestratorTool<
+  TInputSchema extends z.ZodObject<z.ZodRawShape> = DefaultOrchestratorInputSchema,
+> extends AbstractTool<OrchestratorToolMetadata<TInputSchema>> {
   private readonly stateManager: WorkflowStateManager;
+  private currentProgressReporter: ProgressReporter | undefined;
 
   constructor(
     server: McpServer,
-    private readonly config: OrchestratorConfig
+    private readonly config: OrchestratorConfig<TInputSchema>
   ) {
     // Use provided logger or create workflow logger with component name
     const effectiveLogger = config.logger || createWorkflowLogger('OrchestratorTool');
@@ -64,7 +75,16 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
   /**
    * Handle orchestrator requests - manages workflow state and execution
    */
-  public handleRequest = async (input: OrchestratorInput) => {
+  // @ts-expect-error TS2416 - z.infer<TInputSchema> is structurally equivalent to
+  // ShapeOutput<TInputSchema['shape']> (the type ToolCallback resolves to) for Zod object
+  // schemas, but TypeScript cannot prove this for generic type parameters.
+  public handleRequest = async (
+    input: z.infer<TInputSchema>,
+    extra: RequestHandlerExtra<ServerRequest, ServerNotification>
+  ) => {
+    // Create progress reporter from MCP context
+    this.currentProgressReporter = this.createProgressReporter(extra);
+
     this.logger.debug('Orchestrator tool called with input', input);
     try {
       const result = await this.processRequest(input);
@@ -82,34 +102,60 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
     } catch (error) {
       this.logger.error('Error in orchestrator tool execution', error as Error);
       throw error;
+    } finally {
+      // Clear progress reporter after request completes
+      this.currentProgressReporter = undefined;
     }
   };
 
-  private async processRequest(input: OrchestratorInput): Promise<OrchestratorOutput> {
-    // Generate or use existing thread ID for workflow session
-    let threadId = '';
+  /**
+   * Creates a progress reporter from MCP request context.
+   *
+   * Subclasses can override this to provide custom progress reporting behavior.
+   *
+   * @param extra - The MCP request context containing sendNotification and metadata
+   * @returns A progress reporter instance, or undefined if progress reporting is disabled
+   */
+  protected createProgressReporter(
+    extra: RequestHandlerExtra<ServerRequest, ServerNotification>
+  ): ProgressReporter | undefined {
+    const { sendNotification, _meta } = extra;
+    const progressToken = _meta?.progressToken ? String(_meta.progressToken) : undefined;
+    return new MCPProgressReporter(sendNotification, progressToken);
+  }
+
+  protected async processRequest(input: z.infer<TInputSchema>): Promise<OrchestratorOutput> {
+    // Resolve workflow state: extract from input or create fresh for a new session
+    let workflowStateData: WorkflowStateData | undefined;
     try {
       const parsedInput = this.toolMetadata.inputSchema.parse(input);
-      threadId = parsedInput.workflowStateData.thread_id;
+      workflowStateData = this.extractWorkflowStateData(parsedInput);
     } catch (error) {
       this.logger.error(
         'Error parsing orchestrator input. Starting a new workflow.',
         error as Error
       );
     }
-    if (threadId === '') {
-      threadId = generateUniqueThreadId();
+    const isResumption = workflowStateData && workflowStateData.thread_id !== '';
+    if (!isResumption) {
+      workflowStateData = { thread_id: generateUniqueThreadId() };
     }
-    const workflowStateData: WorkflowStateData = { thread_id: threadId };
+    workflowStateData = workflowStateData!;
+
+    // Extract user input using the (overridable) extractor method
+    const userInput = this.extractUserInput(input);
 
     this.logger.info('Processing orchestrator request', {
-      threadId,
-      hasUserInput: !!input.userInput,
-      isResumption: !!input.workflowStateData?.thread_id,
+      threadId: workflowStateData.thread_id,
+      hasUserInput: !!userInput,
+      isResumption,
     });
 
-    // Thread configuration for LangGraph
-    const threadConfig = { configurable: { thread_id: threadId } };
+    // Thread configuration for LangGraph - includes optional progress reporter
+    const threadConfig = this.createThreadConfig(
+      workflowStateData.thread_id,
+      this.getProgressReporter()
+    );
 
     // Get checkpointer from state manager
     const checkpointer = await this.stateManager.createCheckpointer();
@@ -130,16 +176,13 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
       });
 
       // Resume workflow with user input from previous tool execution
-      result = await compiledWorkflow.invoke(
-        new Command({ resume: input.userInput }),
-        threadConfig
-      );
+      result = await compiledWorkflow.invoke(new Command({ resume: userInput }), threadConfig);
     } else {
       // Start new workflow session
       this.logger.info('Starting new workflow execution');
       result = await compiledWorkflow.invoke(
         {
-          userInput: input.userInput,
+          userInput,
         },
         threadConfig
       );
@@ -149,29 +192,35 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
     graphState = await compiledWorkflow.getState(threadConfig);
     if (graphState.next.length > 0) {
       // There are more nodes to execute.
-      const mcpToolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>> | undefined =
+      const interruptData:
+        | InterruptData<z.ZodObject<z.ZodRawShape>, z.ZodObject<z.ZodRawShape>>
+        | undefined =
         '__interrupt__' in result
           ? (
               result.__interrupt__ as Array<{
-                value: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>;
+                value: InterruptData<z.ZodObject<z.ZodRawShape>, z.ZodObject<z.ZodRawShape>>;
               }>
             )[0].value
           : undefined;
 
-      if (!mcpToolInvocationData) {
-        this.logger.error('Workflow completed without expected MCP tool invocation.');
+      if (!interruptData) {
+        this.logger.error('Workflow completed without expected interrupt data.');
         throw new Error('FATAL: Unexpected workflow state without an interrupt');
       }
 
-      this.logger.info('Invoking next MCP tool', {
-        toolName: mcpToolInvocationData.llmMetadata?.name,
-      });
-
-      // Create orchestration prompt
-      const orchestrationPrompt = this.createOrchestrationPrompt(
-        mcpToolInvocationData,
-        workflowStateData
-      );
+      // Determine mode and create appropriate prompt
+      let orchestrationPrompt: string;
+      if (isNodeGuidanceData(interruptData)) {
+        this.logger.info('Using direct guidance mode', {
+          nodeId: interruptData.nodeId,
+        });
+        orchestrationPrompt = this.createDirectGuidancePrompt(interruptData, workflowStateData);
+      } else {
+        this.logger.info('Using delegate mode', {
+          toolName: interruptData.llmMetadata?.name,
+        });
+        orchestrationPrompt = this.createOrchestrationPrompt(interruptData, workflowStateData);
+      }
 
       // Save the workflow state.
       await this.stateManager.saveCheckpointerState(checkpointer);
@@ -189,9 +238,72 @@ export class OrchestratorTool extends AbstractTool<OrchestratorToolMetadata> {
   }
 
   /**
-   * Create orchestration prompt for LLM with embedded tool invocation data and workflow state
+   * Create the thread configuration for LangGraph workflow invocation.
+   *
+   * Subclasses can override this method to add additional properties to
+   * `configurable`, such as progressReporter for long-running operations.
+   *
+   * @param threadId - The thread ID for checkpointing
+   * @param progressReporter - Optional progress reporter for long-running operations
+   * @returns Configuration object for workflow invocation
    */
-  private createOrchestrationPrompt(
+  protected createThreadConfig(
+    threadId: string,
+    progressReporter?: ProgressReporter
+  ): WorkflowRunnableConfig {
+    return {
+      configurable: {
+        thread_id: threadId,
+        progressReporter,
+      },
+    };
+  }
+
+  /**
+   * Get the progress reporter for the current request.
+   *
+   * @returns The progress reporter created from the current MCP request context, or undefined
+   */
+  protected getProgressReporter(): ProgressReporter | undefined {
+    return this.currentProgressReporter;
+  }
+
+  /**
+   * Extract the user input value from the orchestrator input.
+   *
+   * Default implementation assumes the standard ORCHESTRATOR_INPUT_SCHEMA structure
+   * and reads the `userInput` property directly. Subclasses with custom input schemas
+   * MUST override this method to map their custom properties.
+   *
+   * @param input - The parsed orchestrator input
+   * @returns The user input value, or undefined if not present
+   */
+  protected extractUserInput(input: z.infer<TInputSchema>): unknown | undefined {
+    return (input as OrchestratorInput).userInput;
+  }
+
+  /**
+   * Extract the workflow state data from the orchestrator input.
+   *
+   * Default implementation assumes the standard ORCHESTRATOR_INPUT_SCHEMA structure
+   * and reads the `workflowStateData` property directly. Subclasses with custom input
+   * schemas MUST override this method to map their custom properties.
+   *
+   * @param input - The parsed orchestrator input
+   * @returns The workflow state data, or undefined if not present or invalid
+   */
+  protected extractWorkflowStateData(input: z.infer<TInputSchema>): WorkflowStateData | undefined {
+    return (input as OrchestratorInput).workflowStateData;
+  }
+
+  /**
+   * Create orchestration prompt for LLM with embedded tool invocation data and workflow state.
+   * Used in delegate mode - instructs LLM to call a separate MCP tool.
+   *
+   * Subclasses with custom input schemas may override this to adjust property
+   * name references in the generated prompt.
+   */
+  protected createOrchestrationPrompt(
     mcpToolInvocationData: MCPToolInvocationData<z.ZodObject<z.ZodRawShape>>,
     workflowStateData: WorkflowStateData
   ): string {
@@ -210,7 +322,7 @@ Invoke the following MCP server tool:
 **MCP Server Tool Name**: ${mcpToolInvocationData.llmMetadata?.name}
 **MCP Server Tool Input Schema**:
 \`\`\`json
-${JSON.stringify(zodToJsonSchema(mcpToolInvocationData.llmMetadata?.inputSchema))}
+${JSON.stringify(zodToJsonSchema(mcpToolInvocationData.llmMetadata.inputSchema))}
 \`\`\`
 **MCP Server Tool Input Values**:
 \`\`\`json
@@ -234,6 +346,99 @@ specified by the next MCP server tool invocation.
 
 The MCP server tool you invoke will respond with its output, along with further
 instructions for continuing the workflow.
+`;
+  }
+
+  /**
+   * Create a direct guidance prompt for the LLM.
+   * Used in direct guidance mode - provides guidance inline without an intermediate tool call.
+   *
+   * Subclasses with custom input schemas may override this to adjust property
+   * name references in the generated prompt.
+   *
+   * @param nodeGuidanceData - The node guidance data containing task guidance and schemas
+   * @param workflowStateData - The workflow state data to round-trip back to the orchestrator
+   * @returns A prompt with the task guidance and post-task instructions
+   */
+  protected createDirectGuidancePrompt(
+    nodeGuidanceData: NodeGuidanceData<z.ZodObject<z.ZodRawShape>>,
+    workflowStateData: WorkflowStateData
+  ): string {
+    const returnGuidance = nodeGuidanceData.returnGuidance
+      ? nodeGuidanceData.returnGuidance(workflowStateData)
+      : this.defaultReturnGuidance(
+          workflowStateData,
+          nodeGuidanceData.resultSchema,
+          nodeGuidanceData.exampleOutput
+        );
+
+    return `
+# ROLE
+
+You are participating in a workflow orchestration process. The orchestrator is providing
+you with direct guidance for the current task.
+
+# TASK GUIDANCE
+
+${nodeGuidanceData.taskGuidance}
+
+${returnGuidance}
+`;
+  }
+
+  private defaultReturnGuidance(
+    workflowStateData: WorkflowStateData,
+    resultSchema: z.ZodObject<z.ZodRawShape>,
+    exampleOutput?: string
+  ): string {
+    const resultSchemaJson = JSON.stringify(zodToJsonSchema(resultSchema), null, 2);
+
+    // Build example section if provided
+    const exampleSection = exampleOutput
+      ? `
+For example, a properly formatted result should look like:
+
+\`\`\`json
+${exampleOutput}
+\`\`\`
+`
+      : '';
+    return `# CRITICAL: REQUIRED NEXT STEP
+
+After completing the task above, you **MUST** invoke the \`${this.toolMetadata.toolId}\` tool 
+to continue the workflow. The workflow CANNOT proceed without this tool call.
+
+**DO NOT:**
+- Simply respond with text
+- Skip the tool call
+- Forget to include the required parameters
+
+**YOU MUST** call the \`${this.toolMetadata.toolId}\` tool with EXACTLY these parameters:
+
+| Parameter | Value |
+|-----------|-------|
+| \`${WORKFLOW_PROPERTY_NAMES.userInput}\` | Your formatted result (see OUTPUT FORMAT below) |
+| \`${WORKFLOW_PROPERTY_NAMES.workflowStateData}\` | \`${JSON.stringify(workflowStateData)}\` |
+
+# OUTPUT FORMAT
+
+The \`${WORKFLOW_PROPERTY_NAMES.userInput}\` parameter MUST be a JSON object conforming to this schema:
+
+\`\`\`json
+${resultSchemaJson}
+\`\`\`
+${exampleSection}
+
+# EXAMPLE TOOL CALL
+
+Here is an example of the EXACT format your tool call should follow:
+
+\`\`\`
+Tool: ${this.toolMetadata.toolId}
+Parameters:
+  ${WORKFLOW_PROPERTY_NAMES.userInput}: ${exampleOutput ? exampleOutput.replaceAll('\n', '\n    ') : '{ /* your result object here */ }'}
+  ${WORKFLOW_PROPERTY_NAMES.workflowStateData}: ${JSON.stringify(workflowStateData)}
+\`\`\`
 `;
   }
 }

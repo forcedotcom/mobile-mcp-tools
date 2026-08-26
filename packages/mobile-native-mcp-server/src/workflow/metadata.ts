@@ -7,8 +7,39 @@
 
 import { Annotation } from '@langchain/langgraph';
 import z from 'zod';
-import { PLATFORM_ENUM, PROJECT_NAME_FIELD } from '../common/schemas.js';
+import { PLATFORM_ENUM, PROJECT_NAME_FIELD, TemplateListOutput } from '../common/schemas.js';
 import { PropertyMetadata, PropertyMetadataCollection } from '@salesforce/magen-mcp-workflow';
+
+/**
+ * Metadata for a custom template property
+ * This matches the structure returned from template discovery
+ */
+export interface TemplatePropertyMetadata {
+  value?: string;
+  required: boolean;
+  description: string;
+}
+
+/**
+ * Collection of template property metadata
+ */
+export type TemplatePropertiesMetadata = Record<string, TemplatePropertyMetadata>;
+
+/**
+ * Information about a Connected App from Salesforce org metadata
+ */
+export interface ConnectedAppInfo {
+  fullName: string;
+  createdByName: string;
+}
+
+/**
+ * Information about a Salesforce org from `sf org list`
+ */
+export interface OrgInfo {
+  username: string;
+  alias?: string;
+}
 
 /**
  * Definition of all user input properties required by the mobile native workflow.
@@ -37,11 +68,6 @@ export const WORKFLOW_USER_INPUT_PROPERTIES = {
     zodType: z.string(),
     description: 'The organization or company name',
     friendlyName: 'organization or company name',
-  } satisfies PropertyMetadata<z.ZodString>,
-  loginHost: {
-    zodType: z.string(),
-    description: 'The Salesforce login host for the mobile app.',
-    friendlyName: 'Salesforce login host',
   } satisfies PropertyMetadata<z.ZodString>,
 } as const satisfies PropertyMetadataCollection;
 
@@ -81,13 +107,14 @@ export type AndroidSetupProperties = typeof ANDROID_SETUP_PROPERTIES;
 export const MobileNativeWorkflowState = Annotation.Root({
   // Core workflow data
   userInput: Annotation<unknown>,
+  templatePropertiesUserInput: Annotation<unknown>,
   platform: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.platform.zodType>>,
 
   // Plan phase state
-  validEnvironment: Annotation<boolean>,
   validPlatformSetup: Annotation<boolean>,
   validPluginSetup: Annotation<boolean>,
   workflowFatalErrorMessages: Annotation<string[]>,
+  templateOptions: Annotation<TemplateListOutput>,
 
   // Android setup state (for recovery flow)
   androidInstalled: Annotation<z.infer<typeof ANDROID_SETUP_PROPERTIES.androidInstalled.zodType>>,
@@ -95,13 +122,23 @@ export const MobileNativeWorkflowState = Annotation.Root({
   javaHome: Annotation<z.infer<typeof ANDROID_SETUP_PROPERTIES.javaHome.zodType>>,
 
   selectedTemplate: Annotation<string>,
+  templateProperties: Annotation<Record<string, string>>,
+  templatePropertiesMetadata: Annotation<TemplatePropertiesMetadata>,
   projectName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.projectName.zodType>>,
   projectPath: Annotation<string>,
   packageName: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.packageName.zodType>>,
   organization: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.organization.zodType>>,
+
+  // Org selection state (for MSDK apps)
+  orgList: Annotation<OrgInfo[]>,
+  selectedOrgUsername: Annotation<string>,
+
+  // Connected App state (for MSDK apps)
+  connectedAppList: Annotation<ConnectedAppInfo[]>,
+  selectedConnectedAppName: Annotation<string>,
   connectedAppClientId: Annotation<string>,
   connectedAppCallbackUri: Annotation<string>,
-  loginHost: Annotation<z.infer<typeof WORKFLOW_USER_INPUT_PROPERTIES.loginHost.zodType>>,
+  loginHost: Annotation<string>,
 
   // Build and deployment state
   buildType: Annotation<'debug' | 'release'>,
@@ -113,6 +150,7 @@ export const MobileNativeWorkflowState = Annotation.Root({
   buildOutputFilePath: Annotation<string>,
   recoveryReadyForRetry: Annotation<boolean>,
   deploymentStatus: Annotation<string>,
+  androidEmulatorName: Annotation<string>,
 });
 
 export type State = typeof MobileNativeWorkflowState.State;

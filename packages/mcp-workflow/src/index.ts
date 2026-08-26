@@ -33,6 +33,9 @@ export {
   MCP_WORKFLOW_TOOL_OUTPUT_SCHEMA,
   type WorkflowStateData,
   type MCPToolInvocationData,
+  type NodeGuidanceData,
+  type InterruptData,
+  isNodeGuidanceData,
   type MCPWorkflowToolOutput,
   type ToolMetadata,
   type WorkflowToolMetadata,
@@ -55,33 +58,17 @@ export { executeToolWithLogging } from './utils/toolExecutionUtils.js';
 // Base Tool Classes
 export { AbstractTool, AbstractWorkflowTool } from './tools/base/index.js';
 
-// Utility Tools
-export {
-  // Get Input Tool
-  GetInputTool,
-  createGetInputTool,
-  createGetInputMetadata,
-  type GetInputToolOptions,
-  type GetInputToolMetadata,
-  type GetInputWorkflowInput,
-  GET_INPUT_PROPERTY_SCHEMA,
-  GET_INPUT_WORKFLOW_INPUT_SCHEMA,
-  GET_INPUT_WORKFLOW_RESULT_SCHEMA,
-  // Input Extraction Tool
-  InputExtractionTool,
-  createInputExtractionTool,
-  createInputExtractionMetadata,
-  type InputExtractionToolOptions,
-  type InputExtractionToolMetadata,
-  type InputExtractionWorkflowInput,
-  INPUT_EXTRACTION_WORKFLOW_INPUT_SCHEMA,
-  INPUT_EXTRACTION_WORKFLOW_RESULT_SCHEMA,
-} from './tools/utilities/index.js';
+// Get Input Result Schema (for NodeGuidanceData / direct guidance mode services)
+export { GET_INPUT_WORKFLOW_RESULT_SCHEMA } from './tools/utilities/index.js';
+
+// Graph Configuration
+export { type BaseGraphConfig, type WorkflowRunnableConfig } from './common/graphConfig.js';
 
 // Base Node Classes
 export {
   BaseNode,
   AbstractToolNode,
+  UserInputExtractionNode,
   createGetUserInputNode,
   createUserInputExtractionNode,
   type GetUserInputNodeOptions,
@@ -92,7 +79,7 @@ export {
 export { CheckPropertiesFulfilledRouter } from './routers/index.js';
 
 // Base Service Classes
-export { AbstractService } from './services/index.js';
+export { AbstractService, InputExtractionService } from './services/index.js';
 
 // Checkpointing Infrastructure
 export {
@@ -107,6 +94,7 @@ export {
 export {
   OrchestratorTool,
   createOrchestratorToolMetadata,
+  type DefaultOrchestratorInputSchema,
   type OrchestratorConfig,
   type OrchestratorInput,
   type OrchestratorOutput,
@@ -114,3 +102,20 @@ export {
   ORCHESTRATOR_INPUT_SCHEMA,
   ORCHESTRATOR_OUTPUT_SCHEMA,
 } from './tools/orchestrator/index.js';
+
+// Execution Infrastructure
+export {
+  ProgressReporter,
+  MCPProgressReporter,
+  CommandRunner,
+  DefaultCommandRunner,
+  SafeSpawnError,
+  buildSpawnInvocation,
+  quoteForCmd,
+  type Command,
+  type CommandResult,
+  type ProgressParseResult,
+  type ProgressParser,
+  type CommandExecutionOptions,
+  type SpawnInvocation,
+} from './execution/index.js';

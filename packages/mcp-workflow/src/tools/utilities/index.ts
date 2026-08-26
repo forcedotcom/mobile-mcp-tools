@@ -6,4 +6,3 @@
  */
 
 export * from './getInput/index.js';
-export * from './inputExtraction/index.js';

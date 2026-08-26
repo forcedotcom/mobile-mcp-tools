@@ -2,11 +2,11 @@
 
 ## Overview
 
-This document describes the architecture of the execution module (`packages/mobile-native-mcp-server/src/execution/`), which provides an abstraction for executing long running node commands with real-time progress reporting in action nodes. The design emphasizes encapsulation of platform-specific logic, clear separation of concerns, and dependency injection for testability.
+This document describes the architecture of the execution module, which provides an abstraction for executing long running node commands with real-time progress reporting in action nodes. The design emphasizes encapsulation of platform-specific logic, clear separation of concerns, and dependency injection for testability.
 
 The execution module is organized into two layers:
-- **Generic Execution** (`src/execution/`): Reusable components for command execution and progress reporting
-- **Build-Specific Execution** (`src/execution/build/`): Build-specific command creation and execution logic
+- **Generic Execution** (`packages/mcp-workflow/src/execution/`): Reusable components for command execution and progress reporting, available via `@salesforce/magen-mcp-workflow`
+- **Build-Specific Execution** (`packages/mobile-native-mcp-server/src/execution/build/`): Build-specific command creation and execution logic
 
 ## Core Principles
 
@@ -32,21 +32,21 @@ The execution architecture distinguishes between two concepts:
 
 ## Module Structure
 
-### Generic Execution (`src/execution/`)
+### Generic Execution (`packages/mcp-workflow/src/execution/`)
 
-Contains reusable components that can be used for any command execution:
+Contains reusable components that can be used for any command execution, exported from `@salesforce/magen-mcp-workflow`:
 
-- **`progressReporter.ts`**: Abstract progress reporting interface and MCP implementation
-- **`commandRunner.ts`**: Generic command execution abstraction
-- **`index.ts`**: Exports generic execution components and build-specific components
+- **`progressReporter.ts`**: Abstract progress reporting interface and MCP implementation (`ProgressReporter`, `MCPProgressReporter`)
+- **`commandRunner.ts`**: Generic command execution abstraction (`CommandRunner`, `DefaultCommandRunner`)
+- **`types.ts`**: Generic types (`Command`, `CommandResult`, `ProgressParseResult`, `ProgressParser`, `CommandExecutionOptions`)
+- **`index.ts`**: Exports all generic execution components
 
-### Build-Specific Execution (`src/execution/build/`)
+### Build-Specific Execution (`packages/mobile-native-mcp-server/src/execution/build/`)
 
 Contains build-specific logic organized by platform:
 
-- **`types.ts`**: Shared types and interfaces for build command factories
-- **`buildCommandFactoryRouter.ts`**: Router that delegates to platform-specific factories
-- **`buildExecutor.ts`**: Build execution orchestration
+- **`types.ts`**: Shared types and interfaces for build command factories (imports `Command` and `ProgressParseResult` from `@salesforce/magen-mcp-workflow`)
+- **`buildExecutor.ts`**: Build execution orchestration (imports `CommandRunner` and `ProgressReporter` from `@salesforce/magen-mcp-workflow`)
 - **`ios/`**: iOS-specific build implementation
   - **`buildCommandFactory.ts`**: iOS build command creation and progress parsing
   - **`index.ts`**: Exports iOS components
@@ -76,7 +76,7 @@ This organization provides:
 
 **Flow**:
 1. Orchestrator extracts `sendNotification` function and `progressToken` from MCP request context
-2. Creates `MCPProgressReporter` using `createMCPProgressReporter()` helper
+2. Creates `MCPProgressReporter` instance directly
 3. Passes `ProgressReporter` to workflow graph creation
 4. Workflow passes reporter to nodes that need it (e.g., `BuildValidationNode`)
 
@@ -96,20 +96,20 @@ This organization provides:
   - Parse platform-specific build output for progress
 - **Co-location**: Command creation and progress parsing logic live together within the platform directory
 - **Shared Types**: Common interfaces and types are defined in `build/types.ts`
-- **Router Pattern**: `BuildCommandFactoryRouter` routes to appropriate platform factory based on platform parameter
+- **Direct Factory Selection**: `BuildExecutor` selects the appropriate platform factory based on the platform parameter at runtime
 - **Build Environment Extensibility**: Factories can be extended to detect and adapt to different build environments (OS) when needed
 
 **Interface** (defined in `build/types.ts`):
 ```typescript
 interface BuildCommandFactory {
-  create(params: BuildCommandParams): Command;
-  parseProgress(output: string, currentProgress: number): ProgressParseResult;
+  create(params: BuildCommandParams): Command; // Command imported from @salesforce/magen-mcp-workflow
+  parseProgress(output: string, currentProgress: number): ProgressParseResult; // ProgressParseResult imported from @salesforce/magen-mcp-workflow
 }
 ```
 
 **Platform Structure**:
-- **iOS**: `src/execution/build/ios/buildCommandFactory.ts` - xcodebuild command creation and parsing (macOS-only)
-- **Android**: `src/execution/build/android/buildCommandFactory.ts` - Gradle command creation and parsing (currently Unix-style, extensible to Windows)
+- **iOS**: `packages/mobile-native-mcp-server/src/execution/build/ios/buildCommandFactory.ts` - xcodebuild command creation and parsing (macOS-only)
+- **Android**: `packages/mobile-native-mcp-server/src/execution/build/android/buildCommandFactory.ts` - Gradle command creation and parsing (currently Unix-style, extensible to Windows)
 
 **Benefits**:
 - Adding a new platform requires only creating a new platform directory with factory implementation
@@ -121,29 +121,30 @@ interface BuildCommandFactory {
 
 ### BuildExecutor
 
-**Location**: `src/execution/build/buildExecutor.ts`
+**Location**: `packages/mobile-native-mcp-server/src/execution/build/buildExecutor.ts`
 
 **Purpose**: High-level orchestration of build execution, coordinating command creation, execution, and result parsing.
 
 **Key Design Decisions**:
-- Receives `BuildCommandFactory` as dependency (typically a router)
-- Receives `ProgressReporter` as parameter (allows different reporters per execution)
+- Instantiates platform-specific factories (iOS and Android) in constructor
+- Selects appropriate factory based on platform parameter at runtime
+- Receives `ProgressReporter` as parameter (imported from `@salesforce/magen-mcp-workflow`, allows different reporters per execution)
+- Uses `CommandRunner` from `@salesforce/magen-mcp-workflow` for command execution
 - Platform-agnostic: delegates platform-specific concerns to factory
 - Handles result parsing (errors, warnings) generically
 - Lives in `build/` subdirectory as it's build-specific, not generic execution
 
 **Responsibilities**:
 1. Determine build output file path
-2. Create build command via factory
-3. Get platform-specific factory for progress parsing
+2. Select appropriate platform factory (iOS or Android)
+3. Create build command via factory
 4. Execute command with progress reporting
-5. Write output to file for analysis
-6. Parse results (success, errors, warnings)
-7. Report completion status
+5. Parse results (success, errors, warnings)
+6. Report completion status
 
 ### CommandRunner
 
-**Location**: `src/execution/commandRunner.ts`
+**Location**: `packages/mcp-workflow/src/execution/commandRunner.ts` (exported from `@salesforce/magen-mcp-workflow`)
 
 **Purpose**: Generic command execution abstraction that handles process spawning, output capture, and progress reporting.
 
@@ -173,49 +174,41 @@ interface BuildCommandFactory {
 
 ### Workflow Creation
 
-The workflow graph is created via a factory function that accepts dependencies:
+The workflow graph is created via a factory function that constructs its dependencies internally:
 
 ```typescript
-function createMobileNativeWorkflow(
-  buildExecutor: BuildExecutor,
-  sendNotification: SendNotification
-): StateGraph
+function createMobileNativeWorkflow(logger?: Logger): StateGraph
 ```
 
-This pattern enables:
-- **Testability**: Dependencies can be mocked for testing
-- **Flexibility**: Different implementations can be injected
-- **Explicit Dependencies**: Clear contract of what the workflow needs
+This pattern:
+- **Encapsulates Infrastructure**: The workflow owns its execution dependencies (CommandRunner, BuildExecutor)
+- **Simplifies the API**: Callers only need to provide an optional logger
+- **Maintains Testability**: Individual components (BuildExecutor, CommandRunner) can still be tested in isolation
 
 ### Component Construction
 
-Components are constructed at the orchestrator level:
+Components are constructed within the workflow factory:
 
 ```typescript
-// Orchestrator creates dependencies
-import { DefaultCommandRunner } from '../execution/commandRunner.js';
-import { BuildCommandFactoryRouter } from '../execution/build/buildCommandFactoryRouter.js';
-import { DefaultBuildExecutor } from '../execution/build/buildExecutor.js';
-import { createMCPProgressReporter } from '../execution/progressReporter.js';
+// graph.ts - workflow owns its infrastructure
+export function createMobileNativeWorkflow(logger?: Logger) {
+  const commandRunner = new DefaultCommandRunner(logger);
+  const buildExecutor = new DefaultBuildExecutor(
+    commandRunner,
+    defaultTempDirectoryManager,
+    logger
+  );
+  // ... build workflow graph with buildExecutor
+}
 
-const commandRunner = new DefaultCommandRunner(logger);
-const buildCommandFactory = new BuildCommandFactoryRouter(tempDirManager);
-const buildExecutor = new DefaultBuildExecutor(
-  commandRunner,
-  buildCommandFactory,
-  tempDirManager,
-  logger
-);
-const progressReporter = createMCPProgressReporter(sendNotification, progressToken);
-
-// Workflow receives dependencies
-const workflow = createMobileNativeWorkflow(buildExecutor, progressReporter);
+// Orchestrator simply invokes the factory
+const workflow = createMobileNativeWorkflow(logger);
 ```
 
 This ensures:
-- Dependencies are created once and reused
-- Lifecycle is managed at the appropriate level
-- Components remain focused on their responsibilities
+- The orchestrator focuses on orchestration, not infrastructure construction
+- Workflow infrastructure is colocated with the workflow definition
+- Individual components remain independently testable
 
 ## Progress Reporting Flow
 
@@ -223,7 +216,7 @@ This ensures:
 
 1. **MCP Request Arrives**: Contains `progressToken` in metadata
 2. **Orchestrator Extracts Context**: Gets `sendNotification` function and `progressToken`
-3. **ProgressReporter Created**: `createMCPProgressReporter()` validates token and creates reporter
+3. **ProgressReporter Created**: `MCPProgressReporter` instance created with `sendNotification` and `progressToken`
 4. **Workflow Receives Reporter**: Passed to workflow creation function
 
 ### During Execution
@@ -267,17 +260,18 @@ To add a new platform (e.g., Windows):
 3. Implement `create()` with Windows-specific command structure (considering build environment if cross-platform)
 4. Implement `parseProgress()` with Windows build output parsing logic
 5. Create `index.ts` in the platform directory to export the factory
-6. Update `BuildCommandFactoryRouter` to import and route to the new factory
-7. Export the new platform from `build/index.ts`
+6. Update `DefaultBuildExecutor` constructor to instantiate the new factory
+7. Update `DefaultBuildExecutor.execute()` to select the Windows factory when `params.platform === 'Windows'`
+8. Export the new platform from `build/index.ts`
 
 **Example Structure**:
 ```
-src/execution/build/
+packages/mobile-native-mcp-server/src/execution/build/
   ├── windows/
   │   ├── buildCommandFactory.ts
   │   └── index.ts
   ├── types.ts
-  ├── buildCommandFactoryRouter.ts
+  ├── buildExecutor.ts
   └── index.ts
 ```
 

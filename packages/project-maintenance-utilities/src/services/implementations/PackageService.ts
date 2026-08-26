@@ -8,7 +8,14 @@ import {
 } from '../interfaces/PackageServiceProvider.js';
 
 export class PackageService implements PackageServiceProvider {
-  constructor(private fsService: FileSystemServiceProvider) {}
+  private debugLog: (message: string) => void;
+
+  constructor(
+    private fsService: FileSystemServiceProvider,
+    debugLog?: (message: string) => void
+  ) {
+    this.debugLog = debugLog ?? (() => {});
+  }
 
   /**
    * Get package information from package.json
@@ -84,6 +91,8 @@ export class PackageService implements PackageServiceProvider {
       );
     }
 
+    // packageIdentifier is intentionally unvalidated: it only ever reaches setOutput/reporter.info
+    // today, never a shell or file-path sink. If a future change wires it into one, validate it there.
     const packageIdentifier = tagMatch[1];
     const packageVersion = tagMatch[2];
 
@@ -116,5 +125,132 @@ export class PackageService implements PackageServiceProvider {
     }
 
     return packageInfo;
+  }
+
+  /**
+   * Resolve wildcard dependencies by finding packages in the workspace and replacing * with versions
+   * @param packagePath - Absolute path to package directory
+   * @param workspaceRoot - Path to workspace root directory (used to find sibling packages)
+   * @returns Object with original and modified package.json content
+   */
+  resolveWildcardDependencies(
+    packagePath: string,
+    workspaceRoot: string
+  ): { originalContent: string; modifiedContent: string } {
+    const packageJsonPath = join(packagePath, 'package.json');
+    const originalContent = this.fsService.readFileSync(packageJsonPath, 'utf8');
+    const packageJson = JSON.parse(originalContent);
+
+    // Find all workspace packages and their versions
+    const workspacePackages = this.findWorkspacePackages(workspaceRoot);
+    const resolvedVersions: Record<string, string> = {};
+
+    // Resolve versions for dependencies with "*"
+    if (packageJson.dependencies) {
+      for (const [depName, depVersion] of Object.entries(packageJson.dependencies)) {
+        if (depVersion === '*') {
+          const workspacePackage = workspacePackages.find(pkg => pkg.name === depName);
+          if (workspacePackage) {
+            resolvedVersions[depName] = workspacePackage.version;
+          } else {
+            throw new Error(
+              `Cannot resolve wildcard dependency "${depName}": package not found in workspace. ` +
+                `Wildcard dependencies must reference packages within the monorepo.`
+            );
+          }
+        }
+      }
+    }
+
+    // Resolve versions for devDependencies with "*" (though typically these shouldn't be published)
+    if (packageJson.devDependencies) {
+      for (const [depName, depVersion] of Object.entries(packageJson.devDependencies)) {
+        if (depVersion === '*') {
+          const workspacePackage = workspacePackages.find(pkg => pkg.name === depName);
+          if (workspacePackage) {
+            resolvedVersions[depName] = workspacePackage.version;
+          }
+        }
+      }
+    }
+
+    // If no wildcards found, return original
+    if (Object.keys(resolvedVersions).length === 0) {
+      return {
+        originalContent,
+        modifiedContent: originalContent,
+      };
+    }
+
+    // Create modified package.json with resolved versions
+    const modifiedPackageJson = JSON.parse(originalContent);
+
+    // Replace "*" in dependencies with "^<version>"
+    if (modifiedPackageJson.dependencies) {
+      for (const [depName, version] of Object.entries(resolvedVersions)) {
+        if (modifiedPackageJson.dependencies[depName] === '*') {
+          modifiedPackageJson.dependencies[depName] = `^${version}`;
+        }
+      }
+    }
+
+    // Replace "*" in devDependencies with "^<version>"
+    if (modifiedPackageJson.devDependencies) {
+      for (const [depName, version] of Object.entries(resolvedVersions)) {
+        if (modifiedPackageJson.devDependencies[depName] === '*') {
+          modifiedPackageJson.devDependencies[depName] = `^${version}`;
+        }
+      }
+    }
+
+    const modifiedContent = JSON.stringify(modifiedPackageJson, null, 2) + '\n';
+
+    return {
+      originalContent,
+      modifiedContent,
+    };
+  }
+
+  /**
+   * Find all packages in the workspace
+   * @param workspaceRoot - Path to workspace root
+   * @returns Array of package info objects
+   */
+  private findWorkspacePackages(workspaceRoot: string): Array<{ name: string; version: string }> {
+    const packages: Array<{ name: string; version: string }> = [];
+    const packagesDir = join(workspaceRoot, 'packages');
+
+    if (!this.fsService.existsSync(packagesDir)) {
+      return packages;
+    }
+
+    try {
+      // Read directory entries
+      const entries = this.fsService.readdirSync(packagesDir);
+      for (const entry of entries) {
+        const packagePath = join(packagesDir, entry);
+        const packageJsonPath = join(packagePath, 'package.json');
+
+        // Check if it's a directory with a package.json
+        if (this.fsService.existsSync(packageJsonPath)) {
+          try {
+            const packageJsonContent = this.fsService.readFileSync(packageJsonPath, 'utf8');
+            const packageJson = JSON.parse(packageJsonContent);
+            if (packageJson.name && packageJson.version) {
+              packages.push({
+                name: packageJson.name,
+                version: packageJson.version,
+              });
+            }
+          } catch (error) {
+            this.debugLog(`Could not parse package.json at ${packageJsonPath}: ${error}`);
+          }
+        }
+      }
+    } catch (error) {
+      this.debugLog(`Could not read packages directory at ${packagesDir}: ${error}`);
+    }
+
+    return packages;
   }
 }

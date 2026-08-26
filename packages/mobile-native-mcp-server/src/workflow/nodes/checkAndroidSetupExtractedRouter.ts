@@ -31,7 +31,9 @@ export class CheckAndroidSetupExtractedRouter {
   execute = (state: State): string => {
     // Check if both androidHome and javaHome were extracted
     if (state.androidHome && state.javaHome) {
-      this.logger.info('Android setup successfully extracted, routing to platform check');
+      this.logger.info(
+        `Android setup successfully extracted, routing to ${this.setupExtractedNodeName}`
+      );
       return this.setupExtractedNodeName;
     }
 
@@ -41,7 +43,7 @@ export class CheckAndroidSetupExtractedRouter {
     if (!state.javaHome) missingPaths.push('javaHome');
 
     this.logger.warn(
-      `Android setup extraction failed. Missing: ${missingPaths.join(', ')}. Routing to failure.`
+      `Android setup extraction failed. Missing: ${missingPaths.join(', ')}. Routing to ${this.failureNodeName}.`
     );
     return this.failureNodeName;
   };

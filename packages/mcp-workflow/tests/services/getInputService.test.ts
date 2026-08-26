@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { GetInputService } from '../../src/services/getInputService.js';
 import { MockToolExecutor } from '../utils/MockToolExecutor.js';
 import { MockLogger } from '../utils/MockLogger.js';
+import { isNodeGuidanceData } from '../../src/common/metadata.js';
 
 describe('GetInputService', () => {
   let mockToolExecutor: MockToolExecutor;
@@ -58,7 +59,7 @@ describe('GetInputService', () => {
       expect(result).toBe(userResponse);
     });
 
-    it('should call tool executor with correct metadata', () => {
+    it('should call tool executor with NodeGuidanceData', () => {
       const userResponse = 'MyProject';
       mockToolExecutor.setResult(toolId, {
         userUtterance: userResponse,
@@ -77,11 +78,39 @@ describe('GetInputService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      expect(call.llmMetadata.name).toBe(toolId);
-      expect(call.input).toHaveProperty('propertiesRequiringInput');
-      expect(
-        (call.input as { propertiesRequiringInput: unknown[] }).propertiesRequiringInput
-      ).toEqual(unfulfilledProperties);
+      // Uses NodeGuidanceData structure
+      if (isNodeGuidanceData(call)) {
+        expect(call.nodeId).toBe(toolId);
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
+    });
+
+    it('should include taskGuidance in NodeGuidanceData', () => {
+      const userResponse = 'test response';
+      mockToolExecutor.setResult(toolId, {
+        userUtterance: userResponse,
+      });
+
+      const unfulfilledProperties = [
+        {
+          propertyName: 'platform',
+          friendlyName: 'platform',
+          description: 'Target platform',
+        },
+      ];
+
+      service.getInput(unfulfilledProperties);
+
+      const callHistory = mockToolExecutor.getCallHistory();
+      expect(callHistory.length).toBe(1);
+      const call = callHistory[0];
+      // NodeGuidanceData should have taskGuidance
+      if (isNodeGuidanceData(call)) {
+        expect(call.taskGuidance).toContain('input gathering');
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
     });
 
     it('should log debug message with properties', () => {
@@ -141,8 +170,13 @@ describe('GetInputService', () => {
       const callHistory = mockToolExecutor.getCallHistory();
       expect(callHistory.length).toBe(1);
       const call = callHistory[0];
-      const input = call.input as { propertiesRequiringInput: unknown[] };
-      expect(input.propertiesRequiringInput.length).toBe(2);
+      // Verify taskGuidance includes property information
+      if (isNodeGuidanceData(call)) {
+        expect(call.taskGuidance).toContain('platform');
+        expect(call.taskGuidance).toContain('projectName');
+      } else {
+        expect.fail('Expected NodeGuidanceData');
+      }
     });
 
     it('should validate result schema', () => {
