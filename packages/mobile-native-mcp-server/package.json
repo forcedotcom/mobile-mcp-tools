@@ -35,7 +35,7 @@
     "url": "git+https://github.com/forcedotcom/mobile-mcp-tools.git"
   },
   "dependencies": {
-    "@langchain/langgraph": "^0.4.9",
+    "@langchain/langgraph": "^1.4.13",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@salesforce/lwc-dev-mobile-core": "^4.0.0-alpha.14",
     "@salesforce/magen-mcp-workflow": "*",
