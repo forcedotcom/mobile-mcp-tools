@@ -36,7 +36,7 @@
   "devDependencies": {
     "@modelcontextprotocol/inspector": "^0.20.0",
     "@types/node": "^24.10.0",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11"
   }
