@@ -23,7 +23,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@salesforce/magen-mcp-workflow": "*",
-    "globals": "^16.5.0",
+    "globals": "^17.12.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {}
