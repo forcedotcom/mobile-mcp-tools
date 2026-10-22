@@ -36,7 +36,7 @@
   },
   "dependencies": {
     "@langchain/langgraph": "^1.4.13",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@salesforce/lwc-dev-mobile-core": "^4.0.0-alpha.14",
     "@salesforce/magen-mcp-workflow": "*",
     "dedent": "^1.7.1",
