@@ -37,22 +37,22 @@
   "devDependencies": {
     "@nx/workspace": "^23.1.2",
     "@types/node": "^24.10.0",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.0",
     "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-prettier": "^5.5.7",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "nx": "23.1.2",
-    "prettier": "^3.8.1",
+    "prettier": "^3.9.10",
     "tar": "^7.5.11",
-    "tsx": "^4.21.0",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.55.0",
+    "typescript-eslint": "^8.72.1",
     "vite": "^7.3.2",
     "vite-tsconfig-paths": "^5.1.4",
-    "zod-to-json-schema": "^3.25.1"
+    "zod-to-json-schema": "^3.25.2"
   },
   "nx": {
     "extends": "@nx/workspace/presets/npm.json"
